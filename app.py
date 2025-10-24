@@ -850,7 +850,7 @@ def encontrar_fecha_vencimiento(flujos):
 
 # Cargar datos del Excel
 try:
-    st.info("🔄 DEBUG: Iniciando carga de datos...")
+    st.info("🔄 DEBUG: Iniciando carga de datos... (v2)")
     
     # Debug: Verificar que el archivo existe
     import os
