@@ -850,17 +850,38 @@ def encontrar_fecha_vencimiento(flujos):
 
 # Cargar datos del Excel
 try:
+    st.info("🔄 DEBUG: Iniciando carga de datos...")
+    
+    # Debug: Verificar que el archivo existe
+    import os
+    st.write(f"DEBUG: Directorio actual: {os.getcwd()}")
+    st.write(f"DEBUG: Archivos en directorio: {os.listdir('.')}")
+    
+    if os.path.exists('bonos_flujos.xlsx'):
+        st.success("✅ DEBUG: Archivo Excel encontrado")
+        file_size = os.path.getsize('bonos_flujos.xlsx')
+        st.write(f"DEBUG: Tamaño del archivo: {file_size} bytes")
+    else:
+        st.error("❌ DEBUG: Archivo Excel NO encontrado")
+        st.stop()
+    
+    st.info("🔄 DEBUG: Intentando cargar Excel...")
     df = pd.read_excel('bonos_flujos.xlsx', engine='openpyxl')
+    st.success(f"✅ DEBUG: Excel cargado exitosamente - {len(df)} filas, {len(df.columns)} columnas")
     
     # Los tipos de bonos se generarán automáticamente después de procesar los bonos
     
     # Procesar bonos
+    st.info("🔄 DEBUG: Iniciando procesamiento de bonos...")
     bonos = []
     current_bono = None
     
     # No procesar ningún bono antes del bucle principal
+    st.write(f"DEBUG: Procesando {len(df)} filas...")
     
     for index, row in df.iterrows():
+        if index % 100 == 0:  # Debug cada 100 filas
+            st.write(f"DEBUG: Procesando fila {index}...")
         # Verificar si es el inicio de un nuevo bono (cualquier carácter que no sea fecha en columna A)
         if pd.notna(row.iloc[0]) and not isinstance(row.iloc[0], datetime):
             if current_bono:
@@ -913,6 +934,8 @@ try:
     if current_bono:
         bonos.append(current_bono)
     
+    st.success(f"✅ DEBUG: Procesamiento completado - {len(bonos)} bonos encontrados")
+    
     if not bonos:
         st.error("❌ No se encontraron bonos en el archivo")
         st.stop()
@@ -921,6 +944,9 @@ try:
     tipos_bono = list(set([bono['tipo_bono'] for bono in bonos]))
     tipos_bono.sort()  # Ordenar alfabéticamente
     tipos_bono = ["Todos"] + tipos_bono
+    
+    st.success(f"✅ DEBUG: Tipos de bonos generados: {tipos_bono}")
+    st.info("🔄 DEBUG: Iniciando interfaz de usuario...")
     
     # Sidebar
     with st.sidebar:
