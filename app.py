@@ -1158,10 +1158,10 @@ try:
                 with col2:
                     nominales = st.number_input(
                         f"Nominales",
-                        min_value=0.0,
-                        value=bono['nominales'],
-                        step=1000.0,
-                        format="%.0f",
+                        min_value=0,
+                        value=int(bono['nominales']),
+                        step=1000,
+                        format="%d",
                         key=f"nominales_{i}"
                     )
                     # Actualizar nominales en session_state
