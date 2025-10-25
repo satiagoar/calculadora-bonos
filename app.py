@@ -1381,7 +1381,7 @@ try:
                                 fechas = fechas_tir[1:]  # Fechas futuras
                                 
                                 # Usar la función calcular_ytm existente
-                                tir_calculada = calcular_ytm(
+                                tir_efectiva = calcular_ytm(
                                     precio_dirty=precio_dirty,
                                     flujos=flujos,
                                     fechas=fechas,
@@ -1390,7 +1390,12 @@ try:
                                     periodicidad=2
                                 )
                                 
-                                st.write(f"Debug TIR - Resultado: {tir_calculada}")
+                                # Convertir TIR efectiva a TIR semestral
+                                # Fórmula: TIR_semestral = 2 * ((1 + TIR_efectiva)^(1/2) - 1)
+                                tir_calculada = 2 * ((1 + tir_efectiva) ** (1/2) - 1)
+                                
+                                st.write(f"Debug TIR - TIR Efectiva: {tir_efectiva}")
+                                st.write(f"Debug TIR - TIR Semestral: {tir_calculada}")
                                 
                             except Exception as e:
                                 st.write(f"Debug TIR - Error: {e}")
@@ -1398,7 +1403,7 @@ try:
                     
                     st.markdown(f'''
                     <div class="metric-card">
-                        <div class="metric-label">TIR</div>
+                        <div class="metric-label">TIR Semestral</div>
                         <div class="metric-value">{tir_calculada:.2%}</div>
                     </div>
                     ''', unsafe_allow_html=True)
