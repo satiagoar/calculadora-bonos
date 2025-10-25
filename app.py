@@ -1251,7 +1251,18 @@ try:
                     df_flujos['amortizaciones'] = df_flujos['amortizaciones'].apply(lambda x: f"{x:.2f}")
                     df_flujos['total'] = df_flujos['total'].apply(lambda x: f"{x:.2f}")
                     
-                    # Mostrar tabla de flujos
+                    # Mostrar tabla de flujos con alineación a la derecha
+                    st.markdown("""
+                    <style>
+                    .stTable td:nth-child(3), .stTable td:nth-child(4), .stTable td:nth-child(5) {
+                        text-align: right !important;
+                    }
+                    .stTable th:nth-child(3), .stTable th:nth-child(4), .stTable th:nth-child(5) {
+                        text-align: right !important;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
+                    
                     st.table(df_flujos)
                     
                     # Resumen
