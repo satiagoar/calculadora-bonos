@@ -966,7 +966,7 @@ try:
             st.session_state.bono_seleccionado = bono_seleccionado
             st.session_state.calcular = False
         
-        # Solo mostrar inputs si hay un bono seleccionado Y no hay bono en flujos
+        # S1: Solo mostrar inputs si hay bono seleccionado Y NO hay bono en S2
         if bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado'):
             # Encontrar el bono seleccionado
             bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == bono_seleccionado)
@@ -1122,11 +1122,14 @@ try:
                 flujos_tipo_seleccionado = tipos_bono[0]
                 st.rerun()
     
-    # Verificar si se seleccionó un bono en flujos primero
-    if st.session_state.get('flujos_bono_seleccionado') is not None and st.session_state.get('flujos_bono_seleccionado') != '':
+    # LÓGICA SIMPLIFICADA: S1 y S2 son independientes
+    
+    # S2 (Calculadora de Flujos) - Prioridad alta
+    if st.session_state.get('flujos_bono_seleccionado'):
         # Mostrar pantalla en blanco cuando se selecciona un bono en la calculadora de flujos
         st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
-    # Contenido principal
+    
+    # S1 (Calculadora de Rendimientos) - Solo si NO hay bono en S2
     elif st.session_state.calcular and st.session_state.bono_seleccionado:
         # Obtener el bono actual del session_state
         bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado)
