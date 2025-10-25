@@ -1141,7 +1141,7 @@ try:
             if bono_info:
                 st.session_state.flujos_bonos_seleccionados.append({
                     'nombre': bono_actual,
-                    'nominales': 0,
+                    'nominales': '',
                     'info': bono_info
                 })
         
@@ -1160,10 +1160,12 @@ try:
                     st.write("Nominales:")
                 
                 with col3:
+                    # Manejar valores vacíos
+                    initial_value = int(bono['nominales']) if bono['nominales'] != '' else 0
                     nominales = st.number_input(
                         "",
                         min_value=0,
-                        value=int(bono['nominales']),
+                        value=initial_value,
                         step=1000,
                         format="%d",
                         key=f"nominales_{i}",
@@ -1179,7 +1181,7 @@ try:
             
             # Botón para agregar más bonos
             st.markdown("---")
-            st.info("💡 **Para agregar más bonos:** Selecciona otro bono en el sidebar")
+            st.info("**Para agregar más bonos:** Selecciona otro bono en el sidebar")
             
             # Botón para calcular flujos
             st.markdown("""
@@ -1195,7 +1197,7 @@ try:
             </style>
             """, unsafe_allow_html=True)
             
-            if st.button("📈 Calcular Flujos", type="secondary", use_container_width=True):
+            if st.button("Calcular Flujos", type="secondary", use_container_width=True):
                 st.session_state.flujos_calcular = True
             
             # Mostrar tabla de flujos si se presionó calcular
