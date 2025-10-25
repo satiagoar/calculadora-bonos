@@ -1117,6 +1117,9 @@ try:
                     del st.session_state['flujos_tipo_selectbox']
                 if 'flujos_bono_selectbox' in st.session_state:
                     del st.session_state['flujos_bono_selectbox']
+                # Forzar limpieza de variables locales
+                flujos_bono_seleccionado = None
+                flujos_tipo_seleccionado = tipos_bono[0]
                 st.rerun()
     
     # Verificar si se seleccionó un bono en flujos primero
