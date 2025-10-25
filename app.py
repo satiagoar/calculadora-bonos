@@ -1182,6 +1182,19 @@ try:
             st.info("💡 **Para agregar más bonos:** Selecciona otro bono en el sidebar")
             
             # Botón para calcular flujos
+            st.markdown("""
+            <style>
+            .stButton > button[kind="secondary"] {
+                background-color: #6b7280 !important;
+                color: white !important;
+                border: none !important;
+            }
+            .stButton > button[kind="secondary"]:hover {
+                background-color: #4b5563 !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
             if st.button("📈 Calcular Flujos", type="secondary", use_container_width=True):
                 st.session_state.flujos_calcular = True
             
