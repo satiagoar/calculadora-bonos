@@ -1371,10 +1371,6 @@ try:
                         # Calcular TIR usando la misma función que la calculadora de rendimientos
                         if len(valores_tir) > 1:
                             try:
-                                # Debug: mostrar valores para TIR
-                                st.write(f"Debug TIR - Valores: {valores_tir}")
-                                st.write(f"Debug TIR - Fechas: {fechas_tir}")
-                                
                                 # Preparar datos para calcular_ytm
                                 precio_dirty = -valores_tir[0]  # Valor actual (positivo)
                                 flujos = valores_tir[1:]  # Flujos futuros
@@ -1394,11 +1390,7 @@ try:
                                 # Fórmula: TIR_semestral = 2 * ((1 + TIR_efectiva)^(1/2) - 1)
                                 tir_calculada = 2 * ((1 + tir_efectiva) ** (1/2) - 1)
                                 
-                                st.write(f"Debug TIR - TIR Efectiva: {tir_efectiva}")
-                                st.write(f"Debug TIR - TIR Semestral: {tir_calculada}")
-                                
                             except Exception as e:
-                                st.write(f"Debug TIR - Error: {e}")
                                 tir_calculada = 0.0
                     
                     st.markdown(f'''
