@@ -1150,16 +1150,17 @@ try:
         
         if st.session_state.flujos_bonos_seleccionados:
             for i, bono in enumerate(st.session_state.flujos_bonos_seleccionados):
-                # Layout simple con 4 columnas en una sola línea
+                # Layout con alineación en el margen inferior
                 col1, col2, col3, col4 = st.columns([4, 1, 2, 1])
                 
                 with col1:
-                    st.write(f"**{bono['nombre']}**")
+                    st.markdown(f"<div style='display: flex; align-items: flex-end; height: 100%;'><strong>{bono['nombre']}</strong></div>", unsafe_allow_html=True)
                 
                 with col2:
-                    st.write("Nominales:")
+                    st.markdown("<div style='display: flex; align-items: flex-end; height: 100%;'>Nominales:</div>", unsafe_allow_html=True)
                 
                 with col3:
+                    st.markdown("<div style='display: flex; align-items: flex-end; height: 100%;'>", unsafe_allow_html=True)
                     nominales = st.number_input(
                         "",
                         min_value=0,
@@ -1171,11 +1172,14 @@ try:
                     )
                     # Actualizar nominales en session_state
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
+                    st.markdown("</div>", unsafe_allow_html=True)
                 
                 with col4:
+                    st.markdown("<div style='display: flex; align-items: flex-end; height: 100%;'>", unsafe_allow_html=True)
                     if st.button("🗑️", key=f"remove_{i}", help="Eliminar bono"):
                         st.session_state.flujos_bonos_seleccionados.pop(i)
                         st.rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
             
             # Botón para agregar más bonos
             st.markdown("---")
