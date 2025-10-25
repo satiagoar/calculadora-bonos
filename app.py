@@ -1243,20 +1243,33 @@ try:
                             
                             # Si hay múltiples cupones, calcular cupón ponderado del bono
                             if len(cupones_unicos) > 1:
-                                # Bono con cupón variable - calcular cupón ponderado
-                                suma_cupones_bono = 0
-                                total_flujos_bono = 0
+                                # Bono con cupón variable - calcular cupón ponderado por tiempo y valor residual
+                                suma_cupones_ponderados = 0
+                                suma_ponderadores = 0
+                                
                                 for flujo in bono_info['flujos']:
                                     fecha_flujo = flujo['fecha']
                                     if hasattr(fecha_flujo, 'date'):
                                         fecha_flujo = fecha_flujo.date()
                                     
                                     if fecha_flujo >= fecha_actual:
-                                        suma_cupones_bono += flujo['cupon_vigente']
-                                        total_flujos_bono += 1
+                                        # Calcular días hasta el vencimiento del bono
+                                        fecha_vencimiento = encontrar_fecha_vencimiento(bono_info['flujos'])
+                                        if fecha_vencimiento:
+                                            if hasattr(fecha_vencimiento, 'date'):
+                                                fecha_vencimiento = fecha_vencimiento.date()
+                                            
+                                            dias_hasta_vencimiento = (fecha_vencimiento - fecha_flujo).days
+                                            
+                                            # Ponderador = días hasta vencimiento + valor residual (capital del flujo)
+                                            valor_residual = flujo['capital']  # Capital del flujo como valor residual
+                                            ponderador = dias_hasta_vencimiento + (valor_residual * 100)  # Escalar valor residual
+                                            
+                                            suma_cupones_ponderados += flujo['cupon_vigente'] * ponderador
+                                            suma_ponderadores += ponderador
                                 
-                                if total_flujos_bono > 0:
-                                    cupon_ponderado_bono = suma_cupones_bono / total_flujos_bono
+                                if suma_ponderadores > 0:
+                                    cupon_ponderado_bono = suma_cupones_ponderados / suma_ponderadores
                                 else:
                                     cupon_ponderado_bono = bono_info.get('tasa_cupon', 0)
                             else:
