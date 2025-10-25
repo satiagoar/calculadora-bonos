@@ -1190,7 +1190,7 @@ try:
             padding: 12px 16px;
             margin: 8px 0 20px 0;
             background-color: transparent;
-            text-align: left;
+            text-align: center;
             font-weight: 600;
             color: #333;
         ">
