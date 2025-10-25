@@ -933,7 +933,7 @@ try:
         
         # Filtro por tipo de bono
         if 'tipo_seleccionado' not in st.session_state:
-            st.session_state.tipo_seleccionado = tipos_bono[0]  # "Todos" por defecto
+            st.session_state.tipo_seleccionado = "Seleccione un Tipo"  # Valor inicial
         
         tipos_bono_con_seleccion = ["Seleccione un Tipo"] + tipos_bono
         tipo_seleccionado = st.selectbox("Tipo de Bono", tipos_bono_con_seleccion, key="tipo_selectbox")
@@ -1007,7 +1007,7 @@ try:
                     # Resetear todas las selecciones de rendimientos
                     st.session_state.calcular = False
                     st.session_state.bono_seleccionado = None
-                    st.session_state.tipo_seleccionado = tipos_bono[0]  # "Todos"
+                    st.session_state.tipo_seleccionado = "Seleccione un Tipo"  # Resetear a valor inicial
                     # Limpiar las selecciones de los selectbox de rendimientos
                     if 'tipo_selectbox' in st.session_state:
                         del st.session_state['tipo_selectbox']
@@ -1015,7 +1015,7 @@ try:
                         del st.session_state['bono_selectbox']
                     # Limpiar las selecciones de flujos
                     st.session_state.flujos_bono_seleccionado = None
-                    st.session_state.flujos_tipo_seleccionado = tipos_bono[0]  # "Todos"
+                    st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"  # Resetear a valor inicial
                     st.session_state.flujos_calcular = False
                     # Limpiar las selecciones de los selectbox de flujos
                     if 'flujos_tipo_selectbox' in st.session_state:
@@ -1066,7 +1066,7 @@ try:
         
         # Inicializar session_state para flujos
         if 'flujos_tipo_seleccionado' not in st.session_state:
-            st.session_state.flujos_tipo_seleccionado = tipos_bono[0]  # "Todos" por defecto
+            st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"  # Valor inicial
         if 'flujos_bono_seleccionado' not in st.session_state:
             st.session_state.flujos_bono_seleccionado = None
         if 'flujos_calcular' not in st.session_state:
@@ -1108,7 +1108,7 @@ try:
             if flujos_bono_seleccionado:
                 st.session_state.calcular = False
                 st.session_state.bono_seleccionado = None
-                st.session_state.tipo_seleccionado = tipos_bono[0]  # "Todos"
+                st.session_state.tipo_seleccionado = "Seleccione un Tipo"  # Valor inicial
                 # Limpiar las selecciones de los selectbox de rendimientos
                 if 'tipo_selectbox' in st.session_state:
                     del st.session_state['tipo_selectbox']
@@ -1120,7 +1120,7 @@ try:
             if st.button("Volver", type="secondary", use_container_width=True, key="flujos_volver"):
                 # Resetear todas las selecciones de flujos
                 st.session_state.flujos_bono_seleccionado = None
-                st.session_state.flujos_tipo_seleccionado = tipos_bono[0]  # "Todos"
+                st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"  # Resetear a valor inicial
                 st.session_state.flujos_calcular = False
                 # Limpiar la lista de bonos seleccionados
                 if 'flujos_bonos_seleccionados' in st.session_state:
@@ -1132,7 +1132,7 @@ try:
                     del st.session_state['flujos_bono_selectbox']
                 # Forzar limpieza de variables locales
                 flujos_bono_seleccionado = None
-                flujos_tipo_seleccionado = tipos_bono[0]
+                flujos_tipo_seleccionado = "Seleccione un Tipo"
                 st.rerun()
     
     # LÓGICA SIMPLIFICADA: S1 y S2 son independientes
