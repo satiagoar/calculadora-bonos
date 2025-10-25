@@ -1150,24 +1150,28 @@ try:
         
         if st.session_state.flujos_bonos_seleccionados:
             for i, bono in enumerate(st.session_state.flujos_bonos_seleccionados):
-                col1, col2, col3 = st.columns([3, 2, 1])
+                col1, col2, col3, col4 = st.columns([4, 1, 2, 1])
                 
                 with col1:
                     st.write(f"**{bono['nombre']}**")
                 
                 with col2:
+                    st.write("Nominales:")
+                
+                with col3:
                     nominales = st.number_input(
-                        f"Nominales",
+                        "",
                         min_value=0,
                         value=int(bono['nominales']),
                         step=1000,
                         format="%d",
-                        key=f"nominales_{i}"
+                        key=f"nominales_{i}",
+                        label_visibility="collapsed"
                     )
                     # Actualizar nominales en session_state
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
                 
-                with col3:
+                with col4:
                     if st.button("🗑️", key=f"remove_{i}", help="Eliminar bono"):
                         st.session_state.flujos_bonos_seleccionados.pop(i)
                         st.rerun()
