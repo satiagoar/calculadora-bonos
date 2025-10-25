@@ -1768,7 +1768,7 @@ try:
         st.components.v1.html(market_data_html, height=800)
     
     # Mostrar pantalla en blanco cuando se selecciona un bono en la calculadora de flujos
-    elif st.session_state.get('flujos_bono_seleccionado', None):
+    if st.session_state.get('flujos_bono_seleccionado', None):
         # La pantalla central queda en blanco para futuras funcionalidades
         st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
         
