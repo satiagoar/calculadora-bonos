@@ -1243,6 +1243,14 @@ try:
                     # Crear DataFrame
                     df_flujos = pd.DataFrame(todos_flujos)
                     
+                    # Formatear fechas a DD/MM/YY
+                    df_flujos['fecha'] = df_flujos['fecha'].dt.strftime('%d/%m/%y')
+                    
+                    # Formatear números a 2 decimales
+                    df_flujos['intereses'] = df_flujos['intereses'].round(2)
+                    df_flujos['amortizaciones'] = df_flujos['amortizaciones'].round(2)
+                    df_flujos['total'] = df_flujos['total'].round(2)
+                    
                     # Mostrar tabla de flujos
                     st.table(df_flujos)
                     
