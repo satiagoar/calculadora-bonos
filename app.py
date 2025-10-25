@@ -876,12 +876,6 @@ try:
                 except (ValueError, TypeError):
                     return default
             
-            # Debug: mostrar todas las columnas del Excel para este bono
-            st.write(f"Debug Excel - Procesando bono: {str(row.iloc[0])}")
-            for i in range(min(20, len(row))):  # Mostrar primeras 20 columnas
-                if pd.notna(row.iloc[i]) and str(row.iloc[i]).strip() != '':
-                    st.write(f"  Columna {i}: {row.iloc[i]}")
-            
             current_bono = {
                 'nombre': str(row.iloc[0]),
                 'base_calculo': str(row.iloc[1]) if pd.notna(row.iloc[1]) else "ACT/365",
@@ -1237,21 +1231,31 @@ try:
                             nominales = bono_item['nominales']
                             
                             # Calcular cupón ponderado
-                            # Usar la tasa de cupón del bono (tasa_cupon)
-                            tasa_cupon = bono_info.get('tasa_cupon', 0)
+                            # Detectar si el bono tiene cupón variable
+                            cupones_unicos = set()
+                            for flujo in bono_info['flujos']:
+                                if flujo['fecha'] >= fecha_actual:
+                                    cupones_unicos.add(flujo['cupon_vigente'])
                             
-                            # Debug: mostrar valores
-                            st.write(f"Debug - Bono: {bono_item['nombre']}")
-                            st.write(f"Debug - Tasa cupón: {tasa_cupon}")
-                            st.write(f"Debug - Nominales: {nominales}")
+                            # Si hay múltiples cupones, calcular cupón ponderado del bono
+                            if len(cupones_unicos) > 1:
+                                # Bono con cupón variable - calcular cupón ponderado
+                                suma_cupones_bono = 0
+                                total_flujos_bono = 0
+                                for flujo in bono_info['flujos']:
+                                    if flujo['fecha'] >= fecha_actual:
+                                        suma_cupones_bono += flujo['cupon_vigente']
+                                        total_flujos_bono += 1
+                                
+                                if total_flujos_bono > 0:
+                                    cupon_ponderado_bono = suma_cupones_bono / total_flujos_bono
+                                else:
+                                    cupon_ponderado_bono = bono_info.get('tasa_cupon', 0)
+                            else:
+                                # Bono con cupón fijo
+                                cupon_ponderado_bono = bono_info.get('tasa_cupon', 0)
                             
-                            # Debug: mostrar todas las propiedades del bono
-                            st.write(f"Debug - Todas las propiedades del bono:")
-                            for key, value in bono_info.items():
-                                if key != 'flujos':  # No mostrar flujos para evitar spam
-                                    st.write(f"  {key}: {value}")
-                            
-                            suma_cupones_ponderados += tasa_cupon * nominales
+                            suma_cupones_ponderados += cupon_ponderado_bono * nominales
                             total_nominales += nominales
                             
                             for flujo in bono_info['flujos']:
@@ -1271,9 +1275,6 @@ try:
                 # Calcular cupón ponderado final
                 if total_nominales > 0:
                     cupon_ponderado = suma_cupones_ponderados / total_nominales
-                    st.write(f"Debug - Suma cupones ponderados: {suma_cupones_ponderados}")
-                    st.write(f"Debug - Total nominales: {total_nominales}")
-                    st.write(f"Debug - Cupón ponderado calculado: {cupon_ponderado}")
                 
                 with col1:
                     st.markdown(f'''
