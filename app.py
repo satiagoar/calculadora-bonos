@@ -1123,8 +1123,7 @@ try:
                 st.rerun()
     
     # Verificar si se seleccionó un bono en flujos primero
-    flujos_bono_actual = st.session_state.get('flujos_bono_seleccionado')
-    if flujos_bono_actual and flujos_bono_actual is not None:
+    if st.session_state.get('flujos_bono_seleccionado') is not None and st.session_state.get('flujos_bono_seleccionado') != '':
         # Mostrar pantalla en blanco cuando se selecciona un bono en la calculadora de flujos
         st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
     # Contenido principal
