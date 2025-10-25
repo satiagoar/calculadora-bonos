@@ -935,10 +935,13 @@ try:
         if 'tipo_seleccionado' not in st.session_state:
             st.session_state.tipo_seleccionado = tipos_bono[0]  # "Todos" por defecto
         
-        tipo_seleccionado = st.selectbox("Tipo de Bono", tipos_bono, key="tipo_selectbox")
+        tipos_bono_con_seleccion = ["Seleccione un Tipo"] + tipos_bono
+        tipo_seleccionado = st.selectbox("Tipo de Bono", tipos_bono_con_seleccion, key="tipo_selectbox")
         
         # Filtrar bonos por tipo
-        if tipo_seleccionado == "Todos":
+        if tipo_seleccionado == "Seleccione un Tipo":
+            bonos_filtrados = []
+        elif tipo_seleccionado == "Todos":
             bonos_filtrados = bonos
         else:
             bonos_filtrados = [bono for bono in bonos if bono['tipo_bono'] == tipo_seleccionado]
@@ -1070,10 +1073,13 @@ try:
             st.session_state.flujos_calcular = False
         
         # Filtro por tipo de bono para flujos
-        flujos_tipo_seleccionado = st.selectbox("Tipo de Bono", tipos_bono, key="flujos_tipo_selectbox")
+        flujos_tipos_bono_con_seleccion = ["Seleccione un Tipo"] + tipos_bono
+        flujos_tipo_seleccionado = st.selectbox("Tipo de Bono", flujos_tipos_bono_con_seleccion, key="flujos_tipo_selectbox")
         
         # Filtrar bonos por tipo para flujos
-        if flujos_tipo_seleccionado == "Todos":
+        if flujos_tipo_seleccionado == "Seleccione un Tipo":
+            flujos_bonos_filtrados = []
+        elif flujos_tipo_seleccionado == "Todos":
             flujos_bonos_filtrados = bonos
         else:
             flujos_bonos_filtrados = [bono for bono in bonos if bono['tipo_bono'] == flujos_tipo_seleccionado]
