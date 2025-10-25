@@ -1176,9 +1176,91 @@ try:
             st.markdown("---")
             st.info("💡 **Para agregar más bonos:** Selecciona otro bono en el sidebar")
             
-            # Botón para calcular flujos (futuro)
+            # Botón para calcular flujos
             if st.button("📈 Calcular Flujos", type="primary", use_container_width=True):
-                st.success("🚧 Funcionalidad de cálculo de flujos en desarrollo")
+                st.session_state.flujos_calcular = True
+            
+            # Mostrar tabla de flujos si se presionó calcular
+            if st.session_state.get('flujos_calcular', False):
+                st.markdown("### 📊 Tabla de Flujos de Fondos")
+                
+                # Obtener fecha actual
+                fecha_actual = pd.Timestamp.now().date()
+                
+                # Recopilar todos los flujos de todos los bonos seleccionados
+                todos_flujos = []
+                
+                for bono_item in st.session_state.flujos_bonos_seleccionados:
+                    if bono_item['nominales'] > 0:  # Solo si tiene nominales
+                        bono_info = bono_item['info']
+                        nominales = bono_item['nominales']
+                        
+                        # Calcular flujos para este bono (similar a S1)
+                        flujos_bono = []
+                        fechas_bono = []
+                        
+                        # Obtener fechas de cupones y amortizaciones
+                        for _, row in bono_info['data'].iterrows():
+                            fecha_cupon = pd.to_datetime(row['Fecha']).date()
+                            if fecha_cupon >= fecha_actual:  # Solo fechas futuras
+                                flujos_bono.append({
+                                    'fecha': fecha_cupon,
+                                    'activo': bono_item['nombre'],
+                                    'intereses': row['Intereses'] * nominales / 100,
+                                    'amortizaciones': row['Amortizaciones'] * nominales / 100,
+                                    'total': (row['Intereses'] + row['Amortizaciones']) * nominales / 100
+                                })
+                                fechas_bono.append(fecha_cupon)
+                        
+                        todos_flujos.extend(flujos_bono)
+                
+                if todos_flujos:
+                    # Ordenar por fecha
+                    todos_flujos.sort(key=lambda x: x['fecha'])
+                    
+                    # Crear DataFrame
+                    df_flujos = pd.DataFrame(todos_flujos)
+                    
+                    # Mostrar tabla
+                    st.dataframe(
+                        df_flujos,
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "fecha": st.column_config.DateColumn(
+                                "Fecha",
+                                format="DD/MM/YYYY"
+                            ),
+                            "activo": "Activo",
+                            "intereses": st.column_config.NumberColumn(
+                                "Intereses",
+                                format="$%.2f"
+                            ),
+                            "amortizaciones": st.column_config.NumberColumn(
+                                "Amortizaciones", 
+                                format="$%.2f"
+                            ),
+                            "total": st.column_config.NumberColumn(
+                                "Total",
+                                format="$%.2f"
+                            )
+                        }
+                    )
+                    
+                    # Resumen
+                    total_intereses = df_flujos['intereses'].sum()
+                    total_amortizaciones = df_flujos['amortizaciones'].sum()
+                    total_general = df_flujos['total'].sum()
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total Intereses", f"${total_intereses:,.2f}")
+                    with col2:
+                        st.metric("Total Amortizaciones", f"${total_amortizaciones:,.2f}")
+                    with col3:
+                        st.metric("Total General", f"${total_general:,.2f}")
+                else:
+                    st.warning("⚠️ No se encontraron flujos futuros para los bonos seleccionados")
         else:
             st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
     
