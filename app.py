@@ -1153,10 +1153,10 @@ try:
                 col1, col2, col3, col4 = st.columns([4, 1, 2, 1])
                 
                 with col1:
-                    st.write(f"**{bono['nombre']}**")
+                    st.markdown(f"<div style='display: flex; align-items: center; height: 100%;'><strong>{bono['nombre']}</strong></div>", unsafe_allow_html=True)
                 
                 with col2:
-                    st.write("Nominales:")
+                    st.markdown("<div style='display: flex; align-items: center; height: 100%;'>Nominales:</div>", unsafe_allow_html=True)
                 
                 with col3:
                     nominales = st.number_input(
@@ -1172,9 +1172,11 @@ try:
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
                 
                 with col4:
+                    st.markdown("<div style='display: flex; align-items: center; height: 100%;'>", unsafe_allow_html=True)
                     if st.button("🗑️", key=f"remove_{i}", help="Eliminar bono"):
                         st.session_state.flujos_bonos_seleccionados.pop(i)
                         st.rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
             
             # Botón para agregar más bonos
             st.markdown("---")
