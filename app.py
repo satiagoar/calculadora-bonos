@@ -1111,8 +1111,8 @@ try:
                 key="flujos_bono_selectbox"
             )
             
-            # Actualizar session_state cuando cambia la selección
-            if flujos_bono_seleccionado != st.session_state.flujos_bono_seleccionado:
+            # Actualizar session_state solo cuando se selecciona un bono específico
+            if flujos_bono_seleccionado and flujos_bono_seleccionado != st.session_state.flujos_bono_seleccionado:
                 st.session_state.flujos_bono_seleccionado = flujos_bono_seleccionado
                 st.session_state.flujos_calcular = False
             
@@ -1165,12 +1165,13 @@ try:
         # Agregar bono actual a la lista si no está ya
         bono_actual = st.session_state.get('flujos_bono_seleccionado')
         if bono_actual and bono_actual not in [b['nombre'] for b in st.session_state.flujos_bonos_seleccionados]:
-            # Encontrar el bono en la lista de bonos
-            bono_info = next((bono for bono in bonos_filtrados if bono['nombre'] == bono_actual), None)
+            # Encontrar el bono en la lista completa de bonos (no solo los filtrados)
+            bono_info = next((bono for bono in bonos if bono['nombre'] == bono_actual), None)
             if bono_info:
                 st.session_state.flujos_bonos_seleccionados.append({
                     'nombre': bono_actual,
                     'nominales': '',
+                    'precio': '',
                     'info': bono_info
                 })
         
