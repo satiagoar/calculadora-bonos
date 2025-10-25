@@ -1264,19 +1264,6 @@ try:
                     """, unsafe_allow_html=True)
                     
                     st.table(df_flujos)
-                    
-                    # Resumen
-                    total_intereses = df_flujos['intereses'].sum()
-                    total_amortizaciones = df_flujos['amortizaciones'].sum()
-                    total_general = df_flujos['total'].sum()
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Total Intereses", f"${total_intereses:,.2f}")
-                    with col2:
-                        st.metric("Total Amortizaciones", f"${total_amortizaciones:,.2f}")
-                    with col3:
-                        st.metric("Total General", f"${total_general:,.2f}")
                 else:
                     st.warning("⚠️ No se encontraron flujos futuros para los bonos seleccionados")
         else:
