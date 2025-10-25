@@ -1224,20 +1224,9 @@ try:
                     # Crear DataFrame
                     df_flujos = pd.DataFrame(todos_flujos)
                     
-                    # Debug: mostrar información
-                    st.write(f"📊 **Total de flujos encontrados:** {len(todos_flujos)}")
-                    st.write(f"📋 **Columnas del DataFrame:** {list(df_flujos.columns)}")
-                    st.write(f"📏 **Forma del DataFrame:** {df_flujos.shape}")
-                    
-                    # Mostrar tabla con diferentes métodos
-                    st.markdown("### 📊 Tabla de Flujos")
-                    
-                    # Método 1: st.dataframe básico
-                    st.dataframe(df_flujos)
-                    
-                    # Método 2: st.table como alternativa
-                    st.markdown("### 📋 Tabla Alternativa")
-                    st.table(df_flujos.head(10))  # Solo primeras 10 filas para debug
+                    # Mostrar tabla de flujos
+                    st.markdown("### 📊 Tabla de Flujos de Fondos")
+                    st.table(df_flujos)
                     
                     # Resumen
                     total_intereses = df_flujos['intereses'].sum()
