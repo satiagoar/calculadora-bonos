@@ -1229,6 +1229,12 @@ try:
                             # Calcular cupón ponderado
                             # Usar la tasa de cupón del bono (tasa_cupon)
                             tasa_cupon = bono_info.get('tasa_cupon', 0)
+                            
+                            # Debug: mostrar valores
+                            st.write(f"Debug - Bono: {bono_item['nombre']}")
+                            st.write(f"Debug - Tasa cupón: {tasa_cupon}")
+                            st.write(f"Debug - Nominales: {nominales}")
+                            
                             suma_cupones_ponderados += tasa_cupon * nominales
                             total_nominales += nominales
                             
@@ -1249,6 +1255,9 @@ try:
                 # Calcular cupón ponderado final
                 if total_nominales > 0:
                     cupon_ponderado = suma_cupones_ponderados / total_nominales
+                    st.write(f"Debug - Suma cupones ponderados: {suma_cupones_ponderados}")
+                    st.write(f"Debug - Total nominales: {total_nominales}")
+                    st.write(f"Debug - Cupón ponderado calculado: {cupon_ponderado}")
                 
                 with col1:
                     st.markdown(f'''
