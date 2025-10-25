@@ -925,7 +925,7 @@ try:
     
     # Sidebar
     with st.sidebar:
-        st.markdown("# CALCULADORA DE BONOS")
+        st.markdown("# CALCULADORA DE RENDIMIENTOS")
         
         # Filtro por tipo de bono
         if 'tipo_seleccionado' not in st.session_state:
@@ -1044,8 +1044,54 @@ try:
             st.session_state.calcular = False
             bono_actual = None
     
+    # Calculadora de Flujos
+    st.markdown("---")
+    st.markdown("## Calculadora de Flujos")
+    
+    # Inicializar session_state para flujos
+    if 'flujos_tipo_seleccionado' not in st.session_state:
+        st.session_state.flujos_tipo_seleccionado = tipos_bono[0]  # "Todos" por defecto
+    if 'flujos_bono_seleccionado' not in st.session_state:
+        st.session_state.flujos_bono_seleccionado = None
+    if 'flujos_calcular' not in st.session_state:
+        st.session_state.flujos_calcular = False
+    
+    # Filtro por tipo de bono para flujos
+    flujos_tipo_seleccionado = st.selectbox("Tipo de Bono", tipos_bono, key="flujos_tipo_selectbox")
+    
+    # Filtrar bonos por tipo para flujos
+    if flujos_tipo_seleccionado == "Todos":
+        flujos_bonos_filtrados = bonos
+    else:
+        flujos_bonos_filtrados = [bono for bono in bonos if bono['tipo_bono'] == flujos_tipo_seleccionado]
+    
+    if not flujos_bonos_filtrados:
+        st.error("No hay bonos del tipo seleccionado")
+    else:
+        # Selección de bono para flujos
+        flujos_nombres_bonos = [bono['nombre'] for bono in flujos_bonos_filtrados]
+        flujos_nombres_bonos.sort()  # Ordenar alfabéticamente
+        
+        flujos_bono_seleccionado = st.selectbox(
+            "Elija un Bono", 
+            flujos_nombres_bonos,
+            index=None,  # Ningún bono seleccionado por defecto
+            placeholder="Seleccione un bono...",
+            key="flujos_bono_selectbox"
+        )
+        
+        # Actualizar session_state cuando cambia la selección
+        if flujos_bono_seleccionado != st.session_state.flujos_bono_seleccionado:
+            st.session_state.flujos_bono_seleccionado = flujos_bono_seleccionado
+            st.session_state.flujos_calcular = False
+        
+        # Si se selecciona un bono en flujos, limpiar la pantalla principal
+        if flujos_bono_seleccionado:
+            st.session_state.calcular = False
+            st.session_state.bono_seleccionado = None
+    
     # Contenido principal
-    if st.session_state.calcular and st.session_state.bono_seleccionado:
+    if st.session_state.calcular and st.session_state.bono_seleccionado and not st.session_state.flujos_bono_seleccionado:
         # Obtener el bono actual del session_state
         bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado)
         
@@ -1705,6 +1751,11 @@ try:
         </div>
         """
         st.components.v1.html(market_data_html, height=800)
+    
+    # Mostrar mensaje cuando se selecciona un bono en la calculadora de flujos
+    elif st.session_state.flujos_bono_seleccionado:
+        st.info("🔧 Calculadora de Flujos - Funcionalidad en desarrollo")
+        st.write("Has seleccionado un bono en la Calculadora de Flujos. Próximamente se agregarán más funcionalidades.")
         
 except FileNotFoundError:
     st.error("❌ No se pudo cargar el archivo de datos")
