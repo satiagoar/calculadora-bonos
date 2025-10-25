@@ -1200,15 +1200,18 @@ try:
                         fechas_bono = []
                         
                         # Obtener fechas de cupones y amortizaciones
-                        for _, row in bono_info['data'].iterrows():
-                            fecha_cupon = pd.to_datetime(row['Fecha']).date()
+                        for flujo in bono_info['flujos']:
+                            fecha_cupon = flujo['fecha']
+                            if hasattr(fecha_cupon, 'date'):
+                                fecha_cupon = fecha_cupon.date()
+                            
                             if fecha_cupon >= fecha_actual:  # Solo fechas futuras
                                 flujos_bono.append({
                                     'fecha': fecha_cupon,
                                     'activo': bono_item['nombre'],
-                                    'intereses': row['Intereses'] * nominales / 100,
-                                    'amortizaciones': row['Amortizaciones'] * nominales / 100,
-                                    'total': (row['Intereses'] + row['Amortizaciones']) * nominales / 100
+                                    'intereses': flujo['intereses'] * nominales / 100,
+                                    'amortizaciones': flujo['amortizaciones'] * nominales / 100,
+                                    'total': (flujo['intereses'] + flujo['amortizaciones']) * nominales / 100
                                 })
                                 fechas_bono.append(fecha_cupon)
                         
