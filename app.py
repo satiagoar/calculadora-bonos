@@ -1368,30 +1368,37 @@ try:
                                         total_flujo = flujo['total'] * nominales / 100
                                         valores_tir.append(total_flujo)  # Positivo (retorno)
                         
-                        # Calcular TIR usando numpy
+                        # Calcular TIR usando scipy.optimize
                         if len(valores_tir) > 1:
                             try:
-                                import numpy as np
                                 # Debug: mostrar valores para TIR
                                 st.write(f"Debug TIR - Valores: {valores_tir}")
                                 st.write(f"Debug TIR - Fechas: {fechas_tir}")
                                 
-                                # Usar numpy.irr para calcular TIR
-                                tir_calculada = np.irr(valores_tir)
+                                # Usar scipy.optimize para calcular TIR
+                                from scipy.optimize import fsolve
                                 
-                                # Si numpy.irr falla, usar método alternativo
-                                if np.isnan(tir_calculada) or np.isinf(tir_calculada):
-                                    # Método alternativo: usar scipy.optimize
-                                    from scipy.optimize import fsolve
-                                    def npv(r):
-                                        return sum([cf / (1 + r) ** i for i, cf in enumerate(valores_tir)])
-                                    
-                                    try:
-                                        tir_calculada = fsolve(npv, 0.1)[0]
-                                    except:
-                                        tir_calculada = 0.0
+                                def npv(r):
+                                    """Función NPV para encontrar TIR"""
+                                    return sum([cf / (1 + r) ** i for i, cf in enumerate(valores_tir)])
+                                
+                                # Buscar la tasa que hace NPV = 0
+                                tir_calculada = fsolve(npv, 0.1)[0]
+                                
+                                # Verificar que el resultado es válido
+                                if abs(npv(tir_calculada)) > 0.01:  # Si no converge bien
+                                    # Intentar con diferentes valores iniciales
+                                    for guess in [0.05, 0.1, 0.15, 0.2]:
+                                        try:
+                                            result = fsolve(npv, guess)[0]
+                                            if abs(npv(result)) < 0.01:
+                                                tir_calculada = result
+                                                break
+                                        except:
+                                            continue
                                 
                                 st.write(f"Debug TIR - Resultado: {tir_calculada}")
+                                st.write(f"Debug TIR - NPV verificación: {npv(tir_calculada)}")
                                 
                             except Exception as e:
                                 st.write(f"Debug TIR - Error: {e}")
