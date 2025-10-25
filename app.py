@@ -1264,6 +1264,9 @@ try:
                     .stTable th:nth-child(4), .stTable th:nth-child(5), .stTable th:nth-child(6) {
                         text-align: right !important;
                     }
+                    .stTable th {
+                        text-transform: capitalize !important;
+                    }
                     </style>
                     """, unsafe_allow_html=True)
                     
