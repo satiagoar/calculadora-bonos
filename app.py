@@ -1119,6 +1119,9 @@ try:
                 st.session_state.flujos_bono_seleccionado = flujos_bono_seleccionado
                 st.session_state.flujos_calcular = False
             
+            # Mensaje para agregar más bonos
+            st.markdown("**Para agregar más bonos:** Selecciona otro bono en el sidebar")
+            
             # Si se selecciona un bono en flujos, limpiar la pantalla principal y selecciones de rendimientos
             if flujos_bono_seleccionado:
                 st.session_state.calcular = False
@@ -1232,7 +1235,6 @@ try:
             
             # Botón para agregar más bonos
             st.markdown("---")
-            st.info("**Para agregar más bonos:** Selecciona otro bono en el sidebar")
             
             # Botón para calcular flujos
             st.markdown("""
