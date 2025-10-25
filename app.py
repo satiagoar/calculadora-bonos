@@ -1252,8 +1252,8 @@ try:
                     df_flujos['amortizaciones'] = df_flujos['amortizaciones'].apply(lambda x: f"{x:.2f}")
                     df_flujos['total'] = df_flujos['total'].apply(lambda x: f"{x:.2f}")
                     
-                    # Formatear cupón con 2 decimales (ya está en formato porcentual)
-                    df_flujos['cupon'] = df_flujos['cupon'].apply(lambda x: f"{x:.2f}")
+                    # Formatear cupón como porcentaje con 2 decimales
+                    df_flujos['cupon'] = df_flujos['cupon'].apply(lambda x: f"{x*100:.2f}%")
                     
                     # Mostrar tabla de flujos con alineación a la derecha
                     st.markdown("""
