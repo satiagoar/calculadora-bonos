@@ -1226,13 +1226,18 @@ try:
                     
                     # Debug: mostrar información
                     st.write(f"📊 **Total de flujos encontrados:** {len(todos_flujos)}")
+                    st.write(f"📋 **Columnas del DataFrame:** {list(df_flujos.columns)}")
+                    st.write(f"📏 **Forma del DataFrame:** {df_flujos.shape}")
                     
-                    # Mostrar tabla simplificada
-                    st.dataframe(
-                        df_flujos,
-                        use_container_width=True,
-                        hide_index=True
-                    )
+                    # Mostrar tabla con diferentes métodos
+                    st.markdown("### 📊 Tabla de Flujos")
+                    
+                    # Método 1: st.dataframe básico
+                    st.dataframe(df_flujos)
+                    
+                    # Método 2: st.table como alternativa
+                    st.markdown("### 📋 Tabla Alternativa")
+                    st.table(df_flujos.head(10))  # Solo primeras 10 filas para debug
                     
                     # Resumen
                     total_intereses = df_flujos['intereses'].sum()
