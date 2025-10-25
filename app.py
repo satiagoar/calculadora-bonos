@@ -878,15 +878,16 @@ try:
             
             # Debug: mostrar todas las columnas del Excel para este bono
             st.write(f"Debug Excel - Procesando bono: {str(row.iloc[0])}")
-            for i in range(min(10, len(row))):  # Mostrar primeras 10 columnas
-                st.write(f"  Columna {i}: {row.iloc[i]}")
+            for i in range(min(20, len(row))):  # Mostrar primeras 20 columnas
+                if pd.notna(row.iloc[i]) and str(row.iloc[i]).strip() != '':
+                    st.write(f"  Columna {i}: {row.iloc[i]}")
             
             current_bono = {
                 'nombre': str(row.iloc[0]),
                 'base_calculo': str(row.iloc[1]) if pd.notna(row.iloc[1]) else "ACT/365",
                 'periodicidad': int(row.iloc[2]) if pd.notna(row.iloc[2]) else 2,
                 'tipo_bono': str(row.iloc[3]) if pd.notna(row.iloc[3]) else "General",
-                'tasa_cupon': safe_float(row.iloc[4], 0.05),
+                'tasa_cupon': 0.0,  # Se calculará con el primer flujo
                 'ticker': str(row.iloc[4]) if pd.notna(row.iloc[4]) else "SPX500",  # Columna E - ticker
                 'flujos': []
             }
@@ -902,6 +903,10 @@ try:
                     return float(value)
                 except (ValueError, TypeError):
                     return default
+            
+            # Si es el primer flujo, capturar la tasa de cupón
+            if len(current_bono['flujos']) == 0:
+                current_bono['tasa_cupon'] = safe_float(row.iloc[1], 0.0)  # Columna 2: cupón
             
             cupon = safe_float(row.iloc[2])  # Columna C
             capital = safe_float(row.iloc[3])  # Columna D
