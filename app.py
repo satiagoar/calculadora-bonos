@@ -1361,70 +1361,88 @@ try:
                     ''', unsafe_allow_html=True)
                 
                 with col5:
-                    # Calcular TIR usando los flujos de la tabla
-                    tir_calculada = 0.0
-                    if st.session_state.flujos_bonos_seleccionados:
-                        # Preparar datos para TIR: fechas y valores
-                        fechas_tir = []
-                        valores_tir = []
-                        
-                        # Agregar valor actual (inversión inicial)
-                        total_inversion = 0
-                        for bono_item in st.session_state.flujos_bonos_seleccionados:
-                            if bono_item['nominales'] > 0 and bono_item.get('precio', 0) > 0:
-                                total_inversion += bono_item['nominales'] * bono_item['precio']
-                        
-                        if total_inversion > 0:
-                            fechas_tir.append(fecha_actual)
-                            valores_tir.append(-total_inversion)  # Negativo (inversión)
-                        
-                        # Agregar flujos futuros
-                        for bono_item in st.session_state.flujos_bonos_seleccionados:
-                            if bono_item['nominales'] > 0:
-                                bono_info = bono_item['info']
-                                nominales = bono_item['nominales']
-                                
-                                for flujo in bono_info['flujos']:
-                                    fecha_flujo = flujo['fecha']
-                                    if hasattr(fecha_flujo, 'date'):
-                                        fecha_flujo = fecha_flujo.date()
-                                    
-                                    if fecha_flujo >= fecha_actual:
-                                        fechas_tir.append(fecha_flujo)
-                                        total_flujo = flujo['total'] * nominales / 100
-                                        valores_tir.append(total_flujo)  # Positivo (retorno)
-                        
-                        # Calcular TIR usando la misma función que la calculadora de rendimientos
-                        if len(valores_tir) > 1:
-                            try:
-                                # Preparar datos para calcular_ytm
-                                precio_dirty = -valores_tir[0]  # Valor actual (positivo)
-                                flujos = valores_tir[1:]  # Flujos futuros
-                                fechas = fechas_tir[1:]  # Fechas futuras
-                                
-                                # Usar la función calcular_ytm existente
-                                tir_efectiva = calcular_ytm(
-                                    precio_dirty=precio_dirty,
-                                    flujos=flujos,
-                                    fechas=fechas,
-                                    fecha_liquidacion=fecha_actual,
-                                    base_calculo="ACT/365",
-                                    periodicidad=2
-                                )
-                                
-                                # Convertir TIR efectiva a TIR semestral
-                                # Fórmula: TIR_semestral = 2 * ((1 + TIR_efectiva)^(1/2) - 1)
-                                tir_calculada = 2 * ((1 + tir_efectiva) ** (1/2) - 1)
-                                
-                            except Exception as e:
-                                tir_calculada = 0.0
+                    # Calcular TIR solo si todos los bonos tienen precio
+                    tir_calculada = None
+                    todos_tienen_precio = True
                     
-                    st.markdown(f'''
-                    <div class="metric-card">
-                        <div class="metric-label">TIR Semestral</div>
-                        <div class="metric-value">{tir_calculada:.2%}</div>
-                    </div>
-                    ''', unsafe_allow_html=True)
+                    if st.session_state.flujos_bonos_seleccionados:
+                        # Verificar que todos los bonos tengan precio
+                        for bono_item in st.session_state.flujos_bonos_seleccionados:
+                            if bono_item['nominales'] > 0 and (not bono_item.get('precio') or bono_item.get('precio', 0) <= 0):
+                                todos_tienen_precio = False
+                                break
+                        
+                        if todos_tienen_precio:
+                            # Preparar datos para TIR: fechas y valores
+                            fechas_tir = []
+                            valores_tir = []
+                            
+                            # Agregar valor actual (inversión inicial)
+                            total_inversion = 0
+                            for bono_item in st.session_state.flujos_bonos_seleccionados:
+                                if bono_item['nominales'] > 0 and bono_item.get('precio', 0) > 0:
+                                    total_inversion += bono_item['nominales'] * bono_item['precio']
+                            
+                            if total_inversion > 0:
+                                fechas_tir.append(fecha_actual)
+                                valores_tir.append(-total_inversion)  # Negativo (inversión)
+                            
+                            # Agregar flujos futuros
+                            for bono_item in st.session_state.flujos_bonos_seleccionados:
+                                if bono_item['nominales'] > 0:
+                                    bono_info = bono_item['info']
+                                    nominales = bono_item['nominales']
+                                    
+                                    for flujo in bono_info['flujos']:
+                                        fecha_flujo = flujo['fecha']
+                                        if hasattr(fecha_flujo, 'date'):
+                                            fecha_flujo = fecha_flujo.date()
+                                        
+                                        if fecha_flujo >= fecha_actual:
+                                            fechas_tir.append(fecha_flujo)
+                                            total_flujo = flujo['total'] * nominales / 100
+                                            valores_tir.append(total_flujo)  # Positivo (retorno)
+                            
+                            # Calcular TIR usando la misma función que la calculadora de rendimientos
+                            if len(valores_tir) > 1:
+                                try:
+                                    # Preparar datos para calcular_ytm
+                                    precio_dirty = -valores_tir[0]  # Valor actual (positivo)
+                                    flujos = valores_tir[1:]  # Flujos futuros
+                                    fechas = fechas_tir[1:]  # Fechas futuras
+                                    
+                                    # Usar la función calcular_ytm existente
+                                    tir_efectiva = calcular_ytm(
+                                        precio_dirty=precio_dirty,
+                                        flujos=flujos,
+                                        fechas=fechas,
+                                        fecha_liquidacion=fecha_actual,
+                                        base_calculo="ACT/365",
+                                        periodicidad=2
+                                    )
+                                    
+                                    # Convertir TIR efectiva a TIR semestral
+                                    # Fórmula: TIR_semestral = 2 * ((1 + TIR_efectiva)^(1/2) - 1)
+                                    tir_calculada = 2 * ((1 + tir_efectiva) ** (1/2) - 1)
+                                    
+                                except Exception as e:
+                                    tir_calculada = 0.0
+                    
+                    # Mostrar TIR o valor vacío
+                    if tir_calculada is not None:
+                        st.markdown(f'''
+                        <div class="metric-card">
+                            <div class="metric-label">TIR Semestral</div>
+                            <div class="metric-value">{tir_calculada:.2%}</div>
+                        </div>
+                        ''', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'''
+                        <div class="metric-card">
+                            <div class="metric-label">TIR Semestral</div>
+                            <div class="metric-value">-</div>
+                        </div>
+                        ''', unsafe_allow_html=True)
                 
                 st.markdown('</div>', unsafe_allow_html=True)
             
