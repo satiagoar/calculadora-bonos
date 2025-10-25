@@ -1106,7 +1106,7 @@ try:
                     del st.session_state['bono_selectbox']
     
     # Contenido principal
-    if st.session_state.calcular and st.session_state.bono_seleccionado and not st.session_state.flujos_bono_seleccionado:
+    if st.session_state.calcular and st.session_state.bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado', None):
         # Obtener el bono actual del session_state
         bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado)
         
@@ -1768,9 +1768,9 @@ try:
         st.components.v1.html(market_data_html, height=800)
     
     # Mostrar pantalla en blanco cuando se selecciona un bono en la calculadora de flujos
-    if st.session_state.flujos_bono_seleccionado:
+    elif st.session_state.get('flujos_bono_seleccionado', None):
         # La pantalla central queda en blanco para futuras funcionalidades
-        pass
+        st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
         
 except FileNotFoundError:
     st.error("❌ No se pudo cargar el archivo de datos")
