@@ -1202,6 +1202,9 @@ try:
             
             # Mostrar tarjetas de métricas si se está calculando
             if st.session_state.get('flujos_calcular', False):
+                # Obtener fecha actual
+                fecha_actual = pd.Timestamp.now().date()
+                
                 st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
                 
                 # Primera fila de métricas
