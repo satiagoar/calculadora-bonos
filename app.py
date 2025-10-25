@@ -1188,7 +1188,7 @@ try:
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             padding: 12px 16px;
-            margin: 8px 0;
+            margin: 8px 0 20px 0;
             background-color: transparent;
             text-align: center;
             font-weight: 600;
