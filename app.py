@@ -1160,18 +1160,18 @@ try:
                     st.write("Nominales:")
                 
                 with col3:
-                    # Manejar valores vacíos
-                    initial_value = int(bono['nominales']) if bono['nominales'] != '' else 0
-                    nominales = st.number_input(
+                    # Usar text_input para permitir campo vacío
+                    nominales_text = st.text_input(
                         "",
-                        min_value=0,
-                        value=initial_value,
-                        step=1000,
-                        format="%d",
+                        value=str(bono['nominales']) if bono['nominales'] != '' else "",
                         key=f"nominales_{i}",
                         label_visibility="collapsed"
                     )
-                    # Actualizar nominales en session_state
+                    # Convertir a número y actualizar session_state
+                    try:
+                        nominales = int(nominales_text) if nominales_text else 0
+                    except ValueError:
+                        nominales = 0
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
                 
                 with col4:
