@@ -1235,6 +1235,12 @@ try:
                             st.write(f"Debug - Tasa cupón: {tasa_cupon}")
                             st.write(f"Debug - Nominales: {nominales}")
                             
+                            # Debug: mostrar todas las propiedades del bono
+                            st.write(f"Debug - Todas las propiedades del bono:")
+                            for key, value in bono_info.items():
+                                if key != 'flujos':  # No mostrar flujos para evitar spam
+                                    st.write(f"  {key}: {value}")
+                            
                             suma_cupones_ponderados += tasa_cupon * nominales
                             total_nominales += nominales
                             
