@@ -1335,10 +1335,37 @@ try:
                     ''', unsafe_allow_html=True)
                 
                 with col5:
+                    # Calcular TIR usando los flujos de la tabla
+                    tir_calculada = 0.0
+                    if st.session_state.flujos_bonos_seleccionados and todos_flujos:
+                        # Preparar datos para TIR: fechas y valores
+                        fechas_tir = []
+                        valores_tir = []
+                        
+                        for flujo in todos_flujos:
+                            fechas_tir.append(flujo['fecha'])
+                            if flujo['activo'] == 'Valor Actual':
+                                # Valor actual como negativo (inversión inicial)
+                                valores_tir.append(-flujo['total'])
+                            else:
+                                # Flujos futuros como positivos
+                                valores_tir.append(flujo['total'])
+                        
+                        # Calcular TIR usando numpy
+                        try:
+                            import numpy as np
+                            # Convertir fechas a días desde la fecha actual
+                            fechas_dias = [(pd.to_datetime(fecha) - pd.to_datetime(fecha_actual)).days for fecha in fechas_tir]
+                            
+                            # Calcular TIR usando numpy.irr (equivalente a TIR.NO.PER)
+                            tir_calculada = np.irr(valores_tir)
+                        except:
+                            tir_calculada = 0.0
+                    
                     st.markdown(f'''
                     <div class="metric-card">
-                        <div class="metric-label">Cupón Ponderado</div>
-                        <div class="metric-value">{cupon_ponderado:.2%}</div>
+                        <div class="metric-label">TIR</div>
+                        <div class="metric-value">{tir_calculada:.2%}</div>
                     </div>
                     ''', unsafe_allow_html=True)
                 
@@ -1391,7 +1418,7 @@ try:
                     # Agregar fila inicial con fecha actual y total de inversión
                     fila_inicial = {
                         'fecha': fecha_actual,
-                        'activo': 'INVERSIÓN INICIAL',
+                        'activo': 'Valor Actual',
                         'cupon': 0.0,
                         'intereses': 0.0,
                         'amortizaciones': 0.0,
