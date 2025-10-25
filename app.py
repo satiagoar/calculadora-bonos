@@ -1224,30 +1224,14 @@ try:
                     # Crear DataFrame
                     df_flujos = pd.DataFrame(todos_flujos)
                     
-                    # Mostrar tabla
+                    # Debug: mostrar información
+                    st.write(f"📊 **Total de flujos encontrados:** {len(todos_flujos)}")
+                    
+                    # Mostrar tabla simplificada
                     st.dataframe(
                         df_flujos,
                         use_container_width=True,
-                        hide_index=True,
-                        column_config={
-                            "fecha": st.column_config.DateColumn(
-                                "Fecha",
-                                format="DD/MM/YYYY"
-                            ),
-                            "activo": "Activo",
-                            "intereses": st.column_config.NumberColumn(
-                                "Intereses",
-                                format="$%.2f"
-                            ),
-                            "amortizaciones": st.column_config.NumberColumn(
-                                "Amortizaciones", 
-                                format="$%.2f"
-                            ),
-                            "total": st.column_config.NumberColumn(
-                                "Total",
-                                format="$%.2f"
-                            )
-                        }
+                        hide_index=True
                     )
                     
                     # Resumen
