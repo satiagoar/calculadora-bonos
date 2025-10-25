@@ -1244,7 +1244,7 @@ try:
                     df_flujos = pd.DataFrame(todos_flujos)
                     
                     # Formatear fechas a DD/MM/YY
-                    df_flujos['fecha'] = df_flujos['fecha'].dt.strftime('%d/%m/%y')
+                    df_flujos['fecha'] = pd.to_datetime(df_flujos['fecha']).dt.strftime('%d/%m/%y')
                     
                     # Formatear números a 2 decimales
                     df_flujos['intereses'] = df_flujos['intereses'].round(2)
