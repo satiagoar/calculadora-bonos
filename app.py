@@ -1197,8 +1197,57 @@ try:
             </style>
             """, unsafe_allow_html=True)
             
-            if st.button("Calcular Flujos", type="secondary", use_container_width=True):
-                st.session_state.flujos_calcular = True
+                if st.button("Calcular Flujos", type="secondary", use_container_width=True):
+                    st.session_state.flujos_calcular = True
+                
+                # Mostrar tarjetas de métricas si se está calculando
+                if st.session_state.get('flujos_calcular', False):
+                    st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
+                    
+                    # Primera fila de métricas
+                    col1, col2, col3, col4, col5 = st.columns(5)
+                    
+                    with col1:
+                        st.markdown(f'''
+                        <div class="metric-card">
+                            <div class="metric-label">Total Intereses</div>
+                            <div class="metric-value">$0.00</div>
+                        </div>
+                        ''', unsafe_allow_html=True)
+                    
+                    with col2:
+                        st.markdown(f'''
+                        <div class="metric-card">
+                            <div class="metric-label">Total Amortizaciones</div>
+                            <div class="metric-value">$0.00</div>
+                        </div>
+                        ''', unsafe_allow_html=True)
+                    
+                    with col3:
+                        st.markdown(f'''
+                        <div class="metric-card">
+                            <div class="metric-label">Total General</div>
+                            <div class="metric-value">$0.00</div>
+                        </div>
+                        ''', unsafe_allow_html=True)
+                    
+                    with col4:
+                        st.markdown(f'''
+                        <div class="metric-card">
+                            <div class="metric-label">Cantidad Bonos</div>
+                            <div class="metric-value">0</div>
+                        </div>
+                        ''', unsafe_allow_html=True)
+                    
+                    with col5:
+                        st.markdown(f'''
+                        <div class="metric-card">
+                            <div class="metric-label">Flujos Totales</div>
+                            <div class="metric-value">0</div>
+                        </div>
+                        ''', unsafe_allow_html=True)
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
             
             # Mostrar tabla de flujos si se presionó calcular
             if st.session_state.get('flujos_calcular', False):
