@@ -1209,9 +1209,9 @@ try:
                                 flujos_bono.append({
                                     'fecha': fecha_cupon,
                                     'activo': bono_item['nombre'],
-                                    'intereses': flujo['intereses'] * nominales / 100,
-                                    'amortizaciones': flujo['amortizaciones'] * nominales / 100,
-                                    'total': (flujo['intereses'] + flujo['amortizaciones']) * nominales / 100
+                                    'intereses': flujo['cupon'] * nominales / 100,
+                                    'amortizaciones': flujo['capital'] * nominales / 100,
+                                    'total': flujo['total'] * nominales / 100
                                 })
                                 fechas_bono.append(fecha_cupon)
                         
