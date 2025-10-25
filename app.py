@@ -1150,16 +1150,18 @@ try:
         
         if st.session_state.flujos_bonos_seleccionados:
             for i, bono in enumerate(st.session_state.flujos_bonos_seleccionados):
-                col1, col2, col3, col4 = st.columns([4, 1, 2, 1])
+                # Crear una fila con elementos alineados
+                st.markdown(f"""
+                <div style='display: flex; align-items: center; margin: 5px 0;'>
+                    <div style='flex: 4; margin-right: 10px;'><strong>{bono['nombre']}</strong></div>
+                    <div style='flex: 1; margin-right: 10px;'>Nominales:</div>
+                </div>
+                """, unsafe_allow_html=True)
                 
-                with col1:
-                    st.markdown(f"<div style='display: flex; align-items: center; height: 100%;'><strong>{bono['nombre']}</strong></div>", unsafe_allow_html=True)
+                # Input y botón en la misma línea
+                col_input, col_button = st.columns([3, 1])
                 
-                with col2:
-                    st.markdown("<div style='display: flex; align-items: center; height: 100%;'>Nominales:</div>", unsafe_allow_html=True)
-                
-                with col3:
-                    st.markdown("<div style='display: flex; align-items: center; height: 100%;'>", unsafe_allow_html=True)
+                with col_input:
                     nominales = st.number_input(
                         "",
                         min_value=0,
@@ -1171,14 +1173,11 @@ try:
                     )
                     # Actualizar nominales en session_state
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
-                    st.markdown("</div>", unsafe_allow_html=True)
                 
-                with col4:
-                    st.markdown("<div style='display: flex; align-items: center; height: 100%;'>", unsafe_allow_html=True)
+                with col_button:
                     if st.button("🗑️", key=f"remove_{i}", help="Eliminar bono"):
                         st.session_state.flujos_bonos_seleccionados.pop(i)
                         st.rerun()
-                    st.markdown("</div>", unsafe_allow_html=True)
             
             # Botón para agregar más bonos
             st.markdown("---")
