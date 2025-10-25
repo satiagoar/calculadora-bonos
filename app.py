@@ -1261,11 +1261,19 @@ try:
                     # Mostrar tabla de flujos con alineación a la derecha
                     st.markdown("""
                     <style>
+                    /* Alinear columnas numéricas a la derecha */
                     .stTable td:nth-child(3), .stTable td:nth-child(4), .stTable td:nth-child(5), .stTable td:nth-child(6) {
                         text-align: right !important;
                     }
                     .stTable th:nth-child(3), .stTable th:nth-child(4), .stTable th:nth-child(5), .stTable th:nth-child(6) {
                         text-align: right !important;
+                    }
+                    /* Asegurar que columna Activo esté alineada a la izquierda */
+                    .stTable td:nth-child(2) {
+                        text-align: left !important;
+                    }
+                    .stTable th:nth-child(2) {
+                        text-align: left !important;
                     }
                     .stTable th {
                         text-transform: capitalize !important;
