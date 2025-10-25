@@ -997,15 +997,24 @@ try:
             
             with col_volver:
                 if st.button("Volver", type="secondary", use_container_width=True):
-                    # Resetear todas las selecciones
+                    # Resetear todas las selecciones de rendimientos
                     st.session_state.calcular = False
                     st.session_state.bono_seleccionado = None
                     st.session_state.tipo_seleccionado = tipos_bono[0]  # "Todos"
-                    # Limpiar las selecciones de los selectbox
+                    # Limpiar las selecciones de los selectbox de rendimientos
                     if 'tipo_selectbox' in st.session_state:
                         del st.session_state['tipo_selectbox']
                     if 'bono_selectbox' in st.session_state:
                         del st.session_state['bono_selectbox']
+                    # Limpiar las selecciones de flujos
+                    st.session_state.flujos_bono_seleccionado = None
+                    st.session_state.flujos_tipo_seleccionado = tipos_bono[0]  # "Todos"
+                    st.session_state.flujos_calcular = False
+                    # Limpiar las selecciones de los selectbox de flujos
+                    if 'flujos_tipo_selectbox' in st.session_state:
+                        del st.session_state['flujos_tipo_selectbox']
+                    if 'flujos_bono_selectbox' in st.session_state:
+                        del st.session_state['flujos_bono_selectbox']
                     st.rerun()
             
             # Mostrar información del bono seleccionado en el sidebar (más cerca del botón)
@@ -1085,10 +1094,16 @@ try:
                 st.session_state.flujos_bono_seleccionado = flujos_bono_seleccionado
                 st.session_state.flujos_calcular = False
             
-            # Si se selecciona un bono en flujos, limpiar la pantalla principal
+            # Si se selecciona un bono en flujos, limpiar la pantalla principal y selecciones de rendimientos
             if flujos_bono_seleccionado:
                 st.session_state.calcular = False
                 st.session_state.bono_seleccionado = None
+                st.session_state.tipo_seleccionado = tipos_bono[0]  # "Todos"
+                # Limpiar las selecciones de los selectbox de rendimientos
+                if 'tipo_selectbox' in st.session_state:
+                    del st.session_state['tipo_selectbox']
+                if 'bono_selectbox' in st.session_state:
+                    del st.session_state['bono_selectbox']
     
     # Contenido principal
     if st.session_state.calcular and st.session_state.bono_seleccionado and not st.session_state.flujos_bono_seleccionado:
