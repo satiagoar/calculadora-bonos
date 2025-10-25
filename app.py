@@ -1577,6 +1577,10 @@ try:
                         df_futuros['trimestre'] = df_futuros['fecha'].dt.quarter
                         df_futuros['trimestre_label'] = df_futuros['trimestre'].astype(str) + 'Q' + df_futuros['año'].astype(str).str[2:]
                         
+                        # Asegurar que las columnas sean numéricas
+                        df_futuros['intereses'] = pd.to_numeric(df_futuros['intereses'], errors='coerce').fillna(0)
+                        df_futuros['amortizaciones'] = pd.to_numeric(df_futuros['amortizaciones'], errors='coerce').fillna(0)
+                        
                         # Agrupar por trimestre
                         df_trimestral = df_futuros.groupby(['año', 'trimestre', 'trimestre_label']).agg({
                             'intereses': 'sum',
@@ -1589,6 +1593,10 @@ try:
                         # Filtrar solo los próximos 5 años
                         año_actual = pd.Timestamp.now().year
                         df_trimestral = df_trimestral[df_trimestral['año'] <= año_actual + 5]
+                        
+                        # Asegurar que los valores sean numéricos
+                        df_trimestral['intereses'] = pd.to_numeric(df_trimestral['intereses'], errors='coerce').fillna(0)
+                        df_trimestral['amortizaciones'] = pd.to_numeric(df_trimestral['amortizaciones'], errors='coerce').fillna(0)
                         
                         if not df_trimestral.empty:
                             # Crear gráfico de barras apiladas
