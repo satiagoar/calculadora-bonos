@@ -967,7 +967,7 @@ try:
             st.session_state.calcular = False
         
         # Solo mostrar inputs si hay un bono seleccionado Y no hay bono en flujos
-        if bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado', None):
+        if bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado'):
             # Encontrar el bono seleccionado
             bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == bono_seleccionado)
             
