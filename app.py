@@ -1216,13 +1216,21 @@ try:
                 total_amortizaciones = 0
                 total_general = 0
                 cupon_ponderado = 0.0
+                total_nominales = 0
+                suma_cupones_ponderados = 0
                 
-                # Calcular totales de los flujos
+                # Calcular totales de los flujos y cupón ponderado
                 if st.session_state.flujos_bonos_seleccionados:
                     for bono_item in st.session_state.flujos_bonos_seleccionados:
                         if bono_item['nominales'] > 0:
                             bono_info = bono_item['info']
                             nominales = bono_item['nominales']
+                            
+                            # Calcular cupón ponderado
+                            # Usar la tasa de cupón del bono (tasa_cupon)
+                            tasa_cupon = bono_info.get('tasa_cupon', 0)
+                            suma_cupones_ponderados += tasa_cupon * nominales
+                            total_nominales += nominales
                             
                             for flujo in bono_info['flujos']:
                                 fecha_cupon = flujo['fecha']
@@ -1237,6 +1245,10 @@ try:
                                     total_intereses += intereses
                                     total_amortizaciones += amortizaciones
                                     total_general += total
+                
+                # Calcular cupón ponderado final
+                if total_nominales > 0:
+                    cupon_ponderado = suma_cupones_ponderados / total_nominales
                 
                 with col1:
                     st.markdown(f'''
