@@ -1267,14 +1267,13 @@ try:
                     .stTable th {
                         text-transform: capitalize !important;
                     }
+                    .stTable .index {
+                        display: none !important;
+                    }
                     </style>
                     """, unsafe_allow_html=True)
                     
-                    st.dataframe(
-                        df_flujos,
-                        use_container_width=True,
-                        hide_index=True
-                    )
+                    st.table(df_flujos)
                 else:
                     st.warning("⚠️ No se encontraron flujos futuros para los bonos seleccionados")
         else:
