@@ -1154,8 +1154,8 @@ try:
         
         if st.session_state.flujos_bonos_seleccionados:
             for i, bono in enumerate(st.session_state.flujos_bonos_seleccionados):
-                # Layout simple con 4 columnas en una sola línea
-                col1, col2, col3, col4 = st.columns([4, 1, 2, 1])
+                # Layout con 6 columnas para incluir precio
+                col1, col2, col3, col4, col5, col6 = st.columns([3, 1, 2, 1, 1, 1])
                 
                 with col1:
                     st.write(f"**{bono['nombre']}**")
@@ -1179,6 +1179,24 @@ try:
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
                 
                 with col4:
+                    st.write("Precio:")
+                
+                with col5:
+                    # Input para precio del bono
+                    precio_text = st.text_input(
+                        "",
+                        value=str(bono.get('precio', '')) if bono.get('precio', '') != '' else "",
+                        key=f"precio_{i}",
+                        label_visibility="collapsed"
+                    )
+                    # Convertir a número y actualizar session_state
+                    try:
+                        precio = float(precio_text) if precio_text else 0.0
+                    except ValueError:
+                        precio = 0.0
+                    st.session_state.flujos_bonos_seleccionados[i]['precio'] = precio
+                
+                with col6:
                     if st.button("🗑️", key=f"remove_{i}", help="Eliminar bono"):
                         st.session_state.flujos_bonos_seleccionados.pop(i)
                         st.rerun()
