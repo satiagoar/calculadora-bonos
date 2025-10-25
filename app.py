@@ -876,6 +876,11 @@ try:
                 except (ValueError, TypeError):
                     return default
             
+            # Debug: mostrar todas las columnas del Excel para este bono
+            st.write(f"Debug Excel - Procesando bono: {str(row.iloc[0])}")
+            for i in range(min(10, len(row))):  # Mostrar primeras 10 columnas
+                st.write(f"  Columna {i}: {row.iloc[i]}")
+            
             current_bono = {
                 'nombre': str(row.iloc[0]),
                 'base_calculo': str(row.iloc[1]) if pd.notna(row.iloc[1]) else "ACT/365",
