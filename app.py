@@ -1753,7 +1753,7 @@ try:
         st.components.v1.html(market_data_html, height=800)
     
     # Mostrar mensaje cuando se selecciona un bono en la calculadora de flujos
-    elif st.session_state.flujos_bono_seleccionado:
+    if st.session_state.flujos_bono_seleccionado:
         st.info("🔧 Calculadora de Flujos - Funcionalidad en desarrollo")
         st.write("Has seleccionado un bono en la Calculadora de Flujos. Próximamente se agregarán más funcionalidades.")
         
