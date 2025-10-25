@@ -1607,7 +1607,7 @@ try:
                                 name='Intereses',
                                 x=df_trimestral['periodo'],
                                 y=df_trimestral['intereses'],
-                                marker_color='#3498db',
+                                marker_color='#87CEEB',  # Celeste claro
                                 hovertemplate='<b>%{x}</b><br>Intereses: $%{y:,.2f}<extra></extra>'
                             ))
                             
@@ -1616,7 +1616,7 @@ try:
                                 name='Amortizaciones',
                                 x=df_trimestral['periodo'],
                                 y=df_trimestral['amortizaciones'],
-                                marker_color='#e74c3c',
+                                marker_color='#708090',  # Gris azulado
                                 hovertemplate='<b>%{x}</b><br>Amortizaciones: $%{y:,.2f}<extra></extra>'
                             ))
                             
