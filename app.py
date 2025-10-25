@@ -1246,8 +1246,28 @@ try:
                     # Formatear fechas a DD/MM/YY
                     df_flujos['fecha'] = pd.to_datetime(df_flujos['fecha']).dt.strftime('%d/%m/%y')
                     
-                    # Mostrar tabla de flujos
-                    st.table(df_flujos)
+                    # Mostrar tabla de flujos con formato de 2 decimales
+                    st.dataframe(
+                        df_flujos,
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "fecha": "Fecha",
+                            "activo": "Activo",
+                            "intereses": st.column_config.NumberColumn(
+                                "Intereses",
+                                format="%.2f"
+                            ),
+                            "amortizaciones": st.column_config.NumberColumn(
+                                "Amortizaciones",
+                                format="%.2f"
+                            ),
+                            "total": st.column_config.NumberColumn(
+                                "Total",
+                                format="%.2f"
+                            )
+                        }
+                    )
                     
                     # Resumen
                     total_intereses = df_flujos['intereses'].sum()
