@@ -1154,13 +1154,12 @@ try:
                 col1, col2, col3, col4 = st.columns([4, 1, 2, 1])
                 
                 with col1:
-                    st.markdown(f"<div style='display: flex; align-items: center; height: 100%;'><strong>{bono['nombre']}</strong></div>", unsafe_allow_html=True)
+                    st.write(f"**{bono['nombre']}**")
                 
                 with col2:
-                    st.markdown("<div style='display: flex; align-items: center; height: 100%;'>Nominales:</div>", unsafe_allow_html=True)
+                    st.write("Nominales:")
                 
                 with col3:
-                    st.markdown("<div style='display: flex; align-items: center; height: 100%;'>", unsafe_allow_html=True)
                     nominales = st.number_input(
                         "",
                         min_value=0,
@@ -1172,7 +1171,6 @@ try:
                     )
                     # Actualizar nominales en session_state
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
-                    st.markdown("</div>", unsafe_allow_html=True)
                 
                 with col4:
                     if st.button("🗑️", key=f"remove_{i}", help="Eliminar bono"):
