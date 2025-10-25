@@ -1255,42 +1255,42 @@ try:
                     # Formatear cupón como porcentaje con 2 decimales
                     df_flujos['cupon'] = df_flujos['cupon'].apply(lambda x: f"{x*100:.2f}%")
                     
-                    # Crear DataFrame sin índice para eliminar numeración
-                    df_flujos_sin_indice = df_flujos.copy()
-                    df_flujos_sin_indice.index = range(len(df_flujos_sin_indice))
-                    
                     # Mostrar tabla de flujos con alineación a la derecha
                     st.markdown("""
                     <style>
                     /* Alinear columnas numéricas a la derecha */
-                    .stTable td:nth-child(4), .stTable td:nth-child(5), .stTable td:nth-child(6), .stTable td:nth-child(7) {
+                    .stDataFrame td:nth-child(3), .stDataFrame td:nth-child(4), .stDataFrame td:nth-child(5), .stDataFrame td:nth-child(6) {
                         text-align: right !important;
                     }
-                    .stTable th:nth-child(4), .stTable th:nth-child(5), .stTable th:nth-child(6), .stTable th:nth-child(7) {
+                    .stDataFrame th:nth-child(3), .stDataFrame th:nth-child(4), .stDataFrame th:nth-child(5), .stDataFrame th:nth-child(6) {
                         text-align: right !important;
                     }
                     /* Forzar alineación específica para columna Total */
-                    .stTable td:last-child {
+                    .stDataFrame td:last-child {
                         text-align: right !important;
                     }
-                    .stTable th:last-child {
+                    .stDataFrame th:last-child {
                         text-align: right !important;
                     }
-                    .stTable th {
+                    .stDataFrame th {
                         text-transform: capitalize !important;
                     }
-                    /* Forzar alineación a la izquierda para columna Activo (columna 3) */
-                    .stTable td:nth-child(3), .stTable th:nth-child(3) {
+                    /* Forzar alineación a la izquierda para columna Activo (columna 2) */
+                    .stDataFrame td:nth-child(2), .stDataFrame th:nth-child(2) {
                         text-align: left !important;
                     }
                     /* Asegurar que todas las columnas no numéricas estén a la izquierda */
-                    .stTable td:nth-child(1), .stTable td:nth-child(2), .stTable th:nth-child(1), .stTable th:nth-child(2) {
+                    .stDataFrame td:nth-child(1), .stDataFrame th:nth-child(1) {
                         text-align: left !important;
                     }
                     </style>
                     """, unsafe_allow_html=True)
                     
-                    st.table(df_flujos_sin_indice)
+                    st.dataframe(
+                        df_flujos,
+                        use_container_width=True,
+                        hide_index=True
+                    )
                 else:
                     st.warning("⚠️ No se encontraron flujos futuros para los bonos seleccionados")
         else:
