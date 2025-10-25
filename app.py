@@ -1255,6 +1255,9 @@ try:
                     # Formatear cupón como porcentaje con 2 decimales
                     df_flujos['cupon'] = df_flujos['cupon'].apply(lambda x: f"{x*100:.2f}%")
                     
+                    # Resetear índice para eliminar numeración
+                    df_flujos_sin_indice = df_flujos.reset_index(drop=True)
+                    
                     # Mostrar tabla de flujos con alineación a la derecha
                     st.markdown("""
                     <style>
@@ -1267,13 +1270,10 @@ try:
                     .stTable th {
                         text-transform: capitalize !important;
                     }
-                    .stTable .index {
-                        display: none !important;
-                    }
                     </style>
                     """, unsafe_allow_html=True)
                     
-                    st.table(df_flujos)
+                    st.table(df_flujos_sin_indice)
                 else:
                     st.warning("⚠️ No se encontraron flujos futuros para los bonos seleccionados")
         else:
