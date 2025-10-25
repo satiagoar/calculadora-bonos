@@ -1207,43 +1207,71 @@ try:
                 # Primera fila de métricas
                 col1, col2, col3, col4, col5 = st.columns(5)
                 
+                # Calcular métricas
+                cantidad_bonos = len(st.session_state.flujos_bonos_seleccionados)
+                total_intereses = 0
+                total_amortizaciones = 0
+                total_general = 0
+                cupon_ponderado = 0.0
+                
+                # Calcular totales de los flujos
+                if st.session_state.flujos_bonos_seleccionados:
+                    for bono_item in st.session_state.flujos_bonos_seleccionados:
+                        if bono_item['nominales'] > 0:
+                            bono_info = bono_item['info']
+                            nominales = bono_item['nominales']
+                            
+                            for flujo in bono_info['flujos']:
+                                fecha_cupon = flujo['fecha']
+                                if hasattr(fecha_cupon, 'date'):
+                                    fecha_cupon = fecha_cupon.date()
+                                
+                                if fecha_cupon >= fecha_actual:
+                                    intereses = flujo['cupon'] * nominales / 100
+                                    amortizaciones = flujo['capital'] * nominales / 100
+                                    total = flujo['total'] * nominales / 100
+                                    
+                                    total_intereses += intereses
+                                    total_amortizaciones += amortizaciones
+                                    total_general += total
+                
                 with col1:
                     st.markdown(f'''
                     <div class="metric-card">
-                        <div class="metric-label">Total Intereses</div>
-                        <div class="metric-value">$0.00</div>
+                        <div class="metric-label">Cantidad Bonos</div>
+                        <div class="metric-value">{cantidad_bonos}</div>
                     </div>
                     ''', unsafe_allow_html=True)
                 
                 with col2:
                     st.markdown(f'''
                     <div class="metric-card">
-                        <div class="metric-label">Total Amortizaciones</div>
-                        <div class="metric-value">$0.00</div>
+                        <div class="metric-label">Total Intereses</div>
+                        <div class="metric-value">${total_intereses:.2f}</div>
                     </div>
                     ''', unsafe_allow_html=True)
                 
                 with col3:
                     st.markdown(f'''
                     <div class="metric-card">
-                        <div class="metric-label">Total General</div>
-                        <div class="metric-value">$0.00</div>
+                        <div class="metric-label">Total Amortizaciones</div>
+                        <div class="metric-value">${total_amortizaciones:.2f}</div>
                     </div>
                     ''', unsafe_allow_html=True)
                 
                 with col4:
                     st.markdown(f'''
                     <div class="metric-card">
-                        <div class="metric-label">Cantidad Bonos</div>
-                        <div class="metric-value">0</div>
+                        <div class="metric-label">Total</div>
+                        <div class="metric-value">${total_general:.2f}</div>
                     </div>
                     ''', unsafe_allow_html=True)
                 
                 with col5:
                     st.markdown(f'''
                     <div class="metric-card">
-                        <div class="metric-label">Flujos Totales</div>
-                        <div class="metric-value">0</div>
+                        <div class="metric-label">Cupón Ponderado</div>
+                        <div class="metric-value">{cupon_ponderado:.2%}</div>
                     </div>
                     ''', unsafe_allow_html=True)
                 
