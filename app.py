@@ -1268,22 +1268,23 @@ try:
                     .stTable th:nth-child(3), .stTable th:nth-child(4), .stTable th:nth-child(5), .stTable th:nth-child(6) {
                         text-align: right !important;
                     }
-                    /* Asegurar que columna Activo esté alineada a la izquierda */
-                    .stTable td:nth-child(2) {
-                        text-align: left !important;
-                    }
-                    .stTable th:nth-child(2) {
-                        text-align: left !important;
-                    }
-                    .stTable th {
-                        text-transform: capitalize !important;
-                    }
                     /* Forzar alineación específica para columna Total */
                     .stTable td:last-child {
                         text-align: right !important;
                     }
                     .stTable th:last-child {
                         text-align: right !important;
+                    }
+                    .stTable th {
+                        text-transform: capitalize !important;
+                    }
+                    /* Forzar alineación a la izquierda para columna Activo */
+                    .stTable td:nth-child(2), .stTable th:nth-child(2) {
+                        text-align: left !important;
+                    }
+                    /* Asegurar que todas las columnas no numéricas estén a la izquierda */
+                    .stTable td:nth-child(1), .stTable th:nth-child(1) {
+                        text-align: left !important;
                     }
                     </style>
                     """, unsafe_allow_html=True)
