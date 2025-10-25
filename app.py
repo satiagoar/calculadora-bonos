@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import warnings
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 warnings.filterwarnings('ignore')
 
 
@@ -1556,6 +1559,103 @@ try:
                     """, unsafe_allow_html=True)
                     
                     st.table(df_flujos)
+                    
+                    # Gráfico de flujos por trimestre
+                    st.markdown("---")
+                    st.markdown("### 📊 Flujos por Trimestre (Próximos 5 Años)")
+                    
+                    # Preparar datos para el gráfico
+                    df_flujos_copy = df_flujos.copy()
+                    df_flujos_copy['fecha'] = pd.to_datetime(df_flujos_copy['fecha'])
+                    
+                    # Filtrar solo flujos futuros (excluir fila inicial)
+                    df_futuros = df_flujos_copy[df_flujos_copy['activo'] != 'Valor Actual'].copy()
+                    
+                    if not df_futuros.empty:
+                        # Crear columna de trimestre
+                        df_futuros['año'] = df_futuros['fecha'].dt.year
+                        df_futuros['trimestre'] = df_futuros['fecha'].dt.quarter
+                        df_futuros['trimestre_label'] = df_futuros['trimestre'].astype(str) + 'Q' + df_futuros['año'].astype(str).str[2:]
+                        
+                        # Agrupar por trimestre
+                        df_trimestral = df_futuros.groupby(['año', 'trimestre', 'trimestre_label']).agg({
+                            'intereses': 'sum',
+                            'amortizaciones': 'sum'
+                        }).reset_index()
+                        
+                        # Crear etiqueta completa para el eje X
+                        df_trimestral['periodo'] = df_trimestral['trimestre'].astype(str) + 'Q' + df_trimestral['año'].astype(str).str[2:]
+                        
+                        # Filtrar solo los próximos 5 años
+                        año_actual = pd.Timestamp.now().year
+                        df_trimestral = df_trimestral[df_trimestral['año'] <= año_actual + 5]
+                        
+                        if not df_trimestral.empty:
+                            # Crear gráfico de barras apiladas
+                            fig = go.Figure()
+                            
+                            # Agregar barras de intereses
+                            fig.add_trace(go.Bar(
+                                name='Intereses',
+                                x=df_trimestral['periodo'],
+                                y=df_trimestral['intereses'],
+                                marker_color='#3498db',
+                                hovertemplate='<b>%{x}</b><br>Intereses: $%{y:,.2f}<extra></extra>'
+                            ))
+                            
+                            # Agregar barras de amortizaciones
+                            fig.add_trace(go.Bar(
+                                name='Amortizaciones',
+                                x=df_trimestral['periodo'],
+                                y=df_trimestral['amortizaciones'],
+                                marker_color='#e74c3c',
+                                hovertemplate='<b>%{x}</b><br>Amortizaciones: $%{y:,.2f}<extra></extra>'
+                            ))
+                            
+                            # Configurar layout
+                            fig.update_layout(
+                                title='Flujos de Fondos por Trimestre',
+                                xaxis_title='Trimestre',
+                                yaxis_title='Monto ($)',
+                                barmode='stack',
+                                height=500,
+                                showlegend=True,
+                                legend=dict(
+                                    orientation="h",
+                                    yanchor="bottom",
+                                    y=1.02,
+                                    xanchor="right",
+                                    x=1
+                                ),
+                                hovermode='closest'
+                            )
+                            
+                            # Formatear eje Y como moneda
+                            fig.update_layout(
+                                yaxis=dict(
+                                    tickformat='$,.0f'
+                                )
+                            )
+                            
+                            # Mostrar gráfico
+                            st.plotly_chart(fig, use_container_width=True)
+                            
+                            # Mostrar resumen de datos
+                            total_intereses = df_trimestral['intereses'].sum()
+                            total_amortizaciones = df_trimestral['amortizaciones'].sum()
+                            total_flujos = total_intereses + total_amortizaciones
+                            
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("Total Intereses", f"${total_intereses:,.2f}")
+                            with col2:
+                                st.metric("Total Amortizaciones", f"${total_amortizaciones:,.2f}")
+                            with col3:
+                                st.metric("Total Flujos", f"${total_flujos:,.2f}")
+                        else:
+                            st.info("No hay flujos futuros en los próximos 5 años")
+                    else:
+                        st.info("No hay flujos futuros para mostrar")
                 else:
                     st.warning("⚠️ No se encontraron flujos futuros para los bonos seleccionados")
         else:
