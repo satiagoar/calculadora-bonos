@@ -1228,9 +1228,9 @@ try:
                                 flujos_bono.append({
                                     'fecha': fecha_cupon,
                                     'activo': bono_item['nombre'],
-                                    'intereses': flujo['cupon'] * nominales / 100,
-                                    'amortizaciones': flujo['capital'] * nominales / 100,
-                                    'total': flujo['total'] * nominales / 100
+                                    'intereses': round(flujo['cupon'] * nominales / 100, 2),
+                                    'amortizaciones': round(flujo['capital'] * nominales / 100, 2),
+                                    'total': round(flujo['total'] * nominales / 100, 2)
                                 })
                                 fechas_bono.append(fecha_cupon)
                         
@@ -1245,11 +1245,6 @@ try:
                     
                     # Formatear fechas a DD/MM/YY
                     df_flujos['fecha'] = pd.to_datetime(df_flujos['fecha']).dt.strftime('%d/%m/%y')
-                    
-                    # Formatear números a 2 decimales
-                    df_flujos['intereses'] = df_flujos['intereses'].round(2)
-                    df_flujos['amortizaciones'] = df_flujos['amortizaciones'].round(2)
-                    df_flujos['total'] = df_flujos['total'].round(2)
                     
                     # Mostrar tabla de flujos
                     st.table(df_flujos)
