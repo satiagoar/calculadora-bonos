@@ -1562,7 +1562,7 @@ try:
                     
                     # Gráfico de flujos por trimestre
                     st.markdown("---")
-                    st.markdown("### 📊 Flujos por Trimestre (Próximos 5 Años)")
+                    st.markdown("### Flujos por Trimestre (Próximos 5 Años)")
                     
                     # Preparar datos para el gráfico
                     df_flujos_copy = df_flujos.copy()
@@ -1622,7 +1622,6 @@ try:
                             
                             # Configurar layout
                             fig.update_layout(
-                                title='Flujos de Fondos por Trimestre',
                                 xaxis_title='Trimestre',
                                 yaxis_title='Monto ($)',
                                 barmode='stack',
@@ -1647,19 +1646,6 @@ try:
                             
                             # Mostrar gráfico
                             st.plotly_chart(fig, use_container_width=True)
-                            
-                            # Mostrar resumen de datos
-                            total_intereses = df_trimestral['intereses'].sum()
-                            total_amortizaciones = df_trimestral['amortizaciones'].sum()
-                            total_flujos = total_intereses + total_amortizaciones
-                            
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
-                                st.metric("Total Intereses", f"${total_intereses:,.2f}")
-                            with col2:
-                                st.metric("Total Amortizaciones", f"${total_amortizaciones:,.2f}")
-                            with col3:
-                                st.metric("Total Flujos", f"${total_flujos:,.2f}")
                         else:
                             st.info("No hay flujos futuros en los próximos 5 años")
                     else:
