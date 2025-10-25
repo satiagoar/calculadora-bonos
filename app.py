@@ -1202,7 +1202,6 @@ try:
             
             # Mostrar tabla de flujos si se presionó calcular
             if st.session_state.get('flujos_calcular', False):
-                st.markdown("### 📊 Tabla de Flujos de Fondos")
                 
                 # Obtener fecha actual
                 fecha_actual = pd.Timestamp.now().date()
@@ -1245,7 +1244,6 @@ try:
                     df_flujos = pd.DataFrame(todos_flujos)
                     
                     # Mostrar tabla de flujos
-                    st.markdown("### 📊 Tabla de Flujos de Fondos")
                     st.table(df_flujos)
                     
                     # Resumen
