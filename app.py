@@ -1112,6 +1112,9 @@ try:
                 st.session_state.flujos_bono_seleccionado = None
                 st.session_state.flujos_tipo_seleccionado = tipos_bono[0]  # "Todos"
                 st.session_state.flujos_calcular = False
+                # Limpiar la lista de bonos seleccionados
+                if 'flujos_bonos_seleccionados' in st.session_state:
+                    del st.session_state['flujos_bonos_seleccionados']
                 # Limpiar las selecciones de los selectbox de flujos
                 if 'flujos_tipo_selectbox' in st.session_state:
                     del st.session_state['flujos_tipo_selectbox']
@@ -1126,8 +1129,58 @@ try:
     
     # S2 (Calculadora de Flujos) - Prioridad alta
     if st.session_state.get('flujos_bono_seleccionado'):
-        # Mostrar pantalla en blanco cuando se selecciona un bono en la calculadora de flujos
-        st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
+        # Inicializar lista de bonos seleccionados si no existe
+        if 'flujos_bonos_seleccionados' not in st.session_state:
+            st.session_state.flujos_bonos_seleccionados = []
+        
+        # Agregar bono actual a la lista si no está ya
+        bono_actual = st.session_state.get('flujos_bono_seleccionado')
+        if bono_actual and bono_actual not in [b['nombre'] for b in st.session_state.flujos_bonos_seleccionados]:
+            # Encontrar el bono en la lista de bonos
+            bono_info = next((bono for bono in bonos_filtrados if bono['nombre'] == bono_actual), None)
+            if bono_info:
+                st.session_state.flujos_bonos_seleccionados.append({
+                    'nombre': bono_actual,
+                    'nominales': 0,
+                    'info': bono_info
+                })
+        
+        # Mostrar lista de bonos seleccionados
+        st.markdown("### 📊 Bonos Seleccionados para Flujos")
+        
+        if st.session_state.flujos_bonos_seleccionados:
+            for i, bono in enumerate(st.session_state.flujos_bonos_seleccionados):
+                col1, col2, col3 = st.columns([3, 2, 1])
+                
+                with col1:
+                    st.write(f"**{bono['nombre']}**")
+                
+                with col2:
+                    nominales = st.number_input(
+                        f"Nominales",
+                        min_value=0.0,
+                        value=bono['nominales'],
+                        step=1000.0,
+                        format="%.0f",
+                        key=f"nominales_{i}"
+                    )
+                    # Actualizar nominales en session_state
+                    st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
+                
+                with col3:
+                    if st.button("🗑️", key=f"remove_{i}", help="Eliminar bono"):
+                        st.session_state.flujos_bonos_seleccionados.pop(i)
+                        st.rerun()
+            
+            # Botón para agregar más bonos
+            st.markdown("---")
+            st.info("💡 **Para agregar más bonos:** Selecciona otro bono en el sidebar")
+            
+            # Botón para calcular flujos (futuro)
+            if st.button("📈 Calcular Flujos", type="primary", use_container_width=True):
+                st.success("🚧 Funcionalidad de cálculo de flujos en desarrollo")
+        else:
+            st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
     
     # S1 (Calculadora de Rendimientos) - Solo si NO hay bono en S2
     elif st.session_state.calcular and st.session_state.bono_seleccionado:
