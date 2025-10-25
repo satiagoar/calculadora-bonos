@@ -1372,8 +1372,29 @@ try:
                         if len(valores_tir) > 1:
                             try:
                                 import numpy as np
+                                # Debug: mostrar valores para TIR
+                                st.write(f"Debug TIR - Valores: {valores_tir}")
+                                st.write(f"Debug TIR - Fechas: {fechas_tir}")
+                                
+                                # Usar numpy.irr para calcular TIR
                                 tir_calculada = np.irr(valores_tir)
-                            except:
+                                
+                                # Si numpy.irr falla, usar método alternativo
+                                if np.isnan(tir_calculada) or np.isinf(tir_calculada):
+                                    # Método alternativo: usar scipy.optimize
+                                    from scipy.optimize import fsolve
+                                    def npv(r):
+                                        return sum([cf / (1 + r) ** i for i, cf in enumerate(valores_tir)])
+                                    
+                                    try:
+                                        tir_calculada = fsolve(npv, 0.1)[0]
+                                    except:
+                                        tir_calculada = 0.0
+                                
+                                st.write(f"Debug TIR - Resultado: {tir_calculada}")
+                                
+                            except Exception as e:
+                                st.write(f"Debug TIR - Error: {e}")
                                 tir_calculada = 0.0
                     
                     st.markdown(f'''
