@@ -1234,7 +1234,11 @@ try:
                             # Detectar si el bono tiene cupón variable
                             cupones_unicos = set()
                             for flujo in bono_info['flujos']:
-                                if flujo['fecha'] >= fecha_actual:
+                                fecha_flujo = flujo['fecha']
+                                if hasattr(fecha_flujo, 'date'):
+                                    fecha_flujo = fecha_flujo.date()
+                                
+                                if fecha_flujo >= fecha_actual:
                                     cupones_unicos.add(flujo['cupon_vigente'])
                             
                             # Si hay múltiples cupones, calcular cupón ponderado del bono
@@ -1243,7 +1247,11 @@ try:
                                 suma_cupones_bono = 0
                                 total_flujos_bono = 0
                                 for flujo in bono_info['flujos']:
-                                    if flujo['fecha'] >= fecha_actual:
+                                    fecha_flujo = flujo['fecha']
+                                    if hasattr(fecha_flujo, 'date'):
+                                        fecha_flujo = fecha_flujo.date()
+                                    
+                                    if fecha_flujo >= fecha_actual:
                                         suma_cupones_bono += flujo['cupon_vigente']
                                         total_flujos_bono += 1
                                 
