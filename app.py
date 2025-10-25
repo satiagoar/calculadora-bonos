@@ -1270,6 +1270,13 @@ try:
                     .stTable th {
                         text-transform: capitalize !important;
                     }
+                    /* Forzar alineación específica para columna Total */
+                    .stTable td:last-child {
+                        text-align: right !important;
+                    }
+                    .stTable th:last-child {
+                        text-align: right !important;
+                    }
                     </style>
                     """, unsafe_allow_html=True)
                     
