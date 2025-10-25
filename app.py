@@ -940,7 +940,7 @@ try:
         
         # Filtrar bonos por tipo
         if tipo_seleccionado == "Seleccione un Tipo":
-            bonos_filtrados = []
+            bonos_filtrados = bonos  # Mostrar todos los bonos cuando está en "Seleccione un Tipo"
         elif tipo_seleccionado == "Todos":
             bonos_filtrados = bonos
         else:
@@ -1078,7 +1078,7 @@ try:
         
         # Filtrar bonos por tipo para flujos
         if flujos_tipo_seleccionado == "Seleccione un Tipo":
-            flujos_bonos_filtrados = []
+            flujos_bonos_filtrados = bonos  # Mostrar todos los bonos cuando está en "Seleccione un Tipo"
         elif flujos_tipo_seleccionado == "Todos":
             flujos_bonos_filtrados = bonos
         else:
