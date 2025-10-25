@@ -1182,8 +1182,21 @@ try:
                     'info': bono_info
                 })
         
-        # Mostrar lista de bonos seleccionados
-        st.markdown("### Bonos Seleccionados para Flujos")
+        # Mostrar lista de bonos seleccionados con recuadro transparente
+        st.markdown("""
+        <div style="
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 8px 0;
+            background-color: transparent;
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+        ">
+            Bonos Seleccionados para Flujos
+        </div>
+        """, unsafe_allow_html=True)
         
         if st.session_state.flujos_bonos_seleccionados:
             for i, bono in enumerate(st.session_state.flujos_bonos_seleccionados):
