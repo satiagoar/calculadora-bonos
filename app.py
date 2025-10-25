@@ -1382,6 +1382,25 @@ try:
                         todos_flujos.extend(flujos_bono)
                 
                 if todos_flujos:
+                    # Calcular total de inversión (nominales × precio)
+                    total_inversion = 0
+                    for bono_item in st.session_state.flujos_bonos_seleccionados:
+                        if bono_item['nominales'] > 0 and bono_item.get('precio', 0) > 0:
+                            total_inversion += bono_item['nominales'] * bono_item['precio']
+                    
+                    # Agregar fila inicial con fecha actual y total de inversión
+                    fila_inicial = {
+                        'fecha': fecha_actual,
+                        'activo': 'INVERSIÓN INICIAL',
+                        'cupon': 0.0,
+                        'intereses': 0.0,
+                        'amortizaciones': 0.0,
+                        'total': total_inversion
+                    }
+                    
+                    # Insertar fila inicial al principio
+                    todos_flujos.insert(0, fila_inicial)
+                    
                     # Ordenar por fecha
                     todos_flujos.sort(key=lambda x: x['fecha'])
                     
