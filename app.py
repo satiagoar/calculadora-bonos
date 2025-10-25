@@ -1104,6 +1104,19 @@ try:
                     del st.session_state['tipo_selectbox']
                 if 'bono_selectbox' in st.session_state:
                     del st.session_state['bono_selectbox']
+                
+                # Botón Volver para flujos
+                if st.button("Volver", type="secondary", use_container_width=True, key="flujos_volver"):
+                    # Resetear todas las selecciones de flujos
+                    st.session_state.flujos_bono_seleccionado = None
+                    st.session_state.flujos_tipo_seleccionado = tipos_bono[0]  # "Todos"
+                    st.session_state.flujos_calcular = False
+                    # Limpiar las selecciones de los selectbox de flujos
+                    if 'flujos_tipo_selectbox' in st.session_state:
+                        del st.session_state['flujos_tipo_selectbox']
+                    if 'flujos_bono_selectbox' in st.session_state:
+                        del st.session_state['flujos_bono_selectbox']
+                    st.rerun()
     
     # Verificar si se seleccionó un bono en flujos primero
     if st.session_state.get('flujos_bono_seleccionado', None):
