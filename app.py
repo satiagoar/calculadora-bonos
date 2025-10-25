@@ -1261,10 +1261,10 @@ try:
                     # Mostrar tabla de flujos con alineación a la derecha
                     st.markdown("""
                     <style>
-                    .stTable td:nth-child(4), .stTable td:nth-child(5), .stTable td:nth-child(6) {
+                    .stTable td:nth-child(3), .stTable td:nth-child(4), .stTable td:nth-child(5), .stTable td:nth-child(6) {
                         text-align: right !important;
                     }
-                    .stTable th:nth-child(4), .stTable th:nth-child(5), .stTable th:nth-child(6) {
+                    .stTable th:nth-child(3), .stTable th:nth-child(4), .stTable th:nth-child(5), .stTable th:nth-child(6) {
                         text-align: right !important;
                     }
                     .stTable th {
