@@ -936,7 +936,9 @@ try:
             st.session_state.tipo_seleccionado = "Seleccione un Tipo"  # Valor inicial
         
         tipos_bono_con_seleccion = ["Seleccione un Tipo"] + tipos_bono
-        tipo_seleccionado = st.selectbox("Tipo de Bono", tipos_bono_con_seleccion, key="tipo_selectbox")
+        # Forzar reset a "Seleccione un Tipo" si no hay selección previa
+        default_index = 0 if st.session_state.get('tipo_seleccionado') == "Seleccione un Tipo" else 0
+        tipo_seleccionado = st.selectbox("Tipo de Bono", tipos_bono_con_seleccion, key="tipo_selectbox", index=default_index)
         
         # Filtrar bonos por tipo
         if tipo_seleccionado == "Seleccione un Tipo":
@@ -1016,7 +1018,7 @@ try:
                     if 'flujos_bonos_seleccionados' in st.session_state:
                         del st.session_state['flujos_bonos_seleccionados']
                     
-                    # Limpiar TODOS los selectbox
+                    # Limpiar TODOS los selectbox para forzar reset
                     if 'tipo_selectbox' in st.session_state:
                         del st.session_state['tipo_selectbox']
                     if 'bono_selectbox' in st.session_state:
@@ -1078,7 +1080,9 @@ try:
         
         # Filtro por tipo de bono para flujos
         flujos_tipos_bono_con_seleccion = ["Seleccione un Tipo"] + tipos_bono
-        flujos_tipo_seleccionado = st.selectbox("Tipo de Bono", flujos_tipos_bono_con_seleccion, key="flujos_tipo_selectbox")
+        # Forzar reset a "Seleccione un Tipo" si no hay selección previa
+        flujos_default_index = 0 if st.session_state.get('flujos_tipo_seleccionado') == "Seleccione un Tipo" else 0
+        flujos_tipo_seleccionado = st.selectbox("Tipo de Bono", flujos_tipos_bono_con_seleccion, key="flujos_tipo_selectbox", index=flujos_default_index)
         
         # Filtrar bonos por tipo para flujos
         if flujos_tipo_seleccionado == "Seleccione un Tipo":
@@ -1134,7 +1138,7 @@ try:
                 if 'flujos_bonos_seleccionados' in st.session_state:
                     del st.session_state['flujos_bonos_seleccionados']
                 
-                # Limpiar TODOS los selectbox
+                # Limpiar TODOS los selectbox para forzar reset
                 if 'tipo_selectbox' in st.session_state:
                     del st.session_state['tipo_selectbox']
                 if 'bono_selectbox' in st.session_state:
