@@ -1270,7 +1270,11 @@ try:
                     </style>
                     """, unsafe_allow_html=True)
                     
-                    st.table(df_flujos)
+                    st.dataframe(
+                        df_flujos,
+                        use_container_width=True,
+                        hide_index=True
+                    )
                 else:
                     st.warning("⚠️ No se encontraron flujos futuros para los bonos seleccionados")
         else:
