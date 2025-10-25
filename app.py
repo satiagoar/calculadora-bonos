@@ -1159,6 +1159,7 @@ try:
                     st.markdown("<div style='display: flex; align-items: center; height: 100%;'>Nominales:</div>", unsafe_allow_html=True)
                 
                 with col3:
+                    st.markdown("<div style='display: flex; align-items: center; height: 100%;'>", unsafe_allow_html=True)
                     nominales = st.number_input(
                         "",
                         min_value=0,
@@ -1170,6 +1171,7 @@ try:
                     )
                     # Actualizar nominales en session_state
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
+                    st.markdown("</div>", unsafe_allow_html=True)
                 
                 with col4:
                     st.markdown("<div style='display: flex; align-items: center; height: 100%;'>", unsafe_allow_html=True)
