@@ -1146,7 +1146,7 @@ try:
                 })
         
         # Mostrar lista de bonos seleccionados
-        st.markdown("### 📊 Bonos Seleccionados para Flujos")
+        st.markdown("### Bonos Seleccionados para Flujos")
         
         if st.session_state.flujos_bonos_seleccionados:
             for i, bono in enumerate(st.session_state.flujos_bonos_seleccionados):
@@ -1182,7 +1182,7 @@ try:
             st.info("💡 **Para agregar más bonos:** Selecciona otro bono en el sidebar")
             
             # Botón para calcular flujos
-            if st.button("📈 Calcular Flujos", type="primary", use_container_width=True):
+            if st.button("📈 Calcular Flujos", type="secondary", use_container_width=True):
                 st.session_state.flujos_calcular = True
             
             # Mostrar tabla de flujos si se presionó calcular
