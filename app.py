@@ -2369,10 +2369,20 @@ try:
                 })
         
         if bonos_tir_data:
-            df_bonos_tir = pd.DataFrame(bonos_tir_data)
-            # Ordenar por tipo y luego por nombre
-            df_bonos_tir = df_bonos_tir.sort_values(['Tipo', 'Activo'])
-            st.dataframe(df_bonos_tir, use_container_width=True, hide_index=True)
+            try:
+                df_bonos_tir = pd.DataFrame(bonos_tir_data)
+                # Ordenar por tipo y luego por nombre
+                df_bonos_tir = df_bonos_tir.sort_values(['Tipo', 'Activo'])
+                # Reordenar columnas: Activo, Ticker, Tipo, TIR
+                column_order = ['Activo', 'Ticker', 'Tipo', 'TIR']
+                df_bonos_tir = df_bonos_tir[column_order]
+                st.table(df_bonos_tir)
+            except Exception as e:
+                st.error(f"Error al crear la tabla: {e}")
+                st.write("Bonos encontrados:", len(bonos_tir_data))
+                st.write("Primeros bonos:", bonos_tir_data[:3] if len(bonos_tir_data) > 0 else "Ninguno")
+        else:
+            st.info("No se encontraron bonos con ticker válido para mostrar en la tabla.")
     
         
 except FileNotFoundError:
