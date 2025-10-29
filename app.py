@@ -7,6 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import json
+import requests
 warnings.filterwarnings('ignore')
 
 
@@ -853,6 +854,41 @@ def encontrar_fecha_vencimiento(flujos):
     
     return fecha_vencimiento
 
+@st.cache_data(ttl=300)  # Cache por 5 minutos
+def obtener_precio_tradingview(ticker):
+    """
+    Obtiene el precio actual de un símbolo desde TradingView
+    """
+    if not ticker or ticker == 'SPX500':
+        return None
+    
+    try:
+        # Intentar diferentes formatos de símbolos para TradingView
+        formats_to_try = [ticker, f"BYMA:{ticker}", f"BCBA:{ticker}"]
+        
+        for fmt in formats_to_try:
+            try:
+                quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={fmt}"
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept": "application/json"
+                }
+                
+                response = requests.get(quote_url, headers=headers, timeout=5)
+                
+                if response.status_code == 200:
+                    quote_data = response.json()
+                    if quote_data and len(quote_data) > 0:
+                        price = quote_data[0].get('lp') or quote_data[0].get('c') or quote_data[0].get('p')
+                        if price and price > 0:
+                            return round(float(price), 2)
+            except:
+                continue
+        
+        return None
+    except:
+        return None
+
 # Cargar datos del Excel
 try:
     df = pd.read_excel('bonos_flujos.xlsx', engine='openpyxl')
@@ -986,6 +1022,15 @@ try:
             # Encontrar el bono seleccionado
             bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == bono_seleccionado)
             
+            # Obtener precio de TradingView para este ticker
+            ticker = bono_actual.get('ticker', '').strip()
+            precio_default = 100.0  # Valor por defecto
+            
+            if ticker and ticker != '' and ticker != 'SPX500':
+                precio_tv = obtener_precio_tradingview(ticker)
+                if precio_tv and precio_tv > 0:
+                    precio_default = precio_tv
+            
             # Inputs
             fecha_liquidacion = st.date_input(
                 "Fecha de Liquidación",
@@ -997,7 +1042,7 @@ try:
                 "Precio Dirty (base 100)",
             min_value=0.0,
             max_value=200.0,
-            value=100.0,
+            value=precio_default,
             step=0.01,
             format="%.2f"
         )
