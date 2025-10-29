@@ -855,97 +855,114 @@ def encontrar_fecha_vencimiento(flujos):
     
     return fecha_vencimiento
 
-@st.cache_data(ttl=300)  # Cache por 5 minutos
-def obtener_precio_tradingview(ticker):
+@st.cache_data(ttl=300)  # Cache por 5 minutos  
+def obtener_precio_byma(ticker):
     """
-    Obtiene el precio actual de un símbolo desde TradingView usando múltiples métodos
+    Obtiene el precio actual de un símbolo desde PyOBD (Open BYMA Data)
     """
     try:
-        # Método 1: Intentar con el endpoint de quotes/símbolos de TradingView
+        from PyOBD import openBYMAdata
+        
+        # Inicializar PyOBD
+        PyOBD = openBYMAdata()
+        
+        # Intentar diferentes métodos comunes de PyOBD
+        # Método 1: Intentar obtener datos específicos del ticker
+        methods_to_try = [
+            lambda: PyOBD.get_ticker(ticker),
+            lambda: PyOBD.get_instrument(ticker),
+            lambda: PyOBD.get_symbol(ticker),
+            lambda: PyOBD.buscar(ticker),
+            lambda: PyOBD.search(ticker),
+        ]
+        
+        for method in methods_to_try:
+            try:
+                datos = method()
+                if datos:
+                    # Buscar el campo de precio en diferentes formatos posibles
+                    precio = None
+                    if isinstance(datos, dict):
+                        precio = (datos.get('precio') or datos.get('price') or 
+                                 datos.get('last_price') or datos.get('ultimo_precio') or
+                                 datos.get('precio_cierre') or datos.get('close') or
+                                 datos.get('precio_ultimo') or datos.get('p') or
+                                 datos.get('valor'))
+                    elif isinstance(datos, list) and len(datos) > 0:
+                        # Si es una lista, tomar el primer elemento
+                        item = datos[0]
+                        if isinstance(item, dict):
+                            precio = (item.get('precio') or item.get('price') or 
+                                     item.get('last_price') or item.get('ultimo_precio'))
+                    
+                    if precio and precio > 0:
+                        return round(float(precio), 2)
+            except (AttributeError, TypeError, KeyError):
+                continue
+        
+        # Método 2: Intentar obtener todos los datos y buscar nuestro ticker
         try:
-            url = f"https://symbol-search.tradingview.com/symbol_search/?text={ticker}&exchange=&lang=en&search_type=undefined&domain=production&sort_by_country=US"
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
-            response = requests.get(url, headers=headers, timeout=5)
+            todos_methods = [
+                lambda: PyOBD.get_all(),
+                lambda: PyOBD.get_instruments(),
+                lambda: PyOBD.get_symbols(),
+                lambda: PyOBD.list(),
+            ]
             
-            if response.status_code == 200:
-                data = response.json()
-                if data and len(data) > 0:
-                    # Obtener el símbolo completo
-                    symbol_info = data[0]
-                    symbol_full = symbol_info.get('symbol', ticker)
-                    exchange = symbol_info.get('exchange', '')
-                    
-                    # Intentar obtener precio desde el endpoint de datos
-                    if exchange:
-                        quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={exchange}:{symbol_full}"
-                    else:
-                        quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={symbol_full}"
-                    
-                    quote_response = requests.get(quote_url, headers=headers, timeout=5)
-                    if quote_response.status_code == 200:
-                        quote_data = quote_response.json()
-                        if quote_data and len(quote_data) > 0:
-                            precio = quote_data[0].get('lp', None)  # lp = last price
-                            if precio and precio > 0:
-                                return round(float(precio), 2)
+            for method in todos_methods:
+                try:
+                    todos_datos = method()
+                    if todos_datos:
+                        for item in todos_datos:
+                            if isinstance(item, dict):
+                                item_ticker = item.get('ticker') or item.get('symbol') or item.get('nombre') or item.get('name')
+                                if item_ticker and ticker.upper() in str(item_ticker).upper():
+                                    precio = (item.get('precio') or item.get('price') or 
+                                             item.get('last_price') or item.get('ultimo_precio') or
+                                             item.get('precio_cierre') or item.get('close'))
+                                    if precio and precio > 0:
+                                        return round(float(precio), 2)
+                except (AttributeError, TypeError):
+                    continue
         except:
             pass
         
-        # Método 2: Intentar con yfinance como alternativa
-        try:
-            import yfinance as yf
-            # Para bonos argentinos, intentar diferentes formatos
-            ticker_formats = [ticker, f"{ticker}.BA"]  # .BA para bonos argentinos
-            
-            for tf in ticker_formats:
-                try:
-                    tick = yf.Ticker(tf)
-                    info = tick.info
-                    precio = info.get('regularMarketPrice') or info.get('price') or info.get('previousClose')
-                    if precio and precio > 0:
-                        return round(float(precio), 2)
-                except:
-                    continue
-        except ImportError:
-            pass  # yfinance no está disponible
-        
-        # Método 3: Intentar con scanner de TradingView (método anterior)
-        markets = ["argentina", "latam", "america"]
-        for market in markets:
-            try:
-                url = f"https://scanner.tradingview.com/{market}/scan"
-                payload = {
-                    "filter": [{"left": "name", "operation": "match", "right": ticker}],
-                    "options": {"lang": "es", "active_symbols_only": True},
-                    "columns": ["name", "close", "volume"],
-                    "sort": {"sortBy": "name", "sortOrder": "asc"},
-                    "range": [0, 1]
-                }
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                    "Content-Type": "application/json"
-                }
-                response = requests.post(url, json=payload, headers=headers, timeout=5)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get('data') and len(data['data']) > 0:
-                        precio_data = data['data'][0].get('d', [])
-                        for idx, val in enumerate(precio_data):
-                            if isinstance(val, (int, float)) and val > 0 and idx > 0:
-                                return round(float(val), 2)
-                        if len(precio_data) > 1 and isinstance(precio_data[1], (int, float)):
-                            precio = float(precio_data[1])
-                            if precio > 0:
-                                return round(precio, 2)
-            except:
-                continue
-        
+        return None
+    except ImportError:
+        # PyOBD no está disponible
         return None
     except Exception as e:
+        # Error al usar PyOBD
         return None
+
+@st.cache_data(ttl=300)  # Cache por 5 minutos  
+def obtener_precio_tradingview(ticker):
+    """
+    Función alternativa que mantiene métodos anteriores como fallback
+    """
+    # Primero intentar con PyOBD
+    precio = obtener_precio_byma(ticker)
+    if precio:
+        return precio
+    
+    # Si PyOBD falla, intentar con TradingView quote-feed
+    try:
+        formats_to_try = [ticker, f"BYMA:{ticker}", f"BCBA:{ticker}"]
+        for fmt in formats_to_try:
+            quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={fmt}"
+            headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
+            response = requests.get(quote_url, headers=headers, timeout=5)
+            
+            if response.status_code == 200:
+                quote_data = response.json()
+                if quote_data and len(quote_data) > 0:
+                    price = quote_data[0].get('lp') or quote_data[0].get('c') or quote_data[0].get('p')
+                    if price and price > 0:
+                        return round(float(price), 2)
+    except:
+        pass
+    
+    return None
 
 # Cargar datos del Excel
 try:
@@ -2389,9 +2406,9 @@ try:
         
         # Construir JSON de símbolos
         symbols_groups = [
-            {
-                "name": "Indices",
-                "symbols": [
+                {
+                    "name": "Indices",
+                    "symbols": [
                     {"name": "SPX500", "displayName": "S&P 500"},
                     {"name": "NASDAQ:IXIC", "displayName": "NASDAQ"},
                     {"name": "BMFBOVESPA:IBOV", "displayName": "Bovespa"},
@@ -2405,8 +2422,8 @@ try:
         
         # Agregar Monedas y Commodities
         symbols_groups.append({
-            "name": "Monedas",
-            "symbols": [
+                    "name": "Monedas",
+                    "symbols": [
                 {"name": "FX_IDC:USDARS", "displayName": "USD/ARS"},
                 {"name": "FX_IDC:USDEUR", "displayName": "USD/EUR"},
                 {"name": "FX_IDC:USDGBP", "displayName": "USD/GBP"},
@@ -2415,8 +2432,8 @@ try:
         })
         
         symbols_groups.append({
-            "name": "Commodities",
-            "symbols": [
+                    "name": "Commodities",
+                    "symbols": [
                 {"name": "TVC:USOIL", "displayName": "Petróleo WTI"},
                 {"name": "TVC:UKOIL", "displayName": "Petróleo Brent"},
                 {"name": "TVC:GOLD", "displayName": "Oro"},
@@ -2462,45 +2479,86 @@ try:
                 tickers_list.append(ticker)
                 bonos_dict[ticker] = bono
         
-        # Obtener precios de todos los tickers de una vez usando el endpoint de TradingView
+        # Obtener precios usando PyOBD (Open BYMA Data)
         precios_dict = {}
         if tickers_list:
-            # Intentar con diferentes formatos de símbolos
-            formats_to_try = [
-                tickers_list,  # Formato original
-                [f"BYMA:{t}" for t in tickers_list],  # Exchange BYMA (Argentina)
-                [f"BCBA:{t}" for t in tickers_list],  # Exchange BCBA
-            ]
-            
-            for symbols_formatted in formats_to_try:
+            # Intentar primero con PyOBD
+            try:
+                from PyOBD import openBYMAdata
+                PyOBD = openBYMAdata()
+                
+                # Intentar obtener todos los datos de una vez
                 try:
-                    symbols_str = ','.join(symbols_formatted)
-                    quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={symbols_str}"
-                    
-                    headers = {
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                        "Accept": "application/json"
-                    }
-                    
-                    response = requests.get(quote_url, headers=headers, timeout=10)
-                    
-                    if response.status_code == 200:
-                        quote_data = response.json()
-                        for idx, item in enumerate(quote_data):
-                            if item:
-                                symbol = item.get('s', '')  # symbol
-                                price = item.get('lp', None) or item.get('c', None) or item.get('p', None)  # last price, close, price
-                                if price and price > 0:
-                                    # Limpiar símbolo para matching con el ticker original
-                                    symbol_clean = symbol.split(':')[-1] if ':' in symbol else symbol
-                                    # Mapear al ticker original usando el índice
-                                    if idx < len(tickers_list):
-                                        original_ticker = tickers_list[idx]
-                                        precios_dict[original_ticker] = round(float(price), 2)
-                        if precios_dict:
-                            break  # Si encontramos precios, no necesitamos probar más formatos
-                except Exception as e:
-                    continue  # Intentar siguiente formato
+                    todos_datos = PyOBD.get_all() or PyOBD.get_instruments() or PyOBD.get_symbols()
+                    if todos_datos:
+                        # Crear un diccionario rápido de todos los tickers
+                        for item in todos_datos:
+                            if isinstance(item, dict):
+                                item_ticker = (item.get('ticker') or item.get('symbol') or 
+                                             item.get('nombre') or item.get('name') or
+                                             item.get('codigo') or item.get('code'))
+                                if item_ticker:
+                                    item_ticker_clean = str(item_ticker).strip().upper()
+                                    precio = (item.get('precio') or item.get('price') or 
+                                             item.get('last_price') or item.get('ultimo_precio') or
+                                             item.get('precio_cierre') or item.get('close') or
+                                             item.get('p'))
+                                    if precio and precio > 0:
+                                        # Buscar matching con nuestros tickers
+                                        for ticker in tickers_list:
+                                            if ticker.upper() == item_ticker_clean or ticker.upper() in item_ticker_clean:
+                                                precios_dict[ticker] = round(float(precio), 2)
+                                                break
+                except:
+                    # Si get_all no funciona, obtener ticker por ticker
+                    for ticker in tickers_list:
+                        precio = obtener_precio_byma(ticker)
+                        if precio:
+                            precios_dict[ticker] = precio
+            except ImportError:
+                # PyOBD no disponible, continuar con métodos alternativos
+                pass
+            except Exception as e:
+                # Error con PyOBD, continuar con fallback
+                pass
+            
+            # Si PyOBD no funcionó, intentar con TradingView como fallback
+            if not precios_dict:
+                formats_to_try = [
+                    tickers_list,  # Formato original
+                    [f"BYMA:{t}" for t in tickers_list],  # Exchange BYMA (Argentina)
+                    [f"BCBA:{t}" for t in tickers_list],  # Exchange BCBA
+                ]
+                
+                for symbols_formatted in formats_to_try:
+                    try:
+                        symbols_str = ','.join(symbols_formatted)
+                        quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={symbols_str}"
+                        
+                        headers = {
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                            "Accept": "application/json"
+                        }
+                        
+                        response = requests.get(quote_url, headers=headers, timeout=10)
+                        
+                        if response.status_code == 200:
+                            quote_data = response.json()
+                            for idx, item in enumerate(quote_data):
+                                if item:
+                                    symbol = item.get('s', '')  # symbol
+                                    price = item.get('lp', None) or item.get('c', None) or item.get('p', None)  # last price, close, price
+                                    if price and price > 0:
+                                        # Limpiar símbolo para matching con el ticker original
+                                        symbol_clean = symbol.split(':')[-1] if ':' in symbol else symbol
+                                        # Mapear al ticker original usando el índice
+                                        if idx < len(tickers_list):
+                                            original_ticker = tickers_list[idx]
+                                            precios_dict[original_ticker] = round(float(price), 2)
+                            if precios_dict:
+                                break  # Si encontramos precios, no necesitamos probar más formatos
+                    except Exception as e:
+                        continue  # Intentar siguiente formato
         
         # Crear datos de la tabla
         for ticker in tickers_list:
