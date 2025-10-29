@@ -6,6 +6,7 @@ import warnings
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import json
 warnings.filterwarnings('ignore')
 
 
@@ -2226,12 +2227,57 @@ try:
         # Espaciado reducido antes de la tabla de datos de mercado
         st.markdown("<br>", unsafe_allow_html=True)
         
+        # Construir lista de bonos con ticker válido
+        bonos_symbols = []
+        for bono in bonos:
+            ticker = bono.get('ticker', '').strip()
+            if ticker and ticker != '' and ticker != 'SPX500':  # Excluir default y vacíos
+                bonos_symbols.append({
+                    "name": ticker,
+                    "displayName": bono.get('nombre', ticker)
+                })
+        
+        # Construir JSON de símbolos
+        symbols_groups = [
+            {
+                "name": "Indices",
+                "symbols": [
+                    {"name": "SPX500", "displayName": "S&P 500"},
+                    {"name": "NASDAQ:IXIC", "displayName": "NASDAQ"},
+                    {"name": "BMFBOVESPA:IBOV", "displayName": "Bovespa"},
+                    {"name": "IMV", "displayName": "Merval"}
+                ]
+            },
+            {
+                "name": "Bonos",
+                "symbols": bonos_symbols
+            },
+            {
+                "name": "Monedas",
+                "symbols": [
+                    {"name": "FX_IDC:USDARS", "displayName": "USD/ARS"},
+                    {"name": "FX_IDC:USDEUR", "displayName": "USD/EUR"},
+                    {"name": "FX_IDC:USDGBP", "displayName": "USD/GBP"},
+                    {"name": "FX_IDC:USDJPY", "displayName": "USD/JPY"}
+                ]
+            },
+            {
+                "name": "Commodities",
+                "symbols": [
+                    {"name": "TVC:USOIL", "displayName": "Petróleo WTI"},
+                    {"name": "TVC:UKOIL", "displayName": "Petróleo Brent"},
+                    {"name": "TVC:GOLD", "displayName": "Oro"},
+                    {"name": "TVC:SILVER", "displayName": "Plata"}
+                ]
+            }
+        ]
+        
         # Widget Market Data - Ancho completo
-        market_data_html = """
+        market_data_html = f"""
         <div class="tradingview-widget-container" style="height: 800px; width: 100%; font-size: 8px; margin-top: 0;">
             <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 8px;"></div>
             <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
-            {
+            {{
             "colorTheme": "light",
             "locale": "es",
             "largeChartUrl": "",
@@ -2241,93 +2287,8 @@ try:
             "support_host": "https://www.tradingview.com",
             "width": "100%",
             "height": "800",
-            "symbolsGroups": [
-                {
-                    "name": "Indices",
-                    "symbols": [
-                        {
-                            "name": "SPX500",
-                            "displayName": "S&P 500"
-                        },
-                        {
-                            "name": "NASDAQ:IXIC",
-                            "displayName": "NASDAQ"
-                        },
-                        {
-                            "name": "BMFBOVESPA:IBOV",
-                            "displayName": "Bovespa"
-                        },
-                        {
-                            "name": "IMV",
-                            "displayName": "Merval"
-                        }
-                    ]
-                },
-                {
-                    "name": "Bonos",
-                    "symbols": [
-                        {
-                            "name": "GD30D",
-                            "displayName": "GD30D"
-                        },
-                        {
-                            "name": "AL30D",
-                            "displayName": "AL30D"
-                        },
-                        {
-                            "name": "GD29D",
-                            "displayName": "GD29D"
-                        },
-                        {
-                            "name": "AL29D",
-                            "displayName": "AL29D"
-                        }
-                    ]
-                },
-                {
-                    "name": "Monedas",
-                    "symbols": [
-                        {
-                            "name": "FX_IDC:USDARS",
-                            "displayName": "USD/ARS"
-                        },
-                        {
-                            "name": "FX_IDC:USDEUR",
-                            "displayName": "USD/EUR"
-                        },
-                        {
-                            "name": "FX_IDC:USDGBP",
-                            "displayName": "USD/GBP"
-                        },
-                        {
-                            "name": "FX_IDC:USDJPY",
-                            "displayName": "USD/JPY"
-                        }
-                    ]
-                },
-                {
-                    "name": "Commodities",
-                    "symbols": [
-                        {
-                            "name": "TVC:USOIL",
-                            "displayName": "Petróleo WTI"
-                        },
-                        {
-                            "name": "TVC:UKOIL",
-                            "displayName": "Petróleo Brent"
-                        },
-                        {
-                            "name": "TVC:GOLD",
-                            "displayName": "Oro"
-                        },
-                        {
-                            "name": "TVC:SILVER",
-                            "displayName": "Plata"
-                        }
-                    ]
-                }
-            ]
-            }
+            "symbolsGroups": {json.dumps(symbols_groups, ensure_ascii=False)}
+            }}
             </script>
         </div>
         """
