@@ -2227,15 +2227,65 @@ try:
         # Espaciado reducido antes de la tabla de datos de mercado
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Construir lista de bonos con ticker válido
-        bonos_symbols = []
+        # Construir listas de bonos agrupadas por tipo con ticker válido
+        bonos_soberano = []
+        bonos_corporativo_ley_arg = []
+        bonos_corporativo_ley_argentina = []
+        bonos_otros = []
+        
         for bono in bonos:
             ticker = bono.get('ticker', '').strip()
+            tipo_bono = bono.get('tipo_bono', '').strip()
+            
             if ticker and ticker != '' and ticker != 'SPX500':  # Excluir default y vacíos
-                bonos_symbols.append({
+                symbol_entry = {
                     "name": ticker,
                     "displayName": bono.get('nombre', ticker)
-                })
+                }
+                
+                # Agrupar por tipo de bono (case-insensitive y flexible)
+                tipo_lower = tipo_bono.lower()
+                
+                if "soberano" in tipo_lower and "usd" in tipo_lower:
+                    bonos_soberano.append(symbol_entry)
+                elif "corporativo" in tipo_lower and "ley" in tipo_lower and "arg" in tipo_lower and "argentina" not in tipo_lower:
+                    # Corporativo Ley Arg (sin "Argentina")
+                    bonos_corporativo_ley_arg.append(symbol_entry)
+                elif "corporativo" in tipo_lower and "ley" in tipo_lower and "argentina" in tipo_lower:
+                    # Corporativo Ley Argentina
+                    bonos_corporativo_ley_argentina.append(symbol_entry)
+                elif "soberano" in tipo_lower:
+                    # Cualquier otro tipo soberano
+                    bonos_soberano.append(symbol_entry)
+                else:
+                    bonos_otros.append(symbol_entry)
+        
+        # Construir JSON de símbolos con bonos segmentados
+        bonos_groups = []
+        
+        if bonos_soberano:
+            bonos_groups.append({
+                "name": "Soberano",
+                "symbols": bonos_soberano
+            })
+        
+        if bonos_corporativo_ley_arg:
+            bonos_groups.append({
+                "name": "Corporativo Ley Arg",
+                "symbols": bonos_corporativo_ley_arg
+            })
+        
+        if bonos_corporativo_ley_argentina:
+            bonos_groups.append({
+                "name": "Corporativo Ley Argentina",
+                "symbols": bonos_corporativo_ley_argentina
+            })
+        
+        if bonos_otros:
+            bonos_groups.append({
+                "name": "Otros Bonos",
+                "symbols": bonos_otros
+            })
         
         # Construir JSON de símbolos
         symbols_groups = [
@@ -2247,30 +2297,32 @@ try:
                     {"name": "BMFBOVESPA:IBOV", "displayName": "Bovespa"},
                     {"name": "IMV", "displayName": "Merval"}
                 ]
-            },
-            {
-                "name": "Bonos",
-                "symbols": bonos_symbols
-            },
-            {
-                "name": "Monedas",
-                "symbols": [
-                    {"name": "FX_IDC:USDARS", "displayName": "USD/ARS"},
-                    {"name": "FX_IDC:USDEUR", "displayName": "USD/EUR"},
-                    {"name": "FX_IDC:USDGBP", "displayName": "USD/GBP"},
-                    {"name": "FX_IDC:USDJPY", "displayName": "USD/JPY"}
-                ]
-            },
-            {
-                "name": "Commodities",
-                "symbols": [
-                    {"name": "TVC:USOIL", "displayName": "Petróleo WTI"},
-                    {"name": "TVC:UKOIL", "displayName": "Petróleo Brent"},
-                    {"name": "TVC:GOLD", "displayName": "Oro"},
-                    {"name": "TVC:SILVER", "displayName": "Plata"}
-                ]
             }
         ]
+        
+        # Agregar grupos de bonos
+        symbols_groups.extend(bonos_groups)
+        
+        # Agregar Monedas y Commodities
+        symbols_groups.append({
+            "name": "Monedas",
+            "symbols": [
+                {"name": "FX_IDC:USDARS", "displayName": "USD/ARS"},
+                {"name": "FX_IDC:USDEUR", "displayName": "USD/EUR"},
+                {"name": "FX_IDC:USDGBP", "displayName": "USD/GBP"},
+                {"name": "FX_IDC:USDJPY", "displayName": "USD/JPY"}
+            ]
+        })
+        
+        symbols_groups.append({
+            "name": "Commodities",
+            "symbols": [
+                {"name": "TVC:USOIL", "displayName": "Petróleo WTI"},
+                {"name": "TVC:UKOIL", "displayName": "Petróleo Brent"},
+                {"name": "TVC:GOLD", "displayName": "Oro"},
+                {"name": "TVC:SILVER", "displayName": "Plata"}
+            ]
+        })
         
         # Widget Market Data - Ancho completo
         market_data_html = f"""
