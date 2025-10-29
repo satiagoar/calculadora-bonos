@@ -2282,7 +2282,7 @@ try:
             "locale": "es",
             "largeChartUrl": "",
             "isTransparent": true,
-            "showSymbolLogo": true,
+            "showSymbolLogo": false,
             "backgroundColor": "transparent",
             "support_host": "https://www.tradingview.com",
             "width": "100%",
