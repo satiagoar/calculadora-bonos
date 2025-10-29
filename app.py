@@ -853,6 +853,100 @@ def encontrar_fecha_vencimiento(flujos):
     
     return fecha_vencimiento
 
+@st.cache_data(ttl=300)  # Cache por 5 minutos
+def obtener_precio_byma(ticker):
+    """
+    Obtiene el precio actual de un símbolo desde PyOBD (Open BYMA Data)
+    Retorna el precio o None si no se puede obtener
+    """
+    if not ticker or ticker.strip() == '' or ticker == 'SPX500':
+        return None
+    
+    try:
+        from PyOBD import openBYMAdata
+        
+        # Inicializar PyOBD
+        PyOBD = openBYMAdata()
+        
+        # Limpiar el ticker
+        ticker_clean = ticker.strip().upper()
+        
+        # Intentar diferentes métodos para obtener el precio
+        # Método 1: Buscar directamente por ticker
+        methods = [
+            lambda: PyOBD.get_ticker(ticker_clean),
+            lambda: PyOBD.get_instrument(ticker_clean),
+            lambda: PyOBD.get_symbol(ticker_clean),
+            lambda: PyOBD.buscar(ticker_clean),
+            lambda: PyOBD.search(ticker_clean),
+        ]
+        
+        for method in methods:
+            try:
+                datos = method()
+                if datos:
+                    # Buscar precio en diferentes formatos
+                    precio = None
+                    if isinstance(datos, dict):
+                        precio = (datos.get('precio') or datos.get('price') or 
+                                 datos.get('last_price') or datos.get('ultimo_precio') or
+                                 datos.get('precio_cierre') or datos.get('close') or
+                                 datos.get('precio_ultimo') or datos.get('p') or
+                                 datos.get('valor'))
+                    elif isinstance(datos, list) and len(datos) > 0:
+                        item = datos[0]
+                        if isinstance(item, dict):
+                            precio = (item.get('precio') or item.get('price') or 
+                                     item.get('last_price') or item.get('ultimo_precio') or
+                                     item.get('precio_cierre') or item.get('close'))
+                    
+                    if precio and precio > 0:
+                        return round(float(precio), 2)
+            except (AttributeError, TypeError, KeyError, IndexError):
+                continue
+        
+        # Método 2: Obtener todos los datos y buscar nuestro ticker
+        try:
+            todos_methods = [
+                lambda: PyOBD.get_all(),
+                lambda: PyOBD.get_instruments(),
+                lambda: PyOBD.get_symbols(),
+                lambda: PyOBD.list(),
+            ]
+            
+            for method in todos_methods:
+                try:
+                    todos_datos = method()
+                    if todos_datos:
+                        for item in todos_datos:
+                            if isinstance(item, dict):
+                                item_ticker = (item.get('ticker') or item.get('symbol') or 
+                                             item.get('nombre') or item.get('name') or
+                                             item.get('codigo') or item.get('code'))
+                                if item_ticker:
+                                    item_ticker_clean = str(item_ticker).strip().upper()
+                                    # Buscar coincidencia exacta o parcial
+                                    if ticker_clean == item_ticker_clean or ticker_clean in item_ticker_clean:
+                                        precio = (item.get('precio') or item.get('price') or 
+                                                 item.get('last_price') or item.get('ultimo_precio') or
+                                                 item.get('precio_cierre') or item.get('close') or
+                                                 item.get('p'))
+                                        if precio and precio > 0:
+                                            return round(float(precio), 2)
+                except (AttributeError, TypeError):
+                    continue
+        except:
+            pass
+        
+        return None
+        
+    except ImportError:
+        # PyOBD no está instalado
+        return None
+    except Exception as e:
+        # Cualquier otro error
+        return None
+
 # Cargar datos del Excel
 try:
     df = pd.read_excel('bonos_flujos.xlsx', engine='openpyxl')
@@ -990,12 +1084,19 @@ try:
             precio_key = f"precio_dirty_{bono_seleccionado}"
             
             # Inicializar el precio en session_state si no existe
-            # Nota: TradingView bloquea las solicitudes desde Streamlit Cloud
-            # Por lo tanto, siempre usamos 100.0 como valor por defecto
-            # El usuario puede ver el precio en la tabla de TradingView de la página principal
-            # y actualizarlo manualmente aquí
             if precio_key not in st.session_state:
-                st.session_state[precio_key] = 100.0
+                # Intentar obtener precio desde PyOBD (BYMA Data)
+                ticker = bono_actual.get('ticker', '').strip()
+                precio_byma = None
+                
+                if ticker and ticker != '' and ticker != 'SPX500':
+                    precio_byma = obtener_precio_byma(ticker)
+                
+                # Usar precio de BYMA si está disponible, sino usar 100.0 como default
+                if precio_byma and precio_byma > 0:
+                    st.session_state[precio_key] = precio_byma
+                else:
+                    st.session_state[precio_key] = 100.0
             
             # Inputs
             fecha_liquidacion = st.date_input(
@@ -1012,7 +1113,7 @@ try:
                 step=0.01,
                 format="%.2f",
                 key=precio_key,
-                help="💡 Puedes consultar el precio actual en la tabla de TradingView de la página principal"
+                help="💡 El precio se obtiene automáticamente desde BYMA (si está disponible). Puedes modificarlo manualmente si lo deseas."
             )
     
             # Botones de cálculo y volver
