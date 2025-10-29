@@ -2271,7 +2271,7 @@ try:
         
         if bonos_soberano:
             bonos_groups.append({
-                "name": "Soberano",
+                "name": "Bonos Soberanos",
                 "symbols": bonos_soberano
             })
         
@@ -2351,6 +2351,28 @@ try:
         </div>
         """
         st.components.v1.html(market_data_html, height=800)
+        
+        # Tabla complementaria con columna TIR
+        st.markdown("---")
+        st.markdown("### Tabla de Bonos con TIR")
+        
+        # Crear DataFrame con bonos y TIR (vacío por ahora)
+        bonos_tir_data = []
+        for bono in bonos:
+            ticker = bono.get('ticker', '').strip()
+            if ticker and ticker != '' and ticker != 'SPX500':
+                bonos_tir_data.append({
+                    'Activo': bono.get('nombre', ''),
+                    'Ticker': ticker,
+                    'Tipo': bono.get('tipo_bono', ''),
+                    'TIR': ''  # Vacío por ahora
+                })
+        
+        if bonos_tir_data:
+            df_bonos_tir = pd.DataFrame(bonos_tir_data)
+            # Ordenar por tipo y luego por nombre
+            df_bonos_tir = df_bonos_tir.sort_values(['Tipo', 'Activo'])
+            st.dataframe(df_bonos_tir, use_container_width=True, hide_index=True)
     
         
 except FileNotFoundError:
