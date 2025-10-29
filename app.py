@@ -2260,6 +2260,12 @@ try:
                 else:
                     bonos_otros.append(symbol_entry)
         
+        # Ordenar cada lista de bonos alfabéticamente por displayName
+        bonos_soberano.sort(key=lambda x: x['displayName'])
+        bonos_corporativo_ley_arg.sort(key=lambda x: x['displayName'])
+        bonos_corporativo_ley_argentina.sort(key=lambda x: x['displayName'])
+        bonos_otros.sort(key=lambda x: x['displayName'])
+        
         # Construir JSON de símbolos con bonos segmentados
         bonos_groups = []
         
@@ -2283,7 +2289,7 @@ try:
         
         if bonos_otros:
             bonos_groups.append({
-                "name": "Otros Bonos",
+                "name": "Corporativos Ley NY",
                 "symbols": bonos_otros
             })
         
