@@ -858,6 +858,8 @@ def encontrar_fecha_vencimiento(flujos):
 def obtener_precio_tradingview(ticker):
     """
     Obtiene el precio actual de un símbolo desde TradingView
+    Nota: Esta función puede no funcionar desde Streamlit Cloud debido a restricciones de red.
+    En ese caso, se usará 100.0 como precio por defecto.
     """
     if not ticker or ticker == 'SPX500':
         return None
@@ -865,10 +867,39 @@ def obtener_precio_tradingview(ticker):
     error_info = []
     
     try:
-        # Intentar diferentes formatos de símbolos para TradingView
-        formats_to_try = [ticker, f"BYMA:{ticker}", f"BCBA:{ticker}"]
+        # Intentar diferentes endpoints y formatos
+        # Método 1: Intentar con symbol-search (puede ser más accesible)
+        formats_to_try = [ticker, f"BYMA:{ticker}", f"BCBA:{ticker}", f"{ticker}:BYMA", f"{ticker}:BCBA"]
         
         for fmt in formats_to_try:
+            try:
+                # Intentar con symbol-search endpoint
+                search_url = f"https://symbol-search.tradingview.com/symbol_search/?text={fmt}&exchange=&lang=es&search_type=undefined&domain=production&sort_by_country=AR"
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept": "application/json",
+                    "Referer": "https://www.tradingview.com/"
+                }
+                
+                response = requests.get(search_url, headers=headers, timeout=5)
+                error_info.append(f"Symbol-search {fmt}: Status {response.status_code}")
+                
+                if response.status_code == 200:
+                    search_data = response.json()
+                    if search_data and len(search_data) > 0:
+                        # Buscar el precio en los resultados
+                        for result in search_data:
+                            if result.get('price'):
+                                price = result.get('price')
+                                if price and price > 0:
+                                    precio_final = round(float(price), 2)
+                                    return precio_final
+            except Exception as e:
+                error_info.append(f"Error symbol-search {fmt}: {str(e)}")
+                continue
+        
+        # Método 2: Intentar con quote-feed (puede fallar por DNS en Streamlit Cloud)
+        for fmt in formats_to_try[:3]:  # Solo los primeros 3 formatos
             try:
                 quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={fmt}"
                 headers = {
@@ -877,7 +908,7 @@ def obtener_precio_tradingview(ticker):
                 }
                 
                 response = requests.get(quote_url, headers=headers, timeout=5)
-                error_info.append(f"Formato {fmt}: Status {response.status_code}")
+                error_info.append(f"Quote-feed {fmt}: Status {response.status_code}")
                 
                 if response.status_code == 200:
                     quote_data = response.json()
@@ -891,7 +922,7 @@ def obtener_precio_tradingview(ticker):
                             precio_final = round(float(price), 2)
                             return precio_final
             except Exception as e:
-                error_info.append(f"Error con formato {fmt}: {str(e)}")
+                error_info.append(f"Error quote-feed {fmt}: {str(e)}")
                 continue
         
         # Guardar error info en session_state para debug
