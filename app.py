@@ -986,24 +986,16 @@ try:
             # Encontrar el bono seleccionado
             bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == bono_seleccionado)
             
-            # Obtener precio de TradingView para este ticker
-            ticker = bono_actual.get('ticker', '').strip()
-            precio_default = 100.0  # Valor por defecto
-            
             # Crear una key única basada en el bono para que el input se resetee al cambiar de bono
             precio_key = f"precio_dirty_{bono_seleccionado}"
             
-            # Solo obtener precio si no está ya guardado en session_state para este bono
+            # Inicializar el precio en session_state si no existe
+            # Nota: TradingView bloquea las solicitudes desde Streamlit Cloud
+            # Por lo tanto, siempre usamos 100.0 como valor por defecto
+            # El usuario puede ver el precio en la tabla de TradingView de la página principal
+            # y actualizarlo manualmente aquí
             if precio_key not in st.session_state:
-                # Nota: TradingView bloquea las solicitudes desde Streamlit Cloud
-                # Por lo tanto, siempre usamos 100.0 como valor por defecto
-                # El usuario puede ver el precio en la tabla de TradingView de la página principal
-                # y actualizarlo manualmente aquí
                 st.session_state[precio_key] = 100.0
-                precio_default = 100.0
-            else:
-                # Usar el precio guardado (puede haber sido modificado por el usuario)
-                precio_default = st.session_state[precio_key]
             
             # Inputs
             fecha_liquidacion = st.date_input(
@@ -1012,20 +1004,16 @@ try:
                 format="DD/MM/YYYY"
             )
             
+            # Usar solo la key sin value, Streamlit manejará el valor automáticamente desde session_state
             precio_dirty = st.number_input(
                 "Precio Dirty (base 100)",
                 min_value=0.0,
                 max_value=200.0,
-                value=precio_default,
                 step=0.01,
                 format="%.2f",
                 key=precio_key,
                 help="💡 Puedes consultar el precio actual en la tabla de TradingView de la página principal"
             )
-            
-            # Actualizar session_state cuando el usuario cambia el precio
-            if precio_dirty != st.session_state[precio_key]:
-                st.session_state[precio_key] = precio_dirty
     
             # Botones de cálculo y volver
             col_calc, col_volver = st.columns(2)
