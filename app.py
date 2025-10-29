@@ -7,6 +7,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import json
+import requests
+import time
 warnings.filterwarnings('ignore')
 
 
@@ -852,6 +854,70 @@ def encontrar_fecha_vencimiento(flujos):
     fecha_vencimiento = max(fechas)
     
     return fecha_vencimiento
+
+@st.cache_data(ttl=300)  # Cache por 5 minutos
+def obtener_precio_tradingview(ticker):
+    """
+    Obtiene el precio actual de un símbolo desde TradingView
+    """
+    try:
+        # Intentar con diferentes exchanges/markets
+        markets = ["america", "argentina", "latam"]
+        
+        for market in markets:
+            try:
+                url = f"https://scanner.tradingview.com/{market}/scan"
+                
+                # Datos para la request
+                payload = {
+                    "filter": [
+                        {
+                            "left": "name",
+                            "operation": "match",
+                            "right": ticker
+                        }
+                    ],
+                    "options": {
+                        "lang": "es",
+                        "active_symbols_only": True
+                    },
+                    "columns": ["name", "close", "volume"],
+                    "sort": {
+                        "sortBy": "name",
+                        "sortOrder": "asc"
+                    },
+                    "range": [0, 1]
+                }
+                
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Content-Type": "application/json"
+                }
+                
+                response = requests.post(url, json=payload, headers=headers, timeout=5)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('data') and len(data['data']) > 0:
+                        # El precio está en el índice correspondiente a 'close'
+                        precio_data = data['data'][0].get('d', [])
+                        # Buscar el precio en la estructura de datos
+                        # El precio puede estar en diferentes índices según la estructura
+                        for idx, val in enumerate(precio_data):
+                            if isinstance(val, (int, float)) and val > 0 and idx > 0:
+                                return round(float(val), 2)
+                        # Si no encontramos, intentar el índice 1 como antes
+                        if len(precio_data) > 1 and isinstance(precio_data[1], (int, float)):
+                            precio = float(precio_data[1])
+                            if precio > 0:
+                                return round(precio, 2)
+            except:
+                continue  # Intentar siguiente market
+        
+        return None
+    except Exception as e:
+        # Si falla, retornar None para indicar que no se pudo obtener
+        return None
 
 # Cargar datos del Excel
 try:
@@ -2356,25 +2422,45 @@ try:
         st.markdown("---")
         st.markdown("### Tabla de Bonos con TIR")
         
-        # Crear DataFrame con bonos y TIR (vacío por ahora)
+        # Crear DataFrame con bonos, Precio y TIR
         bonos_tir_data = []
+        
+        # Mostrar progress bar para obtener precios
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        total_bonos = len([b for b in bonos if b.get('ticker', '').strip() and b.get('ticker', '').strip() != 'SPX500'])
+        
+        contador = 0
         for bono in bonos:
             ticker = bono.get('ticker', '').strip()
             if ticker and ticker != '' and ticker != 'SPX500':
+                contador += 1
+                status_text.text(f"Obteniendo precios... ({contador}/{total_bonos})")
+                progress_bar.progress(contador / total_bonos)
+                
+                # Obtener precio dinámicamente desde TradingView
+                precio = obtener_precio_tradingview(ticker)
+                precio_str = f"${precio:.2f}" if precio is not None else "-"
+                
                 bonos_tir_data.append({
                     'Activo': bono.get('nombre', ''),
                     'Ticker': ticker,
+                    'Precio': precio_str,
                     'Tipo': bono.get('tipo_bono', ''),
                     'TIR': ''  # Vacío por ahora
                 })
+        
+        progress_bar.empty()
+        status_text.empty()
         
         if bonos_tir_data:
             try:
                 df_bonos_tir = pd.DataFrame(bonos_tir_data)
                 # Ordenar por tipo y luego por nombre
                 df_bonos_tir = df_bonos_tir.sort_values(['Tipo', 'Activo'])
-                # Reordenar columnas: Activo, Ticker, Tipo, TIR
-                column_order = ['Activo', 'Ticker', 'Tipo', 'TIR']
+                # Reordenar columnas: Activo, Ticker, Precio, Tipo, TIR
+                column_order = ['Activo', 'Ticker', 'Precio', 'Tipo', 'TIR']
                 df_bonos_tir = df_bonos_tir[column_order]
                 st.table(df_bonos_tir)
             except Exception as e:
