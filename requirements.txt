@@ -4,6 +4,3 @@ pandas
 python-dateutil
 openpyxl
 plotly
-requests
-yfinance
-PyOBD
