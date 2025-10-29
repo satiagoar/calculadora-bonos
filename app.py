@@ -862,6 +862,8 @@ def obtener_precio_tradingview(ticker):
     if not ticker or ticker == 'SPX500':
         return None
     
+    error_info = []
+    
     try:
         # Intentar diferentes formatos de símbolos para TradingView
         formats_to_try = [ticker, f"BYMA:{ticker}", f"BCBA:{ticker}"]
@@ -875,18 +877,29 @@ def obtener_precio_tradingview(ticker):
                 }
                 
                 response = requests.get(quote_url, headers=headers, timeout=5)
+                error_info.append(f"Formato {fmt}: Status {response.status_code}")
                 
                 if response.status_code == 200:
                     quote_data = response.json()
+                    error_info.append(f"Datos recibidos: {quote_data}")
+                    
                     if quote_data and len(quote_data) > 0:
                         price = quote_data[0].get('lp') or quote_data[0].get('c') or quote_data[0].get('p')
+                        error_info.append(f"Precio extraído: {price}")
+                        
                         if price and price > 0:
-                            return round(float(price), 2)
-            except:
+                            precio_final = round(float(price), 2)
+                            return precio_final
+            except Exception as e:
+                error_info.append(f"Error con formato {fmt}: {str(e)}")
                 continue
         
+        # Guardar error info en session_state para debug
+        st.session_state[f'debug_precio_{ticker}'] = error_info
         return None
-    except:
+    except Exception as e:
+        error_info.append(f"Error general: {str(e)}")
+        st.session_state[f'debug_precio_{ticker}'] = error_info
         return None
 
 # Cargar datos del Excel
@@ -1026,10 +1039,34 @@ try:
             ticker = bono_actual.get('ticker', '').strip()
             precio_default = 100.0  # Valor por defecto
             
-            if ticker and ticker != '' and ticker != 'SPX500':
-                precio_tv = obtener_precio_tradingview(ticker)
-                if precio_tv and precio_tv > 0:
-                    precio_default = precio_tv
+            # Crear una key única basada en el bono para que el input se resetee al cambiar de bono
+            precio_key = f"precio_dirty_{bono_seleccionado}"
+            
+            # Solo obtener precio si no está ya guardado en session_state para este bono
+            if precio_key not in st.session_state:
+                if ticker and ticker != '' and ticker != 'SPX500':
+                    precio_tv = obtener_precio_tradingview(ticker)
+                    # Debug temporal
+                    with st.expander("🔍 Debug Precio TradingView", expanded=False):
+                        st.write(f"Ticker: {ticker}")
+                        st.write(f"Precio TradingView obtenido: {precio_tv}")
+                        st.write(f"Tipo de precio: {type(precio_tv)}")
+                        # Mostrar info de debug si está disponible
+                        debug_key = f'debug_precio_{ticker}'
+                        if debug_key in st.session_state:
+                            st.write("**Detalles de la consulta:**")
+                            for info in st.session_state[debug_key]:
+                                st.write(f"- {info}")
+                    if precio_tv and precio_tv > 0:
+                        precio_default = precio_tv
+                        st.session_state[precio_key] = precio_default
+                    else:
+                        st.session_state[precio_key] = 100.0
+                else:
+                    st.session_state[precio_key] = 100.0
+            else:
+                # Usar el precio guardado (puede haber sido modificado por el usuario)
+                precio_default = st.session_state[precio_key]
             
             # Inputs
             fecha_liquidacion = st.date_input(
@@ -1040,12 +1077,17 @@ try:
             
             precio_dirty = st.number_input(
                 "Precio Dirty (base 100)",
-            min_value=0.0,
-            max_value=200.0,
-            value=precio_default,
-            step=0.01,
-            format="%.2f"
-        )
+                min_value=0.0,
+                max_value=200.0,
+                value=precio_default,
+                step=0.01,
+                format="%.2f",
+                key=precio_key
+            )
+            
+            # Actualizar session_state cuando el usuario cambia el precio
+            if precio_dirty != st.session_state[precio_key]:
+                st.session_state[precio_key] = precio_dirty
     
             # Botones de cálculo y volver
             col_calc, col_volver = st.columns(2)
@@ -1061,6 +1103,11 @@ try:
                     st.session_state.calcular = False
                     st.session_state.bono_seleccionado = None
                     st.session_state.tipo_seleccionado = "Seleccione un Tipo"
+                    
+                    # Limpiar keys de precio
+                    keys_to_delete = [key for key in st.session_state.keys() if key.startswith('precio_dirty_')]
+                    for key in keys_to_delete:
+                        del st.session_state[key]
                     
                     # Limpiar TODAS las selecciones de flujos
                     st.session_state.flujos_bono_seleccionado = None
