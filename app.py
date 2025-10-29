@@ -7,6 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import json
+import requests
 warnings.filterwarnings('ignore')
 
 
@@ -947,6 +948,82 @@ def obtener_precio_byma(ticker):
         # Cualquier otro error
         return None
 
+@st.cache_data(ttl=300)  # Cache por 5 minutos
+def obtener_precio_tradingview(ticker):
+    """
+    Intenta obtener el precio de un símbolo desde TradingView
+    Retorna tuple (precio, cambio_percent) o (None, None) si no se puede obtener
+    """
+    if not ticker or ticker.strip() == '':
+        return None, None
+    
+    ticker_clean = ticker.strip().upper()
+    
+    # Headers que simulan un navegador real
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+        "Referer": "https://www.tradingview.com/",
+        "Origin": "https://www.tradingview.com"
+    }
+    
+    # Intentar diferentes formatos de ticker
+    formats_to_try = [
+        ticker_clean,
+        f"BYMA:{ticker_clean}",
+        f"BCBA:{ticker_clean}",
+    ]
+    
+    for fmt in formats_to_try:
+        try:
+            # Intentar con quote-feed (formato más común)
+            url = f"https://quote-feed.tradingview.com/quotes?symbols={fmt}"
+            response = requests.get(url, headers=headers, timeout=5)
+            
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    if data and len(data) > 0:
+                        item = data[0]
+                        # Intentar extraer precio (lp = last price, c = change, p = price)
+                        precio = item.get('lp') or item.get('p') or item.get('c')
+                        cambio = item.get('c')  # Change
+                        
+                        if precio and precio > 0:
+                            # Calcular cambio porcentual si tenemos cambio absoluto
+                            cambio_percent = None
+                            if cambio and cambio != 0 and precio:
+                                cambio_percent = (cambio / (precio - cambio)) * 100 if (precio - cambio) > 0 else 0
+                            
+                            return round(float(precio), 2), cambio_percent
+                except:
+                    continue
+            
+            # Si quote-feed no funciona, intentar con symbol-search (puede devolver datos con precio)
+            search_url = f"https://symbol-search.tradingview.com/symbol_search/?text={fmt}&exchange=&lang=es&search_type=undefined&domain=production&sort_by_country=AR"
+            response = requests.get(search_url, headers=headers, timeout=5)
+            
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    if data and len(data) > 0:
+                        # Buscar el símbolo que coincida
+                        for item in data:
+                            if isinstance(item, dict):
+                                symbol_match = item.get('symbol') or item.get('s')
+                                if symbol_match and (fmt in str(symbol_match).upper() or symbol_match.upper() == ticker_clean):
+                                    precio = item.get('price') or item.get('close') or item.get('last_price')
+                                    if precio and precio > 0:
+                                        return round(float(precio), 2), None
+                except:
+                    continue
+                    
+        except Exception as e:
+            continue
+    
+    return None, None
+
 # Cargar datos del Excel
 try:
     df = pd.read_excel('bonos_flujos.xlsx', engine='openpyxl')
@@ -1108,13 +1185,13 @@ try:
             # Usar solo la key sin value, Streamlit manejará el valor automáticamente desde session_state
             precio_dirty = st.number_input(
                 "Precio Dirty (base 100)",
-                min_value=0.0,
-                max_value=200.0,
-                step=0.01,
+            min_value=0.0,
+            max_value=200.0,
+            step=0.01,
                 format="%.2f",
                 key=precio_key,
                 help="💡 El precio se obtiene automáticamente desde BYMA (si está disponible). Puedes modificarlo manualmente si lo deseas."
-            )
+        )
     
             # Botones de cálculo y volver
             col_calc, col_volver = st.columns(2)
@@ -2044,13 +2121,58 @@ try:
             # Tabla de Bonos Argentinos
             
             # Crear una tabla personalizada con bonos argentinos
+            # Obtener precios reales desde TradingView
+            bonos_lista = ['GD30D', 'AL30D', 'GD29D']
+            bonos_data = []
             
-            # Datos de bonos argentinos (precios aproximados - en una app real vendrían de una API)
-            bonos_data = {
-                'Bono': ['GD30D', 'AL30D', 'GD29D'],
-                'Precio': ['$45.20', '$42.80', '$38.50'],
-                'Cambio': ['+1.2%', '+0.8%', '-0.5%']
-            }
+            for bono_ticker in bonos_lista:
+                precio, cambio_percent = obtener_precio_tradingview(bono_ticker)
+                
+                if precio:
+                    precio_str = f"${precio:.2f}"
+                    if cambio_percent:
+                        if cambio_percent > 0:
+                            cambio_str = f"+{cambio_percent:.2f}%"
+                            cambio_class = "positivo"
+                        elif cambio_percent < 0:
+                            cambio_str = f"{cambio_percent:.2f}%"
+                            cambio_class = "negativo"
+                        else:
+                            cambio_str = "0.00%"
+                            cambio_class = ""
+                    else:
+                        cambio_str = "-"
+                        cambio_class = ""
+                else:
+                    # Fallback a valores por defecto si no se puede obtener el precio
+                    precios_default = {
+                        'GD30D': 45.20,
+                        'AL30D': 42.80,
+                        'GD29D': 38.50
+                    }
+                    cambios_default = {
+                        'GD30D': 1.2,
+                        'AL30D': 0.8,
+                        'GD29D': -0.5
+                    }
+                    precio_str = f"${precios_default.get(bono_ticker, 0):.2f}"
+                    cambio_default = cambios_default.get(bono_ticker, 0)
+                    if cambio_default > 0:
+                        cambio_str = f"+{cambio_default:.1f}%"
+                        cambio_class = "positivo"
+                    elif cambio_default < 0:
+                        cambio_str = f"{cambio_default:.1f}%"
+                        cambio_class = "negativo"
+                    else:
+                        cambio_str = "0.0%"
+                        cambio_class = ""
+                
+                bonos_data.append({
+                    'ticker': bono_ticker,
+                    'precio': precio_str,
+                    'cambio': cambio_str,
+                    'cambio_class': cambio_class
+                })
             
             # CSS personalizado para la tabla de bonos
             st.markdown("""
@@ -2118,7 +2240,7 @@ try:
             """, unsafe_allow_html=True)
             
             # Mostrar tabla con formato personalizado
-            st.markdown("""
+            tabla_html = """
             <table class="bonos-table">
                 <thead>
                     <tr>
@@ -2128,24 +2250,23 @@ try:
                     </tr>
                 </thead>
                 <tbody>
+            """
+            
+            for bono_info in bonos_data:
+                tabla_html += f"""
                     <tr>
-                        <td>GD30D</td>
-                        <td>$45.20</td>
-                        <td class="positivo">+1.2%</td>
+                        <td>{bono_info['ticker']}</td>
+                        <td>{bono_info['precio']}</td>
+                        <td class="{bono_info['cambio_class']}">{bono_info['cambio']}</td>
                     </tr>
-                    <tr>
-                        <td>AL30D</td>
-                        <td>$42.80</td>
-                        <td class="positivo">+0.8%</td>
-                    </tr>
-                    <tr>
-                        <td>GD29D</td>
-                        <td>$38.50</td>
-                        <td class="negativo">-0.5%</td>
-                    </tr>
+                """
+            
+            tabla_html += """
                 </tbody>
             </table>
-            """, unsafe_allow_html=True)
+            """
+            
+            st.markdown(tabla_html, unsafe_allow_html=True)
         
         # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO
         st.markdown("## Flujo de Fondos")
