@@ -858,65 +858,93 @@ def encontrar_fecha_vencimiento(flujos):
 @st.cache_data(ttl=300)  # Cache por 5 minutos
 def obtener_precio_tradingview(ticker):
     """
-    Obtiene el precio actual de un símbolo desde TradingView
+    Obtiene el precio actual de un símbolo desde TradingView usando múltiples métodos
     """
     try:
-        # Intentar con diferentes exchanges/markets
-        markets = ["america", "argentina", "latam"]
+        # Método 1: Intentar con el endpoint de quotes/símbolos de TradingView
+        try:
+            url = f"https://symbol-search.tradingview.com/symbol_search/?text={ticker}&exchange=&lang=en&search_type=undefined&domain=production&sort_by_country=US"
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+            response = requests.get(url, headers=headers, timeout=5)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data and len(data) > 0:
+                    # Obtener el símbolo completo
+                    symbol_info = data[0]
+                    symbol_full = symbol_info.get('symbol', ticker)
+                    exchange = symbol_info.get('exchange', '')
+                    
+                    # Intentar obtener precio desde el endpoint de datos
+                    if exchange:
+                        quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={exchange}:{symbol_full}"
+                    else:
+                        quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={symbol_full}"
+                    
+                    quote_response = requests.get(quote_url, headers=headers, timeout=5)
+                    if quote_response.status_code == 200:
+                        quote_data = quote_response.json()
+                        if quote_data and len(quote_data) > 0:
+                            precio = quote_data[0].get('lp', None)  # lp = last price
+                            if precio and precio > 0:
+                                return round(float(precio), 2)
+        except:
+            pass
         
+        # Método 2: Intentar con yfinance como alternativa
+        try:
+            import yfinance as yf
+            # Para bonos argentinos, intentar diferentes formatos
+            ticker_formats = [ticker, f"{ticker}.BA"]  # .BA para bonos argentinos
+            
+            for tf in ticker_formats:
+                try:
+                    tick = yf.Ticker(tf)
+                    info = tick.info
+                    precio = info.get('regularMarketPrice') or info.get('price') or info.get('previousClose')
+                    if precio and precio > 0:
+                        return round(float(precio), 2)
+                except:
+                    continue
+        except ImportError:
+            pass  # yfinance no está disponible
+        
+        # Método 3: Intentar con scanner de TradingView (método anterior)
+        markets = ["argentina", "latam", "america"]
         for market in markets:
             try:
                 url = f"https://scanner.tradingview.com/{market}/scan"
-                
-                # Datos para la request
                 payload = {
-                    "filter": [
-                        {
-                            "left": "name",
-                            "operation": "match",
-                            "right": ticker
-                        }
-                    ],
-                    "options": {
-                        "lang": "es",
-                        "active_symbols_only": True
-                    },
+                    "filter": [{"left": "name", "operation": "match", "right": ticker}],
+                    "options": {"lang": "es", "active_symbols_only": True},
                     "columns": ["name", "close", "volume"],
-                    "sort": {
-                        "sortBy": "name",
-                        "sortOrder": "asc"
-                    },
+                    "sort": {"sortBy": "name", "sortOrder": "asc"},
                     "range": [0, 1]
                 }
-                
                 headers = {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                     "Content-Type": "application/json"
                 }
-                
                 response = requests.post(url, json=payload, headers=headers, timeout=5)
                 
                 if response.status_code == 200:
                     data = response.json()
                     if data.get('data') and len(data['data']) > 0:
-                        # El precio está en el índice correspondiente a 'close'
                         precio_data = data['data'][0].get('d', [])
-                        # Buscar el precio en la estructura de datos
-                        # El precio puede estar en diferentes índices según la estructura
                         for idx, val in enumerate(precio_data):
                             if isinstance(val, (int, float)) and val > 0 and idx > 0:
                                 return round(float(val), 2)
-                        # Si no encontramos, intentar el índice 1 como antes
                         if len(precio_data) > 1 and isinstance(precio_data[1], (int, float)):
                             precio = float(precio_data[1])
                             if precio > 0:
                                 return round(precio, 2)
             except:
-                continue  # Intentar siguiente market
+                continue
         
         return None
     except Exception as e:
-        # Si falla, retornar None para indicar que no se pudo obtener
         return None
 
 # Cargar datos del Excel
@@ -2425,34 +2453,68 @@ try:
         # Crear DataFrame con bonos, Precio y TIR
         bonos_tir_data = []
         
-        # Mostrar progress bar para obtener precios
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        total_bonos = len([b for b in bonos if b.get('ticker', '').strip() and b.get('ticker', '').strip() != 'SPX500'])
-        
-        contador = 0
+        # Recolectar todos los tickers
+        tickers_list = []
+        bonos_dict = {}
         for bono in bonos:
             ticker = bono.get('ticker', '').strip()
             if ticker and ticker != '' and ticker != 'SPX500':
-                contador += 1
-                status_text.text(f"Obteniendo precios... ({contador}/{total_bonos})")
-                progress_bar.progress(contador / total_bonos)
-                
-                # Obtener precio dinámicamente desde TradingView
-                precio = obtener_precio_tradingview(ticker)
-                precio_str = f"${precio:.2f}" if precio is not None else "-"
-                
-                bonos_tir_data.append({
-                    'Activo': bono.get('nombre', ''),
-                    'Ticker': ticker,
-                    'Precio': precio_str,
-                    'Tipo': bono.get('tipo_bono', ''),
-                    'TIR': ''  # Vacío por ahora
-                })
+                tickers_list.append(ticker)
+                bonos_dict[ticker] = bono
         
-        progress_bar.empty()
-        status_text.empty()
+        # Obtener precios de todos los tickers de una vez usando el endpoint de TradingView
+        precios_dict = {}
+        if tickers_list:
+            # Intentar con diferentes formatos de símbolos
+            formats_to_try = [
+                tickers_list,  # Formato original
+                [f"BYMA:{t}" for t in tickers_list],  # Exchange BYMA (Argentina)
+                [f"BCBA:{t}" for t in tickers_list],  # Exchange BCBA
+            ]
+            
+            for symbols_formatted in formats_to_try:
+                try:
+                    symbols_str = ','.join(symbols_formatted)
+                    quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={symbols_str}"
+                    
+                    headers = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                        "Accept": "application/json"
+                    }
+                    
+                    response = requests.get(quote_url, headers=headers, timeout=10)
+                    
+                    if response.status_code == 200:
+                        quote_data = response.json()
+                        for idx, item in enumerate(quote_data):
+                            if item:
+                                symbol = item.get('s', '')  # symbol
+                                price = item.get('lp', None) or item.get('c', None) or item.get('p', None)  # last price, close, price
+                                if price and price > 0:
+                                    # Limpiar símbolo para matching con el ticker original
+                                    symbol_clean = symbol.split(':')[-1] if ':' in symbol else symbol
+                                    # Mapear al ticker original usando el índice
+                                    if idx < len(tickers_list):
+                                        original_ticker = tickers_list[idx]
+                                        precios_dict[original_ticker] = round(float(price), 2)
+                        if precios_dict:
+                            break  # Si encontramos precios, no necesitamos probar más formatos
+                except Exception as e:
+                    continue  # Intentar siguiente formato
+        
+        # Crear datos de la tabla
+        for ticker in tickers_list:
+            bono = bonos_dict[ticker]
+            precio = precios_dict.get(ticker) or obtener_precio_tradingview(ticker)
+            precio_str = f"${precio:.2f}" if precio is not None else "-"
+            
+            bonos_tir_data.append({
+                'Activo': bono.get('nombre', ''),
+                'Ticker': ticker,
+                'Precio': precio_str,
+                'Tipo': bono.get('tipo_bono', ''),
+                'TIR': ''  # Vacío por ahora
+            })
         
         if bonos_tir_data:
             try:
