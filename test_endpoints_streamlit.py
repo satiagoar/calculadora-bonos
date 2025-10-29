@@ -223,6 +223,124 @@ if st.button("🔄 Probar Todos los Endpoints Conocidos"):
                     st.text(result['data'])
 
 st.markdown("---")
+
+st.subheader("3️⃣ Guía para Usar DevTools")
+
+st.markdown("""
+**Ya que los endpoints automáticos no funcionan, necesitamos encontrar el endpoint real que usa el widget:**
+
+### Pasos:
+
+1. **Abre tu app principal** (donde está la tabla de TradingView)
+   - Si no está corriendo: `streamlit run app.py`
+   - URL: `http://localhost:8501`
+
+2. **Abre DevTools** en esa página
+   - Presiona `F12` o `Ctrl+Shift+I`
+   - O clic derecho → "Inspeccionar elemento"
+
+3. **Ve a la pestaña Network (Red)**
+   - Filtra por **"XHR"** o **"Fetch"**
+   - Limpia la lista de requests (botón de clear)
+
+4. **Espera a que cargue la tabla de TradingView**
+   - O recarga la página con DevTools abierto
+
+5. **Busca requests que devuelvan JSON**
+   - Busca nombres como: "quote", "quotes", "market", "symbol", "data"
+   - Haz clic en cualquier request que parezca relevante
+
+6. **Para cada request, revisa:**
+   - **Headers** → Copia todos los headers, especialmente:
+     - `Referer`
+     - `User-Agent`
+     - `Cookie` (si existe)
+     - Cualquier header de autorización
+   - **Payload/Query** → Copia los parámetros
+   - **Response** → Copia la estructura del JSON
+
+7. **Pega la información aquí abajo:**
+""")
+
+# Campos para documentar el endpoint encontrado
+st.markdown("#### 📝 Documentar Endpoint Encontrado")
+
+endpoint_found = st.text_input("URL completa del endpoint", placeholder="https://...")
+method_found = st.selectbox("Método HTTP", ["GET", "POST"])
+
+headers_found = st.text_area(
+    "Headers (formato JSON)",
+    placeholder='{"Referer": "https://www.tradingview.com/", "User-Agent": "...", ...}',
+    height=100
+)
+
+params_found = st.text_area(
+    "Parámetros (Query String o JSON body)",
+    placeholder="symbols=BYMA:AL30D,BYMA:AL35D o {'symbols': '...'}",
+    height=80
+)
+
+response_sample = st.text_area(
+    "Respuesta JSON (muestra)",
+    placeholder='[{"s": "BYMA:AL30D", "lp": 45.20, ...}]',
+    height=150
+)
+
+if st.button("💾 Guardar y Probar Endpoint Encontrado"):
+    if endpoint_found:
+        try:
+            # Parsear headers
+            headers_dict = {}
+            if headers_found:
+                try:
+                    headers_dict = json.loads(headers_found)
+                except:
+                    st.warning("⚠️ Headers no son JSON válido, usando como texto simple")
+            
+            # Probar el endpoint
+            with st.spinner("Probando endpoint encontrado..."):
+                try:
+                    if method_found == "GET":
+                        # Agregar params a URL si es GET
+                        if params_found and "?" not in endpoint_found:
+                            separator = "?" if endpoint_found else ""
+                            url_with_params = f"{endpoint_found}{separator}{params_found}"
+                        else:
+                            url_with_params = endpoint_found
+                        
+                        response = requests.get(url_with_params, headers=headers_dict, timeout=10)
+                    else:
+                        # Para POST, parsear params como JSON si es posible
+                        post_data = {}
+                        if params_found:
+                            try:
+                                post_data = json.loads(params_found)
+                            except:
+                                st.info("⚠️ Params no son JSON válido para POST")
+                        
+                        response = requests.post(endpoint_found, headers=headers_dict, json=post_data, timeout=10)
+                    
+                    st.success(f"✅ Status: {response.status_code}")
+                    
+                    if response.status_code == 200:
+                        try:
+                            data = response.json()
+                            st.json(data)
+                            st.success("🎉 ¡Endpoint encontrado y funcionando!")
+                        except:
+                            st.text("Respuesta (texto):")
+                            st.text(response.text[:500])
+                    else:
+                        st.error(f"❌ Error {response.status_code}")
+                        st.text(response.text[:300])
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
+        except Exception as e:
+            st.error(f"Error procesando: {e}")
+    else:
+        st.warning("⚠️ Por favor ingresa la URL del endpoint")
+
+st.markdown("---")
 st.markdown("""
 ### 📝 Información a Documentar
 
