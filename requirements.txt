@@ -4,4 +4,3 @@ pandas
 python-dateutil
 openpyxl
 plotly
-requests

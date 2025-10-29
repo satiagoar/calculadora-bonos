@@ -7,7 +7,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import json
-import requests
 warnings.filterwarnings('ignore')
 
 
@@ -854,85 +853,6 @@ def encontrar_fecha_vencimiento(flujos):
     
     return fecha_vencimiento
 
-@st.cache_data(ttl=300)  # Cache por 5 minutos
-def obtener_precio_tradingview(ticker):
-    """
-    Obtiene el precio actual de un símbolo desde TradingView
-    Nota: Esta función puede no funcionar desde Streamlit Cloud debido a restricciones de red.
-    En ese caso, se usará 100.0 como precio por defecto.
-    """
-    if not ticker or ticker == 'SPX500':
-        return None
-    
-    error_info = []
-    
-    try:
-        # Intentar diferentes endpoints y formatos
-        # Método 1: Intentar con symbol-search (puede ser más accesible)
-        formats_to_try = [ticker, f"BYMA:{ticker}", f"BCBA:{ticker}", f"{ticker}:BYMA", f"{ticker}:BCBA"]
-        
-        for fmt in formats_to_try:
-            try:
-                # Intentar con symbol-search endpoint
-                search_url = f"https://symbol-search.tradingview.com/symbol_search/?text={fmt}&exchange=&lang=es&search_type=undefined&domain=production&sort_by_country=AR"
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                    "Accept": "application/json",
-                    "Referer": "https://www.tradingview.com/"
-                }
-                
-                response = requests.get(search_url, headers=headers, timeout=5)
-                error_info.append(f"Symbol-search {fmt}: Status {response.status_code}")
-                
-                if response.status_code == 200:
-                    search_data = response.json()
-                    if search_data and len(search_data) > 0:
-                        # Buscar el precio en los resultados
-                        for result in search_data:
-                            if result.get('price'):
-                                price = result.get('price')
-                                if price and price > 0:
-                                    precio_final = round(float(price), 2)
-                                    return precio_final
-            except Exception as e:
-                error_info.append(f"Error symbol-search {fmt}: {str(e)}")
-                continue
-        
-        # Método 2: Intentar con quote-feed (puede fallar por DNS en Streamlit Cloud)
-        for fmt in formats_to_try[:3]:  # Solo los primeros 3 formatos
-            try:
-                quote_url = f"https://quote-feed.tradingview.com/quotes?symbols={fmt}"
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                    "Accept": "application/json"
-                }
-                
-                response = requests.get(quote_url, headers=headers, timeout=5)
-                error_info.append(f"Quote-feed {fmt}: Status {response.status_code}")
-                
-                if response.status_code == 200:
-                    quote_data = response.json()
-                    error_info.append(f"Datos recibidos: {quote_data}")
-                    
-                    if quote_data and len(quote_data) > 0:
-                        price = quote_data[0].get('lp') or quote_data[0].get('c') or quote_data[0].get('p')
-                        error_info.append(f"Precio extraído: {price}")
-                        
-                        if price and price > 0:
-                            precio_final = round(float(price), 2)
-                            return precio_final
-            except Exception as e:
-                error_info.append(f"Error quote-feed {fmt}: {str(e)}")
-                continue
-        
-        # Guardar error info en session_state para debug
-        st.session_state[f'debug_precio_{ticker}'] = error_info
-        return None
-    except Exception as e:
-        error_info.append(f"Error general: {str(e)}")
-        st.session_state[f'debug_precio_{ticker}'] = error_info
-        return None
-
 # Cargar datos del Excel
 try:
     df = pd.read_excel('bonos_flujos.xlsx', engine='openpyxl')
@@ -1075,26 +995,12 @@ try:
             
             # Solo obtener precio si no está ya guardado en session_state para este bono
             if precio_key not in st.session_state:
-                if ticker and ticker != '' and ticker != 'SPX500':
-                    precio_tv = obtener_precio_tradingview(ticker)
-                    # Debug temporal
-                    with st.expander("🔍 Debug Precio TradingView", expanded=False):
-                        st.write(f"Ticker: {ticker}")
-                        st.write(f"Precio TradingView obtenido: {precio_tv}")
-                        st.write(f"Tipo de precio: {type(precio_tv)}")
-                        # Mostrar info de debug si está disponible
-                        debug_key = f'debug_precio_{ticker}'
-                        if debug_key in st.session_state:
-                            st.write("**Detalles de la consulta:**")
-                            for info in st.session_state[debug_key]:
-                                st.write(f"- {info}")
-                    if precio_tv and precio_tv > 0:
-                        precio_default = precio_tv
-                        st.session_state[precio_key] = precio_default
-                    else:
-                        st.session_state[precio_key] = 100.0
-                else:
-                    st.session_state[precio_key] = 100.0
+                # Nota: TradingView bloquea las solicitudes desde Streamlit Cloud
+                # Por lo tanto, siempre usamos 100.0 como valor por defecto
+                # El usuario puede ver el precio en la tabla de TradingView de la página principal
+                # y actualizarlo manualmente aquí
+                st.session_state[precio_key] = 100.0
+                precio_default = 100.0
             else:
                 # Usar el precio guardado (puede haber sido modificado por el usuario)
                 precio_default = st.session_state[precio_key]
@@ -1113,7 +1019,8 @@ try:
                 value=precio_default,
                 step=0.01,
                 format="%.2f",
-                key=precio_key
+                key=precio_key,
+                help="💡 Puedes consultar el precio actual en la tabla de TradingView de la página principal"
             )
             
             # Actualizar session_state cuando el usuario cambia el precio
