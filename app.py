@@ -8,7 +8,86 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import json
 import requests
+import re
+import locale
 warnings.filterwarnings('ignore')
+
+# Configurar locale para formato de números (Argentina: punto para miles, coma para decimales)
+try:
+    locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')
+except:
+    try:
+        locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
+    except:
+        pass  # Usar formato por defecto si no se puede configurar
+
+def validar_formato_decimal(texto):
+    """
+    Valida que el formato de decimal sea correcto.
+    Acepta: números enteros, números con punto decimal (45.20) o coma decimal (45,20)
+    No acepta: formatos mixtos incorrectos (45.20,50 o 45,20.50)
+    """
+    if not texto or texto.strip() == '':
+        return True, None  # Campo vacío es válido
+    
+    texto = texto.strip()
+    
+    # Permitir solo números, punto, coma y signo negativo
+    if not re.match(r'^-?\d+([.,]\d+)?$', texto):
+        return False, None
+    
+    # Verificar que no tenga ambos separadores
+    tiene_punto = '.' in texto
+    tiene_coma = ',' in texto
+    
+    if tiene_punto and tiene_coma:
+        return False, None
+    
+    # Convertir a float
+    try:
+        # Reemplazar coma por punto para conversión
+        texto_convertido = texto.replace(',', '.')
+        valor = float(texto_convertido)
+        return True, valor
+    except:
+        return False, None
+
+def formatear_numero(numero, decimales=2, usar_separador_miles=True):
+    """
+    Formatea un número con separadores de miles y decimales según formato argentino.
+    Usa punto para miles y coma para decimales (ej: 1.234,56)
+    """
+    if numero is None or pd.isna(numero):
+        return "-"
+    
+    try:
+        numero = float(numero)
+        
+        if usar_separador_miles:
+            # Formatear con separador de miles y decimales
+            # Usar formato: 1.234,56
+            parte_entera = int(abs(numero))
+            parte_decimal = abs(numero) - parte_entera
+            
+            # Formatear parte entera con separador de miles
+            parte_entera_str = f"{parte_entera:,}".replace(",", ".")
+            
+            # Formatear parte decimal
+            if decimales > 0:
+                parte_decimal_str = f"{parte_decimal:.{decimales}f}".split('.')[1]
+                signo = "-" if numero < 0 else ""
+                return f"{signo}{parte_entera_str},{parte_decimal_str}"
+            else:
+                signo = "-" if numero < 0 else ""
+                return f"{signo}{parte_entera_str}"
+        else:
+            # Sin separador de miles, solo decimales
+            if decimales > 0:
+                return f"{numero:,.{decimales}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            else:
+                return f"{numero:,.0f}".replace(",", ".")
+    except:
+        return str(numero)
 
 
 # Configuración de la página
@@ -1346,21 +1425,32 @@ try:
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
                 
                 with col4:
-                    st.write("Precio:")
+                    st.write("Precio (base 100):")
                 
                 with col5:
-                    # Input para precio del bono
-                    precio_text = st.text_input(
+                    # Input para precio del bono en base 100
+                    precio_key = f"precio_flujo_{i}"
+                    
+                    # Inicializar precio en session_state si no existe
+                    if precio_key not in st.session_state:
+                        precio_actual = bono.get('precio', 0.0)
+                        if precio_actual and precio_actual > 0:
+                            st.session_state[precio_key] = float(precio_actual)
+                        else:
+                            st.session_state[precio_key] = 100.0  # Valor por defecto en base 100
+                    
+                    # Usar number_input para validación automática
+                    precio = st.number_input(
                         "",
-                        value=str(bono.get('precio', '')) if bono.get('precio', '') != '' else "",
-                        key=f"precio_{i}",
+                        min_value=0.0,
+                        max_value=200.0,
+                        step=0.01,
+                        format="%.2f",
+                        key=precio_key,
                         label_visibility="collapsed"
                     )
-                    # Convertir a número y actualizar session_state
-                    try:
-                        precio = float(precio_text) if precio_text else 0.0
-                    except ValueError:
-                        precio = 0.0
+                    
+                    # Actualizar session_state
                     st.session_state.flujos_bonos_seleccionados[i]['precio'] = precio
                 
                 with col6:
@@ -1480,7 +1570,7 @@ try:
                     st.markdown(f'''
                     <div class="metric-card">
                         <div class="metric-label">Total Intereses</div>
-                        <div class="metric-value">${total_intereses:.2f}</div>
+                        <div class="metric-value">${formatear_numero(total_intereses, 2)}</div>
                     </div>
                     ''', unsafe_allow_html=True)
                 
@@ -1488,7 +1578,7 @@ try:
                     st.markdown(f'''
                     <div class="metric-card">
                         <div class="metric-label">Total Amortizaciones</div>
-                        <div class="metric-value">${total_amortizaciones:.2f}</div>
+                        <div class="metric-value">${formatear_numero(total_amortizaciones, 2)}</div>
                     </div>
                     ''', unsafe_allow_html=True)
                 
@@ -1496,7 +1586,7 @@ try:
                     st.markdown(f'''
                     <div class="metric-card">
                         <div class="metric-label">Total</div>
-                        <div class="metric-value">${total_general:.2f}</div>
+                        <div class="metric-value">${formatear_numero(total_general, 2)}</div>
                     </div>
                     ''', unsafe_allow_html=True)
                 
@@ -1652,10 +1742,10 @@ try:
                     # Formatear fechas a DD/MM/YY
                     df_flujos['fecha'] = pd.to_datetime(df_flujos['fecha']).dt.strftime('%d/%m/%y')
                     
-                    # Formatear números como strings con 2 decimales
-                    df_flujos['intereses'] = df_flujos['intereses'].apply(lambda x: f"{x:.2f}")
-                    df_flujos['amortizaciones'] = df_flujos['amortizaciones'].apply(lambda x: f"{x:.2f}")
-                    df_flujos['total'] = df_flujos['total'].apply(lambda x: f"{x:.2f}")
+                    # Formatear números con separadores de miles
+                    df_flujos['intereses'] = df_flujos['intereses'].apply(lambda x: formatear_numero(x, 2))
+                    df_flujos['amortizaciones'] = df_flujos['amortizaciones'].apply(lambda x: formatear_numero(x, 2))
+                    df_flujos['total'] = df_flujos['total'].apply(lambda x: formatear_numero(x, 2))
                     
                     # Formatear cupón como porcentaje con 2 decimales
                     df_flujos['cupon'] = df_flujos['cupon'].apply(lambda x: f"{x*100:.2f}%")
@@ -1906,7 +1996,7 @@ try:
                 st.markdown(f'''
                 <div class="metric-card">
                     <div class="metric-label">Precio Limpio</div>
-                    <div class="metric-value">{precio_limpio:.4f}</div>
+                    <div class="metric-value">{formatear_numero(precio_limpio, 4)}</div>
                 </div>
                 ''', unsafe_allow_html=True)
             
@@ -1914,7 +2004,7 @@ try:
                 st.markdown(f'''
                 <div class="metric-card">
                     <div class="metric-label">Intereses Corridos</div>
-                    <div class="metric-value">{intereses_corridos:.4f}</div>
+                    <div class="metric-value">{formatear_numero(intereses_corridos, 4)}</div>
                 </div>
                 ''', unsafe_allow_html=True)
             
@@ -1922,7 +2012,7 @@ try:
                 st.markdown(f'''
                 <div class="metric-card">
                     <div class="metric-label">Capital Residual</div>
-                    <div class="metric-value">{capital_residual:.2f}</div>
+                    <div class="metric-value">{formatear_numero(capital_residual, 2)}</div>
                 </div>
                 ''', unsafe_allow_html=True)
             
@@ -1960,7 +2050,7 @@ try:
                 st.markdown(f'''
                 <div class="metric-card">
                     <div class="metric-label">Duración Modificada</div>
-                    <div class="metric-value">{duracion_modificada:.2f} años</div>
+                    <div class="metric-value">{formatear_numero(duracion_modificada, 2)} años</div>
                 </div>
                 ''', unsafe_allow_html=True)
             
@@ -1968,7 +2058,7 @@ try:
                 st.markdown(f'''
                 <div class="metric-card">
                     <div class="metric-label">Duración Macaulay</div>
-                    <div class="metric-value">{duracion_macaulay:.2f} años</div>
+                    <div class="metric-value">{formatear_numero(duracion_macaulay, 2)} años</div>
                 </div>
                 ''', unsafe_allow_html=True)
             
@@ -1982,7 +2072,7 @@ try:
                 st.markdown(f'''
                 <div class="metric-card">
                     <div class="metric-label">Valor Técnico</div>
-                    <div class="metric-value">{valor_tecnico:.4f}</div>
+                    <div class="metric-value">{formatear_numero(valor_tecnico, 4)}</div>
                 </div>
                 ''', unsafe_allow_html=True)
             
@@ -1990,7 +2080,7 @@ try:
                 st.markdown(f'''
                 <div class="metric-card">
                     <div class="metric-label">Paridad</div>
-                    <div class="metric-value">{paridad:.4f}</div>
+                    <div class="metric-value">{formatear_numero(paridad, 4)}</div>
                 </div>
                 ''', unsafe_allow_html=True)
             
@@ -2006,7 +2096,7 @@ try:
                 st.markdown(f'''
                 <div class="metric-card">
                     <div class="metric-label">Vida Media</div>
-                    <div class="metric-value">{vida_media:.2f} años</div>
+                    <div class="metric-value">{formatear_numero(vida_media, 2)} años</div>
                 </div>
                 ''', unsafe_allow_html=True)
             
@@ -2049,9 +2139,9 @@ try:
         # Crear DataFrame con formato mejorado
         # Primera fila: fecha de liquidación y precio pagado (negativo)
         fechas_con_liquidacion = [fecha_liquidacion] + fechas
-        capital_con_liquidacion = [""] + [f"{c:.1f}" if c > 0 else "" for c in flujos_capital]
-        cupon_con_liquidacion = [""] + [f"{f-c:.1f}" for f, c in zip(flujos, flujos_capital)]
-        total_con_liquidacion = [f"-{precio_dirty:.1f}"] + [f"{f:.1f}" for f in flujos]
+        capital_con_liquidacion = [""] + [formatear_numero(c, 1) if c > 0 else "" for c in flujos_capital]
+        cupon_con_liquidacion = [""] + [formatear_numero(f-c, 1) for f, c in zip(flujos, flujos_capital)]
+        total_con_liquidacion = [f"-{formatear_numero(precio_dirty, 1)}"] + [formatear_numero(f, 1) for f in flujos]
         
         df_simple = pd.DataFrame({
             'Fecha': [f.strftime('%d/%m/%Y') for f in fechas_con_liquidacion],
