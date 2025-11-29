@@ -1425,7 +1425,7 @@ try:
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
                 
                 with col4:
-                    st.write("Precio (base 100):")
+                    st.write("Precio:")
                 
                 with col5:
                     # Input para precio del bono en base 100
@@ -1608,10 +1608,12 @@ try:
                             valores_tir = []
                             
                             # Agregar valor actual (inversión inicial)
+                            # El precio se ingresa en base 100, se convierte a base 1 dividiendo por 100
                             total_inversion = 0
                             for bono_item in st.session_state.flujos_bonos_seleccionados:
                                 if bono_item['nominales'] > 0 and bono_item.get('precio', 0) > 0:
-                                    total_inversion += bono_item['nominales'] * bono_item['precio']
+                                    precio_base1 = bono_item['precio'] / 100  # Convertir de base 100 a base 1
+                                    total_inversion += bono_item['nominales'] * precio_base1
                             
                             if total_inversion > 0:
                                 fechas_tir.append(fecha_actual)
@@ -1714,11 +1716,13 @@ try:
                         todos_flujos.extend(flujos_bono)
                 
                 if todos_flujos:
-                    # Calcular total de inversión (nominales × precio)
+                    # Calcular total de inversión (nominales × precio en base 1)
+                    # El precio se ingresa en base 100, se convierte a base 1 dividiendo por 100
                     total_inversion = 0
                     for bono_item in st.session_state.flujos_bonos_seleccionados:
                         if bono_item['nominales'] > 0 and bono_item.get('precio', 0) > 0:
-                            total_inversion += bono_item['nominales'] * bono_item['precio']
+                            precio_base1 = bono_item['precio'] / 100  # Convertir de base 100 a base 1
+                            total_inversion += bono_item['nominales'] * precio_base1
                     
                     # Agregar fila inicial con fecha actual y total de inversión
                     fila_inicial = {
