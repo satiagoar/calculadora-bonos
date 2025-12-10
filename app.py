@@ -1833,7 +1833,7 @@ try:
                 col_calc, col_volver = st.columns(2)
                 
                 with col_calc:
-                    if st.button("Calcular", type="primary", use_container_width=True, key="calcular_main"):
+                    if st.button("Calcular", type="secondary", use_container_width=True, key="calcular_main"):
                         st.session_state.calcular = True
                 
                 with col_volver:
@@ -2257,8 +2257,8 @@ try:
                 </script>
                 """, unsafe_allow_html=True)
             else:
-                # Mostrar mensaje cuando hay bono seleccionado pero no se ha calculado
-                st.info("👆 Completa los datos y presiona 'Calcular' para ver los resultados")
+                # No mostrar nada cuando hay bono seleccionado pero no se ha calculado
+                pass
             
     else:
         # Mostrar los 4 gráficos de TradingView cuando no se ha calculado
