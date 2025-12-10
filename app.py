@@ -1645,13 +1645,39 @@ try:
                     if not insertado:
                         bonos_soberano_ordenados.append(bono_t)
             
-            # Construir JSON de símbolos solo con bonos soberanos
+            # Construir JSON de símbolos insertando separador después de GD38
             symbols_groups = []
             
-            if bonos_soberano_ordenados:
+            # Encontrar la posición de GD38 e insertar separador antes de los bonos T
+            bonos_finales = []
+            encontrado_gd38 = False
+            
+            for bono in bonos_soberano_ordenados:
+                ticker_norm = normalizar_ticker(bono['name'])
+                display_norm = bono.get('displayName', '').upper()
+                
+                # Verificar si es GD38
+                if 'GD38' in ticker_norm or 'GD38' in display_norm:
+                    bonos_finales.append(bono)
+                    encontrado_gd38 = True
+                    # Insertar separador (símbolo vacío) después de GD38
+                    bonos_finales.append({"name": "", "displayName": ""})
+                else:
+                    bonos_finales.append(bono)
+            
+            # Si no se encontró GD38, insertar separador antes del primer bono T
+            if not encontrado_gd38:
+                for i, bono in enumerate(bonos_finales):
+                    ticker_norm = normalizar_ticker(bono['name'])
+                    display_norm = bono.get('displayName', '').upper()
+                    if any(ticker_t in ticker_norm or ticker_t in display_norm for ticker_t in bonos_t_especificos):
+                        bonos_finales.insert(i, {"name": "", "displayName": ""})
+                        break
+            
+            if bonos_finales:
                 symbols_groups.append({
                     "name": "Bonos Soberanos",
-                    "symbols": bonos_soberano_ordenados
+                    "symbols": bonos_finales
                 })
             
             # Widget Market Data - Ancho completo
