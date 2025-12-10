@@ -1987,10 +1987,40 @@ try:
         }.get(bono_actual['periodicidad'], f"{bono_actual['periodicidad']} veces al año")
         
         # Layout principal
-        col1, col2 = st.columns([2, 1])
+        col1, col2 = st.columns([1, 2])
         
-        # COLUMNA IZQUIERDA - RESULTADOS
+        # COLUMNA IZQUIERDA - GRÁFICOS DE TRADINGVIEW
         with col1:
+            # Espaciado para alinear con las tarjetas
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Gráfico del bono seleccionado
+            bono_html = f"""
+            <div class="tradingview-widget-container" style="height: 270px; width: 100%;">
+                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                {{
+                "symbol": "{bono_actual['ticker']}",
+                "width": "100%",
+                "height": "270",
+                "locale": "es",
+                "dateRange": "12M",
+                "colorTheme": "light",
+                "isTransparent": true,
+                "autosize": false,
+                "largeChartUrl": "",
+                "hideTopToolbar": true,
+                "hideLegend": false,
+                "saveImage": false
+                }}
+                </script>
+            </div>
+            """
+            
+            st.components.v1.html(bono_html, height=270)
+        
+        # COLUMNA DERECHA - RESULTADOS
+        with col2:
             # Métricas principales
             st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
             
@@ -2105,36 +2135,6 @@ try:
                 ''', unsafe_allow_html=True)
             
             st.markdown('</div>', unsafe_allow_html=True)
-        
-        # COLUMNA DERECHA - GRÁFICOS DE TRADINGVIEW
-        with col2:
-            # Espaciado para alinear con las tarjetas
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            # Gráfico del bono seleccionado
-            bono_html = f"""
-            <div class="tradingview-widget-container" style="height: 270px; width: 100%;">
-                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
-                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                {{
-                "symbol": "{bono_actual['ticker']}",
-                "width": "100%",
-                "height": "270",
-                "locale": "es",
-                "dateRange": "12M",
-                "colorTheme": "light",
-                "isTransparent": true,
-                "autosize": false,
-                "largeChartUrl": "",
-                "hideTopToolbar": true,
-                "hideLegend": false,
-                "saveImage": false
-                }}
-                </script>
-            </div>
-            """
-            
-            st.components.v1.html(bono_html, height=270)
             
         
         # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO
