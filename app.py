@@ -1813,62 +1813,68 @@ try:
                     else:
                         st.session_state[precio_key_main] = 100.0
                 
-                # Inputs
-                fecha_liquidacion = st.date_input(
-                    "Fecha de Liquidación",
-                    value=get_next_business_day(),
-                    format="DD/MM/YYYY",
-                    key="fecha_liquidacion_main"
-                )
+                # Inputs con ancho reducido al 70%
+                col_input_left, col_input_center, col_input_right = st.columns([0.15, 0.7, 0.15])
                 
-                # Usar solo la key sin value, Streamlit manejará el valor automáticamente desde session_state
-                precio_dirty = st.number_input(
-                    "Precio Dirty (base 100)",
-                    min_value=0.0,
-                    max_value=200.0,
-                    step=0.01,
-                    format="%.2f",
-                    key=precio_key_main,
-                    help="💡 El precio se obtiene automáticamente desde BYMA (si está disponible). Puedes modificarlo manualmente si lo deseas."
-                )
+                with col_input_center:
+                    fecha_liquidacion = st.date_input(
+                        "Fecha de Liquidación",
+                        value=get_next_business_day(),
+                        format="DD/MM/YYYY",
+                        key="fecha_liquidacion_main"
+                    )
+                    
+                    # Usar solo la key sin value, Streamlit manejará el valor automáticamente desde session_state
+                    precio_dirty = st.number_input(
+                        "Precio Dirty (base 100)",
+                        min_value=0.0,
+                        max_value=200.0,
+                        step=0.01,
+                        format="%.2f",
+                        key=precio_key_main,
+                        help="💡 El precio se obtiene automáticamente desde BYMA (si está disponible). Puedes modificarlo manualmente si lo deseas."
+                    )
         
-                # Botones de cálculo y volver
-                col_calc, col_volver = st.columns(2)
+                # Botones de cálculo y volver con ancho reducido al 70%
+                col_btn_left, col_btn_center, col_btn_right = st.columns([0.15, 0.7, 0.15])
                 
-                with col_calc:
-                    if st.button("Calcular", type="secondary", use_container_width=True, key="calcular_main"):
-                        st.session_state.calcular = True
-                
-                with col_volver:
-                    if st.button("Volver", type="secondary", use_container_width=True, key="volver_main"):
-                        # Resetear TODAS las selecciones - estado inicial completo
-                        st.session_state.calcular = False
-                        st.session_state.bono_seleccionado = None
-                        st.session_state.tipo_seleccionado = "Seleccione un Tipo"
-                        
-                        # Limpiar keys de precio
-                        keys_to_delete = [key for key in st.session_state.keys() if key.startswith('precio_dirty_')]
-                        for key in keys_to_delete:
-                            del st.session_state[key]
-                        
-                        # Limpiar TODAS las selecciones de flujos
-                        st.session_state.flujos_bono_seleccionado = None
-                        st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
-                        st.session_state.flujos_calcular = False
-                        if 'flujos_bonos_seleccionados' in st.session_state:
-                            del st.session_state['flujos_bonos_seleccionados']
-                        
-                        # Incrementar claves únicas para forzar reset de selectbox
-                        st.session_state.tipo_selectbox_key += 1
-                        st.session_state.flujos_tipo_selectbox_key += 1
-                        
-                        # Limpiar TODOS los selectbox para forzar reset
-                        if 'bono_selectbox' in st.session_state:
-                            del st.session_state['bono_selectbox']
-                        if 'flujos_bono_selectbox' in st.session_state:
-                            del st.session_state['flujos_bono_selectbox']
-                        
-                        st.rerun()
+                with col_btn_center:
+                    col_calc, col_volver = st.columns(2)
+                    
+                    with col_calc:
+                        if st.button("Calcular", type="secondary", use_container_width=True, key="calcular_main"):
+                            st.session_state.calcular = True
+                    
+                    with col_volver:
+                        if st.button("Volver", type="secondary", use_container_width=True, key="volver_main"):
+                            # Resetear TODAS las selecciones - estado inicial completo
+                            st.session_state.calcular = False
+                            st.session_state.bono_seleccionado = None
+                            st.session_state.tipo_seleccionado = "Seleccione un Tipo"
+                            
+                            # Limpiar keys de precio
+                            keys_to_delete = [key for key in st.session_state.keys() if key.startswith('precio_dirty_')]
+                            for key in keys_to_delete:
+                                del st.session_state[key]
+                            
+                            # Limpiar TODAS las selecciones de flujos
+                            st.session_state.flujos_bono_seleccionado = None
+                            st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
+                            st.session_state.flujos_calcular = False
+                            if 'flujos_bonos_seleccionados' in st.session_state:
+                                del st.session_state['flujos_bonos_seleccionados']
+                            
+                            # Incrementar claves únicas para forzar reset de selectbox
+                            st.session_state.tipo_selectbox_key += 1
+                            st.session_state.flujos_tipo_selectbox_key += 1
+                            
+                            # Limpiar TODOS los selectbox para forzar reset
+                            if 'bono_selectbox' in st.session_state:
+                                del st.session_state['bono_selectbox']
+                            if 'flujos_bono_selectbox' in st.session_state:
+                                del st.session_state['flujos_bono_selectbox']
+                            
+                            st.rerun()
                 
                 # Mostrar información del bono seleccionado
                 st.markdown("---")
