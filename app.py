@@ -708,8 +708,8 @@ if st.session_state.get('mercados_activo', False):
     .main {
         margin-left: 0 !important;
     }
-    </style>
-    """, unsafe_allow_html=True)
+</style>
+""", unsafe_allow_html=True)
 
 # Función para calcular el próximo día hábil
 def get_next_business_day():
@@ -1282,7 +1282,7 @@ try:
                     del st.session_state['flujos_bono_selectbox']
                 
                 st.rerun()
-        
+    
         # Botón Mercados
         st.markdown("---")
         if st.button("Mercados", type="secondary", use_container_width=True, key="mercados_button"):
@@ -1401,11 +1401,11 @@ try:
             market_data_html = f"""
             <style>
                 .tradingview-widget-container-left {{
-                    font-size: 11.04px !important;
+                    font-size: 13.248px !important;
                 }}
             </style>
-            <div class="tradingview-widget-container tradingview-widget-container-left" style="height: 800px; width: 100%; font-size: 11.04px; margin-top: 0;">
-                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 11.04px;"></div>
+            <div class="tradingview-widget-container tradingview-widget-container-left" style="height: 800px; width: 100%; font-size: 13.248px; margin-top: 0;">
+                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 13.248px;"></div>
                 <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
                 {{
                 "colorTheme": "light",
@@ -1534,25 +1534,61 @@ try:
                         bonos_soberano.append(symbol_entry)
             
             # Filtrar y reordenar bonos soberanos según especificaciones
-            # Eliminar AL41, GD41, GD46 (por ticker o por nombre)
-            bonos_soberano = [b for b in bonos_soberano if b['name'] not in ['AL41', 'GD41', 'GD46'] and 'AL41' not in b['name'] and 'GD41' not in b['name'] and 'GD46' not in b['name']]
+            # Eliminar AL41, GD41, GD46, AE38 (por ticker o por nombre)
+            bonos_soberano = [b for b in bonos_soberano if b['name'] not in ['AL41', 'GD41', 'GD46', 'AE38'] and 'AL41' not in b['name'] and 'GD41' not in b['name'] and 'GD46' not in b['name'] and 'AE38' not in b['name']]
             # También filtrar por displayName por si el ticker tiene formato diferente
-            bonos_soberano = [b for b in bonos_soberano if 'AL41' not in b.get('displayName', '') and 'GD41' not in b.get('displayName', '') and 'GD46' not in b.get('displayName', '')]
+            bonos_soberano = [b for b in bonos_soberano if 'AL41' not in b.get('displayName', '') and 'GD41' not in b.get('displayName', '') and 'GD46' not in b.get('displayName', '') and 'AE38' not in b.get('displayName', '')]
             
-            # Separar AL35, AE38 y el resto
-            al35_entry = next((b for b in bonos_soberano if b['name'] == 'AL35'), None)
-            ae38_entry = next((b for b in bonos_soberano if b['name'] == 'AE38'), None)
-            otros_bonos = [b for b in bonos_soberano if b['name'] not in ['AL35', 'AE38']]
+            # Función para determinar el grupo de un bono
+            def obtener_grupo_bono(bono):
+                ticker = bono['name'].upper()
+                # Limpiar prefijo de exchange si existe
+                if ':' in ticker:
+                    ticker = ticker.split(':')[1]
+                
+                # Grupo 1: AL29 hasta GD38 (bonos que empiezan con AL, AE, o GD hasta GD38)
+                if ticker.startswith('AL') or ticker.startswith('AE'):
+                    return 1
+                elif ticker.startswith('GD'):
+                    # Verificar si es GD38 o menor (comparar números)
+                    try:
+                        num = int(ticker[2:])
+                        if num <= 38:
+                            return 1
+                    except:
+                        pass
+                
+                # Grupo 2: T30E6 hasta TZX28 (bonos que empiezan con T y están en el rango)
+                if ticker.startswith('T'):
+                    # Lista de bonos específicos del grupo 2
+                    bonos_grupo2 = ['T30E6', 'T30J6', 'T15E7', 'TY30P', 'TZXM6', 'TZXD6', 'TZXD7', 'TZX28']
+                    if any(bono_ticker in ticker for bono_ticker in bonos_grupo2):
+                        return 2
+                
+                # Resto de bonos
+                return 3
             
-            # Reconstruir lista: AL35, AE38, luego bonos específicos, luego el resto ordenado alfabéticamente
-            bonos_soberano_ordenados = []
-            if al35_entry:
-                bonos_soberano_ordenados.append(al35_entry)
-            if ae38_entry:
-                bonos_soberano_ordenados.append(ae38_entry)
+            # Separar bonos en grupos
+            grupo1_bonos = []  # AL29 hasta GD38
+            grupo2_bonos = []  # T30E6 hasta TZX28
+            grupo3_bonos = []  # Resto
             
-            # Agregar bonos específicos en el orden solicitado
-            bonos_especificos = [
+            for bono in bonos_soberano:
+                grupo = obtener_grupo_bono(bono)
+                if grupo == 1:
+                    grupo1_bonos.append(bono)
+                elif grupo == 2:
+                    grupo2_bonos.append(bono)
+                else:
+                    grupo3_bonos.append(bono)
+            
+            # Ordenar cada grupo alfabéticamente por displayName
+            grupo1_bonos.sort(key=lambda x: x['displayName'])
+            grupo2_bonos.sort(key=lambda x: x['displayName'])
+            grupo3_bonos.sort(key=lambda x: x['displayName'])
+            
+            # Agregar bonos específicos del grupo 2 en el orden solicitado
+            bonos_especificos_grupo2 = [
                 {"name": "BCBA:T30E6", "displayName": "T30E6"},
                 {"name": "BCBA:T30J6", "displayName": "T30J6"},
                 {"name": "BCBA:T15E7", "displayName": "T15E7"},
@@ -1562,11 +1598,12 @@ try:
                 {"name": "BCBA:TZXD7", "displayName": "TZXD7"},
                 {"name": "BCBA:TZX28", "displayName": "TZX28"}
             ]
-            bonos_soberano_ordenados.extend(bonos_especificos)
             
-            # Ordenar el resto alfabéticamente por displayName
-            otros_bonos.sort(key=lambda x: x['displayName'])
-            bonos_soberano_ordenados.extend(otros_bonos)
+            # Reconstruir lista: Grupo 1 (AL29-GD38), luego Grupo 2 (T30E6-TZX28), luego resto
+            bonos_soberano_ordenados = []
+            bonos_soberano_ordenados.extend(grupo1_bonos)
+            bonos_soberano_ordenados.extend(bonos_especificos_grupo2)
+            bonos_soberano_ordenados.extend(grupo3_bonos)
             
             # Construir JSON de símbolos solo con bonos soberanos
             symbols_groups = []
@@ -1581,11 +1618,11 @@ try:
             market_data_html = f"""
             <style>
                 .tradingview-widget-container-right {{
-                    font-size: 11.04px !important;
+                    font-size: 13.248px !important;
                 }}
             </style>
-            <div class="tradingview-widget-container tradingview-widget-container-right" style="height: 800px; width: 100%; font-size: 11.04px; margin-top: 0;">
-                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 11.04px;"></div>
+            <div class="tradingview-widget-container tradingview-widget-container-right" style="height: 800px; width: 100%; font-size: 13.248px; margin-top: 0;">
+                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 13.248px;"></div>
                 <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
                 {{
                 "colorTheme": "light",
@@ -2278,235 +2315,235 @@ try:
                 # Obtener fecha_liquidacion y precio_dirty desde session_state
                 fecha_liquidacion = st.session_state.get('fecha_liquidacion_main', get_next_business_day())
                 precio_dirty = st.session_state.get('precio_dirty_main', 100.0)
-                
-                # Convertir fecha_liquidacion a datetime para comparación
-                fecha_liquidacion_dt = pd.to_datetime(fecha_liquidacion)
-                
-                # Calcular flujos de caja
-                flujos = []
-                fechas = []
-                flujos_capital = []
-                
-                for flujo in bono_actual['flujos']:
-                    if flujo['fecha'] > fecha_liquidacion_dt:
-                        flujos.append(flujo['total'])
-                        fechas.append(flujo['fecha'])
-                        flujos_capital.append(flujo['capital'])
-                
-                if not flujos:
-                    st.error("❌ No hay flujos futuros para calcular")
-                else:
-                    # Continuar con los cálculos solo si hay flujos
-                    # Calcular YTM
-                    ytm_efectiva = calcular_ytm(
-                        precio_dirty,
-                        flujos,
-                        fechas,
-                        fecha_liquidacion,
-                        bono_actual['base_calculo'],
-                        bono_actual['periodicidad']
-                    )
-                    
-                    # Calcular YTM anualizada según periodicidad
-                    ytm_anualizada = bono_actual['periodicidad'] * ((1 + ytm_efectiva) ** (1 / bono_actual['periodicidad']) - 1)
-                    
-                    # Calcular duración Macaulay
-                    duracion_macaulay = calcular_duracion_macaulay(
-                        flujos,
-                        fechas,
-                        fecha_liquidacion,
-                        ytm_efectiva,
-                        bono_actual['base_calculo']
-                    )
-                    
-                    # Calcular duración modificada
-                    duracion_modificada = calcular_duracion_modificada(
-                        duracion_macaulay,
-                        ytm_anualizada / bono_actual['periodicidad'],
-                        bono_actual['periodicidad']
-                    )
-                    
-                    # Calcular capital residual
-                    capital_residual = 100 - sum([flujo['capital'] for flujo in bono_actual['flujos'] if flujo['fecha'] <= fecha_liquidacion_dt])
-                    
-                    # Calcular intereses corridos
-                    fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
-                    if fecha_ultimo_cupon:
-                        intereses_corridos = calcular_intereses_corridos(
-                            fecha_liquidacion,
-                            fecha_ultimo_cupon,
-                            bono_actual['tasa_cupon'],
-                            capital_residual,
-                            bono_actual['base_calculo']
-                        )
-                    else:
-                        intereses_corridos = 0
-                    
-                    # Calcular precio limpio
-                    precio_limpio = precio_dirty - intereses_corridos
-                    
-                    # Calcular vida media
-                    vida_media = calcular_vida_media(
-                        flujos_capital,
-                        fechas,
-                        fecha_liquidacion,
-                        bono_actual['base_calculo']
-                    )
-                    
-                    # Calcular paridad
-                    valor_tecnico = capital_residual + intereses_corridos
-                    paridad = precio_limpio / valor_tecnico if valor_tecnico > 0 else 0
-                    
-                    # Encontrar próximo cupón
-                    proximo_cupon = encontrar_proximo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
-                    
-                    # Calcular cupón vigente
-                    cupon_vigente = encontrar_cupon_vigente(fecha_liquidacion, bono_actual['flujos'])
-                    
-                    # Mapear periodicidad a texto
-                    periodicidad_texto = {
-                        1: "anual",
-                        2: "semestral", 
-                        3: "trimestral",
-                        4: "trimestral",
-                        6: "bimestral",
-                        12: "mensual"
-                    }.get(bono_actual['periodicidad'], f"{bono_actual['periodicidad']} veces al año")
-                    
-                    # Métricas principales
-                    st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
-                    
-                    # Primera fila
-                    col1_1, col1_2, col1_3, col1_4 = st.columns(4)
-                    with col1_1:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Precio Limpio</div>
-                            <div class="metric-value">{formatear_numero(precio_limpio, 4)}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col1_2:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Intereses Corridos</div>
-                            <div class="metric-value">{formatear_numero(intereses_corridos, 4)}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col1_3:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Capital Residual</div>
-                            <div class="metric-value">{formatear_numero(capital_residual, 2)}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col1_4:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Cupón Vigente</div>
-                            <div class="metric-value">{cupon_vigente:.2%}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # Segunda fila
-                    st.markdown('<div class="metrics-row">', unsafe_allow_html=True)
-                    col2_1, col2_2, col2_3, col2_4 = st.columns(4)
-                    
-                    with col2_1:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">TIR Efectiva</div>
-                            <div class="metric-value">{ytm_efectiva:.4%}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col2_2:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">TIR {periodicidad_texto.title()}</div>
-                            <div class="metric-value">{ytm_anualizada:.4%}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col2_3:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Duración Modificada</div>
-                            <div class="metric-value">{formatear_numero(duracion_modificada, 2)} años</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col2_4:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Duración Macaulay</div>
-                            <div class="metric-value">{formatear_numero(duracion_macaulay, 2)} años</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # Tercera fila
-                    st.markdown('<div class="metrics-row">', unsafe_allow_html=True)
-                    col3_1, col3_2, col3_3, col3_4 = st.columns(4)
-                    
-                    with col3_1:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Valor Técnico</div>
-                            <div class="metric-value">{formatear_numero(valor_tecnico, 4)}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col3_2:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Paridad</div>
-                            <div class="metric-value">{formatear_numero(paridad, 4)}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col3_3:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Próximo Cupón</div>
-                            <div class="metric-value">{proximo_cupon.strftime('%d/%m/%Y') if proximo_cupon else 'N/A'}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col3_4:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Vida Media</div>
-                            <div class="metric-value">{formatear_numero(vida_media, 2)} años</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
-                
-                # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO
-                st.markdown("## Flujo de Fondos")
-                
-                # Crear DataFrame con formato mejorado
-                # Primera fila: fecha de liquidación y precio pagado (negativo)
-                fechas_con_liquidacion = [fecha_liquidacion] + fechas
-                capital_con_liquidacion = [""] + [formatear_numero(c, 1) if c > 0 else "" for c in flujos_capital]
-                cupon_con_liquidacion = [""] + [formatear_numero(f-c, 1) for f, c in zip(flujos, flujos_capital)]
-                total_con_liquidacion = [f"-{formatear_numero(precio_dirty, 1)}"] + [formatear_numero(f, 1) for f in flujos]
-                
-                df_simple = pd.DataFrame({
-                    'Fecha': [f.strftime('%d/%m/%Y') for f in fechas_con_liquidacion],
-                    'Capital': capital_con_liquidacion,
-                    'Cupón': cupon_con_liquidacion,
-                    'Total': total_con_liquidacion
-                })
-                
-                # CSS para mejorar la visualización de la tabla
-                st.markdown("""
+        
+        # Convertir fecha_liquidacion a datetime para comparación
+        fecha_liquidacion_dt = pd.to_datetime(fecha_liquidacion)
+        
+        # Calcular flujos de caja
+        flujos = []
+        fechas = []
+        flujos_capital = []
+        
+        for flujo in bono_actual['flujos']:
+            if flujo['fecha'] > fecha_liquidacion_dt:
+                flujos.append(flujo['total'])
+                fechas.append(flujo['fecha'])
+                flujos_capital.append(flujo['capital'])
+        
+        if not flujos:
+            st.error("❌ No hay flujos futuros para calcular")
+        else:
+            # Continuar con los cálculos solo si hay flujos
+            # Calcular YTM
+            ytm_efectiva = calcular_ytm(
+            precio_dirty,
+            flujos,
+            fechas,
+            fecha_liquidacion,
+            bono_actual['base_calculo'],
+            bono_actual['periodicidad']
+            )
+            
+            # Calcular YTM anualizada según periodicidad
+            ytm_anualizada = bono_actual['periodicidad'] * ((1 + ytm_efectiva) ** (1 / bono_actual['periodicidad']) - 1)
+            
+            # Calcular duración Macaulay
+            duracion_macaulay = calcular_duracion_macaulay(
+                flujos,
+                fechas,
+                fecha_liquidacion,
+                ytm_efectiva,
+                bono_actual['base_calculo']
+            )
+            
+            # Calcular duración modificada
+            duracion_modificada = calcular_duracion_modificada(
+                duracion_macaulay,
+                ytm_anualizada / bono_actual['periodicidad'],
+                bono_actual['periodicidad']
+            )
+            
+            # Calcular capital residual
+            capital_residual = 100 - sum([flujo['capital'] for flujo in bono_actual['flujos'] if flujo['fecha'] <= fecha_liquidacion_dt])
+            
+            # Calcular intereses corridos
+            fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
+            if fecha_ultimo_cupon:
+                intereses_corridos = calcular_intereses_corridos(
+                    fecha_liquidacion,
+                    fecha_ultimo_cupon,
+                    bono_actual['tasa_cupon'],
+                    capital_residual,
+                    bono_actual['base_calculo']
+                )
+            else:
+                intereses_corridos = 0
+            
+            # Calcular precio limpio
+            precio_limpio = precio_dirty - intereses_corridos
+            
+            # Calcular vida media
+            vida_media = calcular_vida_media(
+                flujos_capital,
+                fechas,
+                fecha_liquidacion,
+                bono_actual['base_calculo']
+            )
+            
+            # Calcular paridad
+            valor_tecnico = capital_residual + intereses_corridos
+            paridad = precio_limpio / valor_tecnico if valor_tecnico > 0 else 0
+            
+            # Encontrar próximo cupón
+            proximo_cupon = encontrar_proximo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
+            
+            # Calcular cupón vigente
+            cupon_vigente = encontrar_cupon_vigente(fecha_liquidacion, bono_actual['flujos'])
+            
+            # Mapear periodicidad a texto
+            periodicidad_texto = {
+                1: "anual",
+                2: "semestral", 
+                3: "trimestral",
+                4: "trimestral",
+                6: "bimestral",
+                12: "mensual"
+            }.get(bono_actual['periodicidad'], f"{bono_actual['periodicidad']} veces al año")
+            
+            # Métricas principales
+            st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
+            
+            # Primera fila
+            col1_1, col1_2, col1_3, col1_4 = st.columns(4)
+            with col1_1:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">Precio Limpio</div>
+                    <div class="metric-value">{formatear_numero(precio_limpio, 4)}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            with col1_2:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">Intereses Corridos</div>
+                    <div class="metric-value">{formatear_numero(intereses_corridos, 4)}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            with col1_3:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">Capital Residual</div>
+                    <div class="metric-value">{formatear_numero(capital_residual, 2)}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            with col1_4:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">Cupón Vigente</div>
+                    <div class="metric-value">{cupon_vigente:.2%}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # Segunda fila
+            st.markdown('<div class="metrics-row">', unsafe_allow_html=True)
+            col2_1, col2_2, col2_3, col2_4 = st.columns(4)
+            
+            with col2_1:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">TIR Efectiva</div>
+                    <div class="metric-value">{ytm_efectiva:.4%}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            with col2_2:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">TIR {periodicidad_texto.title()}</div>
+                    <div class="metric-value">{ytm_anualizada:.4%}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            with col2_3:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">Duración Modificada</div>
+                    <div class="metric-value">{formatear_numero(duracion_modificada, 2)} años</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            with col2_4:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">Duración Macaulay</div>
+                    <div class="metric-value">{formatear_numero(duracion_macaulay, 2)} años</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # Tercera fila
+            st.markdown('<div class="metrics-row">', unsafe_allow_html=True)
+            col3_1, col3_2, col3_3, col3_4 = st.columns(4)
+            
+            with col3_1:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">Valor Técnico</div>
+                    <div class="metric-value">{formatear_numero(valor_tecnico, 4)}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            with col3_2:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">Paridad</div>
+                    <div class="metric-value">{formatear_numero(paridad, 4)}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            with col3_3:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">Próximo Cupón</div>
+                    <div class="metric-value">{proximo_cupon.strftime('%d/%m/%Y') if proximo_cupon else 'N/A'}</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            with col3_4:
+                st.markdown(f'''
+                <div class="metric-card">
+                    <div class="metric-label">Vida Media</div>
+                    <div class="metric-value">{formatear_numero(vida_media, 2)} años</div>
+                </div>
+                ''', unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO
+        st.markdown("## Flujo de Fondos")
+        
+        # Crear DataFrame con formato mejorado
+        # Primera fila: fecha de liquidación y precio pagado (negativo)
+        fechas_con_liquidacion = [fecha_liquidacion] + fechas
+        capital_con_liquidacion = [""] + [formatear_numero(c, 1) if c > 0 else "" for c in flujos_capital]
+        cupon_con_liquidacion = [""] + [formatear_numero(f-c, 1) for f, c in zip(flujos, flujos_capital)]
+        total_con_liquidacion = [f"-{formatear_numero(precio_dirty, 1)}"] + [formatear_numero(f, 1) for f in flujos]
+        
+        df_simple = pd.DataFrame({
+            'Fecha': [f.strftime('%d/%m/%Y') for f in fechas_con_liquidacion],
+            'Capital': capital_con_liquidacion,
+            'Cupón': cupon_con_liquidacion,
+            'Total': total_con_liquidacion
+        })
+        
+        # CSS para mejorar la visualización de la tabla
+        st.markdown("""
         <style>
         .stTable {
             border: none !important;
@@ -2560,79 +2597,79 @@ try:
             position: relative !important;
             z-index: 5 !important;
         }
-                </style>
-                """, unsafe_allow_html=True)
-                
-                # Mostrar tabla con formato mejorado
-                st.table(df_simple)
-                
-                # Gráfico del bono seleccionado - Ancho completo (minigráfico expandido)
-                bono_avanzado_html = f"""
-                <div class="tradingview-widget-container" style="height: 500px; width: 100%;">
-                    <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                    {{
-                    "symbol": "{bono_actual['ticker']}",
-                    "width": "100%",
-                    "height": "500",
-                    "locale": "es",
-                    "dateRange": "12M",
-                    "colorTheme": "light",
-                    "isTransparent": true,
-                    "autosize": false,
-                    "largeChartUrl": "",
-                    "hideTopToolbar": true,
-                    "hideLegend": false,
-                    "saveImage": false
-                    }}
-                    </script>
-                </div>
-                """
-                st.components.v1.html(bono_avanzado_html, height=500)
-                
-                # JavaScript para prevenir scroll automático al hacer clic en Calcular
-                st.markdown("""
-                <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    // Interceptar clics en el botón Calcular
-                    document.addEventListener('click', function(e) {
-                        // Verificar si es el botón Calcular
-                        if (e.target.matches('button[data-testid="baseButton-primary"]') || 
-                            e.target.textContent.includes('Calcular')) {
-                            
-                            // Prevenir el comportamiento por defecto
-                            e.preventDefault();
-                            
-                            // Forzar scroll hacia arriba después de un pequeño delay
-                            setTimeout(function() {
-                                window.scrollTo({
-                                    top: 0,
-                                    left: 0,
-                                    behavior: 'auto'
-                                });
-                            }, 100);
-                        }
-                    });
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Mostrar tabla con formato mejorado
+        st.table(df_simple)
+        
+        # Gráfico del bono seleccionado - Ancho completo (minigráfico expandido)
+        bono_avanzado_html = f"""
+        <div class="tradingview-widget-container" style="height: 500px; width: 100%;">
+            <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+            {{
+            "symbol": "{bono_actual['ticker']}",
+            "width": "100%",
+            "height": "500",
+            "locale": "es",
+            "dateRange": "12M",
+            "colorTheme": "light",
+            "isTransparent": true,
+            "autosize": false,
+            "largeChartUrl": "",
+            "hideTopToolbar": true,
+            "hideLegend": false,
+            "saveImage": false
+            }}
+            </script>
+        </div>
+        """
+        st.components.v1.html(bono_avanzado_html, height=500)
+        
+        # JavaScript para prevenir scroll automático al hacer clic en Calcular
+        st.markdown("""
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Interceptar clics en el botón Calcular
+            document.addEventListener('click', function(e) {
+                // Verificar si es el botón Calcular
+                if (e.target.matches('button[data-testid="baseButton-primary"]') || 
+                    e.target.textContent.includes('Calcular')) {
                     
-                    // También interceptar el evento de submit del formulario
-                    document.addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        setTimeout(function() {
-                            window.scrollTo({
-                                top: 0,
-                                left: 0,
-                                behavior: 'auto'
-                            });
-                        }, 100);
-                    });
-                });
-                </script>
-                """, unsafe_allow_html=True)
-            else:
-                # No mostrar nada cuando hay bono seleccionado pero no se ha calculado
-                pass
+                    // Prevenir el comportamiento por defecto
+                    e.preventDefault();
+                    
+                    // Forzar scroll hacia arriba después de un pequeño delay
+                    setTimeout(function() {
+                        window.scrollTo({
+                            top: 0,
+                            left: 0,
+                            behavior: 'auto'
+                        });
+                    }, 100);
+                }
+            });
             
-    elif not st.session_state.get('mercados_activo', False):
+            // También interceptar el evento de submit del formulario
+            document.addEventListener('submit', function(e) {
+                e.preventDefault();
+                setTimeout(function() {
+                    window.scrollTo({
+                        top: 0,
+                        left: 0,
+                        behavior: 'auto'
+                    });
+                }, 100);
+            });
+        });
+        </script>
+        """, unsafe_allow_html=True)
+    else:
+        # No mostrar nada cuando hay bono seleccionado pero no se ha calculado
+        pass
+    
+    if not st.session_state.get('mercados_activo', False) and not st.session_state.get('bono_seleccionado'):
         # Mostrar los 4 gráficos de TradingView cuando no se ha calculado (solo si mercados no está activo)
         # Crear 2 filas de 2 columnas cada una
         col1, col2 = st.columns(2)
