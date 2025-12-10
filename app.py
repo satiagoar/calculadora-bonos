@@ -1421,6 +1421,13 @@ try:
                 }}
                 </script>
                 <script>
+                    // NOTA IMPORTANTE: TradingView renderiza el contenido en un iframe de otro dominio (tradingview.com).
+                    // Por políticas de seguridad del navegador (CORS - Cross-Origin Resource Sharing), 
+                    // NO ES POSIBLE acceder al contenido del iframe desde JavaScript.
+                    // Por lo tanto, ocultar la columna "Apertura" NO ES TÉCNICAMENTE POSIBLE.
+                    // TradingView no proporciona una opción de configuración para ocultar columnas específicas.
+                    // El código a continuación intentará ocultarla, pero fallará silenciosamente debido a CORS.
+                    
                     function ocultarColumnaAperturaLeft() {{
                         var container = document.querySelector('.tradingview-widget-container-left');
                         if (!container) return;
@@ -1453,12 +1460,12 @@ try:
                                 }});
                             }});
                         }} catch(e) {{
-                            // No se puede acceder al iframe por CORS - esto es normal
-                            console.log('No se puede acceder al contenido del iframe de TradingView por políticas de seguridad del navegador');
+                            // Esto fallará debido a CORS - es el comportamiento esperado
+                            // No se puede acceder al contenido del iframe de TradingView por políticas de seguridad
                         }}
                     }}
                     
-                    // Intentar múltiples veces después de que se cargue el iframe
+                    // Intentar múltiples veces (aunque no funcionará debido a CORS)
                     setTimeout(ocultarColumnaAperturaLeft, 1000);
                     setTimeout(ocultarColumnaAperturaLeft, 2000);
                     setTimeout(ocultarColumnaAperturaLeft, 3000);
@@ -1599,12 +1606,34 @@ try:
                 else:
                     grupo3_bonos.append(bono)
             
+            # Función auxiliar para normalizar ticker
+            def normalizar_ticker(ticker_str):
+                """Normaliza el ticker removiendo prefijos de exchange"""
+                if ':' in ticker_str:
+                    return ticker_str.split(':')[1].upper()
+                return ticker_str.upper()
+            
             # Separar AL35 y los GD específicos del resto del grupo 1
-            al35_entry = next((b for b in grupo1_bonos if 'AL35' in b['name'].upper() or 'AL35' in b.get('displayName', '').upper()), None)
-            gd29_entry = next((b for b in grupo1_bonos if 'GD29' in b['name'].upper() or 'GD29' in b.get('displayName', '').upper()), None)
-            gd30_entry = next((b for b in grupo1_bonos if 'GD30' in b['name'].upper() or 'GD30' in b.get('displayName', '').upper()), None)
-            gd35_entry = next((b for b in grupo1_bonos if 'GD35' in b['name'].upper() or 'GD35' in b.get('displayName', '').upper()), None)
-            gd38_entry = next((b for b in grupo1_bonos if 'GD38' in b['name'].upper() or 'GD38' in b.get('displayName', '').upper()), None)
+            al35_entry = None
+            gd29_entry = None
+            gd30_entry = None
+            gd35_entry = None
+            gd38_entry = None
+            
+            for b in grupo1_bonos:
+                ticker_norm = normalizar_ticker(b['name'])
+                display_norm = b.get('displayName', '').upper()
+                
+                if 'AL35' in ticker_norm or 'AL35' in display_norm:
+                    al35_entry = b
+                elif 'GD29' in ticker_norm or 'GD29' in display_norm:
+                    gd29_entry = b
+                elif 'GD30' in ticker_norm or 'GD30' in display_norm:
+                    gd30_entry = b
+                elif 'GD35' in ticker_norm or 'GD35' in display_norm:
+                    gd35_entry = b
+                elif 'GD38' in ticker_norm or 'GD38' in display_norm:
+                    gd38_entry = b
             
             # Resto del grupo 1 (sin AL35 y los GD específicos)
             grupo1_resto = [b for b in grupo1_bonos if b != al35_entry and b != gd29_entry and b != gd30_entry and b != gd35_entry and b != gd38_entry]
@@ -1628,18 +1657,36 @@ try:
             
             # Reconstruir lista: AL35, luego GD29, GD30, GD35, GD38, luego resto grupo 1, luego Grupo 2, luego resto
             bonos_soberano_ordenados = []
+            
+            # AL35 primero
             if al35_entry:
                 bonos_soberano_ordenados.append(al35_entry)
-            if gd29_entry:
-                bonos_soberano_ordenados.append(gd29_entry)
-            if gd30_entry:
-                bonos_soberano_ordenados.append(gd30_entry)
-            if gd35_entry:
-                bonos_soberano_ordenados.append(gd35_entry)
-            if gd38_entry:
-                bonos_soberano_ordenados.append(gd38_entry)
+            
+            # Luego los GD específicos en el orden solicitado
+            gd_bonos_orden = [gd29_entry, gd30_entry, gd35_entry, gd38_entry]
+            for gd_bono in gd_bonos_orden:
+                if gd_bono:
+                    bonos_soberano_ordenados.append(gd_bono)
+            
+            # Si algún GD no se encontró, intentar agregarlo manualmente
+            gd_tickers_esperados = ['GD29', 'GD30', 'GD35', 'GD38']
+            gd_encontrados = [normalizar_ticker(b['name']) for b in bonos_soberano_ordenados if 'GD' in normalizar_ticker(b['name'])]
+            for gd_ticker in gd_tickers_esperados:
+                if gd_ticker not in gd_encontrados:
+                    # Buscar en grupo1_resto si está ahí
+                    for b in grupo1_resto:
+                        if gd_ticker in normalizar_ticker(b['name']):
+                            bonos_soberano_ordenados.append(b)
+                            grupo1_resto.remove(b)
+                            break
+            
+            # Resto del grupo 1
             bonos_soberano_ordenados.extend(grupo1_resto)
+            
+            # Grupo 2 (bonos T específicos)
             bonos_soberano_ordenados.extend(bonos_especificos_grupo2)
+            
+            # Resto (grupo 3)
             bonos_soberano_ordenados.extend(grupo3_bonos)
             
             # Construir JSON de símbolos solo con bonos soberanos
@@ -1675,6 +1722,13 @@ try:
                 }}
                 </script>
                 <script>
+                    // NOTA IMPORTANTE: TradingView renderiza el contenido en un iframe de otro dominio (tradingview.com).
+                    // Por políticas de seguridad del navegador (CORS - Cross-Origin Resource Sharing), 
+                    // NO ES POSIBLE acceder al contenido del iframe desde JavaScript.
+                    // Por lo tanto, ocultar la columna "Apertura" NO ES TÉCNICAMENTE POSIBLE.
+                    // TradingView no proporciona una opción de configuración para ocultar columnas específicas.
+                    // El código a continuación intentará ocultarla, pero fallará silenciosamente debido a CORS.
+                    
                     function ocultarColumnaApertura() {{
                         var container = document.querySelector('.tradingview-widget-container-right');
                         if (!container) return;
@@ -1707,12 +1761,12 @@ try:
                                 }});
                             }});
                         }} catch(e) {{
-                            // No se puede acceder al iframe por CORS - esto es normal
-                            console.log('No se puede acceder al contenido del iframe de TradingView por políticas de seguridad del navegador');
+                            // Esto fallará debido a CORS - es el comportamiento esperado
+                            // No se puede acceder al contenido del iframe de TradingView por políticas de seguridad
                         }}
                     }}
                     
-                    // Intentar múltiples veces después de que se cargue el iframe
+                    // Intentar múltiples veces (aunque no funcionará debido a CORS)
                     setTimeout(ocultarColumnaApertura, 1000);
                     setTimeout(ocultarColumnaApertura, 2000);
                     setTimeout(ocultarColumnaApertura, 3000);
