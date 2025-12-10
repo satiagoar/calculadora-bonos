@@ -1399,8 +1399,13 @@ try:
             
             # Widget Market Data - Ancho completo
             market_data_html = f"""
-            <div class="tradingview-widget-container" style="height: 800px; width: 100%; font-size: 8px; margin-top: 0;">
-                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 8px;"></div>
+            <style>
+                .tradingview-widget-container-left {{
+                    font-size: 9.2px !important;
+                }}
+            </style>
+            <div class="tradingview-widget-container tradingview-widget-container-left" style="height: 800px; width: 100%; font-size: 9.2px; margin-top: 0;">
+                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 9.2px;"></div>
                 <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
                 {{
                 "colorTheme": "light",
@@ -1414,6 +1419,32 @@ try:
                 "height": "800",
                 "symbolsGroups": {json.dumps(symbols_groups, ensure_ascii=False)}
                 }}
+                </script>
+                <script>
+                    setTimeout(function() {{
+                        var container = document.querySelector('.tradingview-widget-container-left');
+                        if (container) {{
+                            var iframe = container.querySelector('iframe');
+                            if (iframe) {{
+                                iframe.onload = function() {{
+                                    try {{
+                                        var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                                        var headers = iframeDoc.querySelectorAll('th');
+                                        headers.forEach(function(th, index) {{
+                                            if (th.textContent.includes('Apertura') || th.textContent.includes('Open')) {{
+                                                var colIndex = index + 1;
+                                                iframeDoc.querySelectorAll('th:nth-child(' + colIndex + '), td:nth-child(' + colIndex + ')').forEach(function(el) {{
+                                                    el.style.display = 'none';
+                                                }});
+                                            }}
+                                        }});
+                                    }} catch(e) {{
+                                        console.log('No se pudo acceder al iframe:', e);
+                                    }}
+                                }};
+                            }}
+                        }}
+                    }}, 2000);
                 </script>
             </div>
             """
@@ -1503,8 +1534,10 @@ try:
                         bonos_soberano.append(symbol_entry)
             
             # Filtrar y reordenar bonos soberanos según especificaciones
-            # Eliminar AL41, GD41, GD46
-            bonos_soberano = [b for b in bonos_soberano if b['name'] not in ['AL41', 'GD41', 'GD46']]
+            # Eliminar AL41, GD41, GD46 (por ticker o por nombre)
+            bonos_soberano = [b for b in bonos_soberano if b['name'] not in ['AL41', 'GD41', 'GD46'] and 'AL41' not in b['name'] and 'GD41' not in b['name'] and 'GD46' not in b['name']]
+            # También filtrar por displayName por si el ticker tiene formato diferente
+            bonos_soberano = [b for b in bonos_soberano if 'AL41' not in b.get('displayName', '') and 'GD41' not in b.get('displayName', '') and 'GD46' not in b.get('displayName', '')]
             
             # Separar AL35, AE38 y el resto
             al35_entry = next((b for b in bonos_soberano if b['name'] == 'AL35'), None)
@@ -1539,8 +1572,13 @@ try:
             
             # Widget Market Data - Ancho completo
             market_data_html = f"""
-            <div class="tradingview-widget-container" style="height: 800px; width: 100%; font-size: 8px; margin-top: 0;">
-                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 8px;"></div>
+            <style>
+                .tradingview-widget-container-right {{
+                    font-size: 9.2px !important;
+                }}
+            </style>
+            <div class="tradingview-widget-container tradingview-widget-container-right" style="height: 800px; width: 100%; font-size: 9.2px; margin-top: 0;">
+                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 9.2px;"></div>
                 <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
                 {{
                 "colorTheme": "light",
@@ -1554,6 +1592,32 @@ try:
                 "height": "800",
                 "symbolsGroups": {json.dumps(symbols_groups, ensure_ascii=False)}
                 }}
+                </script>
+                <script>
+                    setTimeout(function() {{
+                        var container = document.querySelector('.tradingview-widget-container-right');
+                        if (container) {{
+                            var iframe = container.querySelector('iframe');
+                            if (iframe) {{
+                                iframe.onload = function() {{
+                                    try {{
+                                        var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                                        var headers = iframeDoc.querySelectorAll('th');
+                                        headers.forEach(function(th, index) {{
+                                            if (th.textContent.includes('Apertura') || th.textContent.includes('Open')) {{
+                                                var colIndex = index + 1;
+                                                iframeDoc.querySelectorAll('th:nth-child(' + colIndex + '), td:nth-child(' + colIndex + ')').forEach(function(el) {{
+                                                    el.style.display = 'none';
+                                                }});
+                                            }}
+                                        }});
+                                    }} catch(e) {{
+                                        console.log('No se pudo acceder al iframe:', e);
+                                    }}
+                                }};
+                            }}
+                        }}
+                    }}, 2000);
                 </script>
             </div>
             """
