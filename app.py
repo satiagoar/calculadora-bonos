@@ -1623,23 +1623,30 @@ try:
             gd35_entry = None
             gd38_entry = None
             
+            # Función auxiliar para verificar si un bono coincide con un ticker específico
+            def coincide_ticker(bono, ticker_buscado):
+                """Verifica si un bono coincide con un ticker específico"""
+                ticker_norm = normalizar_ticker(bono['name'])
+                display_norm = bono.get('displayName', '').upper()
+                # Buscar el ticker como parte del ticker normalizado o del displayName
+                # Usar regex o verificación más precisa
+                return (ticker_buscado in ticker_norm or ticker_buscado in display_norm)
+            
             for b in grupo1_bonos:
-                ticker_norm = normalizar_ticker(b['name'])
-                display_norm = b.get('displayName', '').upper()
-                
-                if 'AL29' in ticker_norm or 'AL29' in display_norm:
+                # Usar if separados para que cada bono pueda ser encontrado independientemente
+                if coincide_ticker(b, 'AL29') and al29_entry is None:
                     al29_entry = b
-                elif 'AL30' in ticker_norm or 'AL30' in display_norm:
+                if coincide_ticker(b, 'AL30') and al30_entry is None:
                     al30_entry = b
-                elif 'AL35' in ticker_norm or 'AL35' in display_norm:
+                if coincide_ticker(b, 'AL35') and al35_entry is None:
                     al35_entry = b
-                elif 'GD29' in ticker_norm or 'GD29' in display_norm:
+                if coincide_ticker(b, 'GD29') and gd29_entry is None:
                     gd29_entry = b
-                elif 'GD30' in ticker_norm or 'GD30' in display_norm:
+                if coincide_ticker(b, 'GD30') and gd30_entry is None:
                     gd30_entry = b
-                elif 'GD35' in ticker_norm or 'GD35' in display_norm:
+                if coincide_ticker(b, 'GD35') and gd35_entry is None:
                     gd35_entry = b
-                elif 'GD38' in ticker_norm or 'GD38' in display_norm:
+                if coincide_ticker(b, 'GD38') and gd38_entry is None:
                     gd38_entry = b
             
             # Resto del grupo 1 (sin los bonos específicos)
@@ -1683,8 +1690,7 @@ try:
                 else:
                     # Si no se encontró, buscar en grupo1_resto
                     for b in grupo1_resto[:]:  # Usar slice para evitar problemas al modificar durante iteración
-                        ticker_b = normalizar_ticker(b['name'])
-                        if ticker_esperado in ticker_b:
+                        if coincide_ticker(b, ticker_esperado):
                             bonos_soberano_ordenados.append(b)
                             grupo1_resto.remove(b)
                             break
