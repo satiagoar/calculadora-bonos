@@ -1428,31 +1428,44 @@ try:
                     // TradingView no proporciona una opción de configuración para ocultar columnas específicas.
                     // El código a continuación intentará ocultarla, pero fallará silenciosamente debido a CORS.
                     
-                    function ocultarColumnaAperturaLeft() {{
+                    function modificarColumnasLeft() {{
                         var container = document.querySelector('.tradingview-widget-container-left');
                         if (!container) return;
                         
                         var iframe = container.querySelector('iframe');
                         if (!iframe) {{
-                            setTimeout(ocultarColumnaAperturaLeft, 500);
+                            setTimeout(modificarColumnasLeft, 500);
                             return;
                         }}
                         
                         try {{
                             var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                             if (!iframeDoc) {{
-                                setTimeout(ocultarColumnaAperturaLeft, 500);
+                                setTimeout(modificarColumnasLeft, 500);
                                 return;
                             }}
                             
-                            // Intentar ocultar columna Apertura (generalmente es la 3ra columna)
                             var tables = iframeDoc.querySelectorAll('table');
                             tables.forEach(function(table) {{
                                 var headers = table.querySelectorAll('th');
                                 headers.forEach(function(th, index) {{
                                     var text = th.textContent || th.innerText || '';
+                                    var colIndex = index + 1;
+                                    
+                                    // Reducir ancho de columna Nombre (primera columna)
+                                    if (text.includes('Nombre') || text.includes('Name') || index === 0) {{
+                                        table.querySelectorAll('th:nth-child(' + colIndex + '), td:nth-child(' + colIndex + ')').forEach(function(el) {{
+                                            el.style.maxWidth = '80px';
+                                            el.style.width = '80px';
+                                            el.style.minWidth = '80px';
+                                            el.style.overflow = 'hidden';
+                                            el.style.textOverflow = 'ellipsis';
+                                            el.style.whiteSpace = 'nowrap';
+                                        }});
+                                    }}
+                                    
+                                    // Intentar ocultar columna Apertura
                                     if (text.includes('Apertura') || text.includes('Open') || text.includes('Abrir')) {{
-                                        var colIndex = index + 1;
                                         table.querySelectorAll('th:nth-child(' + colIndex + '), td:nth-child(' + colIndex + ')').forEach(function(el) {{
                                             el.style.display = 'none';
                                         }});
@@ -1466,9 +1479,9 @@ try:
                     }}
                     
                     // Intentar múltiples veces (aunque no funcionará debido a CORS)
-                    setTimeout(ocultarColumnaAperturaLeft, 1000);
-                    setTimeout(ocultarColumnaAperturaLeft, 2000);
-                    setTimeout(ocultarColumnaAperturaLeft, 3000);
+                    setTimeout(modificarColumnasLeft, 1000);
+                    setTimeout(modificarColumnasLeft, 2000);
+                    setTimeout(modificarColumnasLeft, 3000);
                 </script>
             </div>
             """
@@ -1672,31 +1685,44 @@ try:
                     // TradingView no proporciona una opción de configuración para ocultar columnas específicas.
                     // El código a continuación intentará ocultarla, pero fallará silenciosamente debido a CORS.
                     
-                    function ocultarColumnaApertura() {{
+                    function modificarColumnas() {{
                         var container = document.querySelector('.tradingview-widget-container-right');
                         if (!container) return;
                         
                         var iframe = container.querySelector('iframe');
                         if (!iframe) {{
-                            setTimeout(ocultarColumnaApertura, 500);
+                            setTimeout(modificarColumnas, 500);
                             return;
                         }}
                         
                         try {{
                             var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                             if (!iframeDoc) {{
-                                setTimeout(ocultarColumnaApertura, 500);
+                                setTimeout(modificarColumnas, 500);
                                 return;
                             }}
                             
-                            // Intentar ocultar columna Apertura (generalmente es la 3ra columna)
                             var tables = iframeDoc.querySelectorAll('table');
                             tables.forEach(function(table) {{
                                 var headers = table.querySelectorAll('th');
                                 headers.forEach(function(th, index) {{
                                     var text = th.textContent || th.innerText || '';
+                                    var colIndex = index + 1;
+                                    
+                                    // Reducir ancho de columna Nombre (primera columna)
+                                    if (text.includes('Nombre') || text.includes('Name') || index === 0) {{
+                                        table.querySelectorAll('th:nth-child(' + colIndex + '), td:nth-child(' + colIndex + ')').forEach(function(el) {{
+                                            el.style.maxWidth = '80px';
+                                            el.style.width = '80px';
+                                            el.style.minWidth = '80px';
+                                            el.style.overflow = 'hidden';
+                                            el.style.textOverflow = 'ellipsis';
+                                            el.style.whiteSpace = 'nowrap';
+                                        }});
+                                    }}
+                                    
+                                    // Intentar ocultar columna Apertura
                                     if (text.includes('Apertura') || text.includes('Open') || text.includes('Abrir')) {{
-                                        var colIndex = index + 1;
                                         table.querySelectorAll('th:nth-child(' + colIndex + '), td:nth-child(' + colIndex + ')').forEach(function(el) {{
                                             el.style.display = 'none';
                                         }});
@@ -1710,9 +1736,9 @@ try:
                     }}
                     
                     // Intentar múltiples veces (aunque no funcionará debido a CORS)
-                    setTimeout(ocultarColumnaApertura, 1000);
-                    setTimeout(ocultarColumnaApertura, 2000);
-                    setTimeout(ocultarColumnaApertura, 3000);
+                    setTimeout(modificarColumnas, 1000);
+                    setTimeout(modificarColumnas, 2000);
+                    setTimeout(modificarColumnas, 3000);
                 </script>
             </div>
             """
