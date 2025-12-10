@@ -1777,109 +1777,10 @@ try:
         else:
             st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
     
-    # S1 (Calculadora de Rendimientos) - Solo si NO hay bono en S2
-    elif st.session_state.calcular and st.session_state.bono_seleccionado:
+    # S1 (Calculadora de Rendimientos) - Mostrar cuando hay bono seleccionado (sin necesidad de calcular)
+    elif st.session_state.bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado'):
         # Obtener el bono actual del session_state
         bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado)
-        
-        # Obtener fecha_liquidacion y precio_dirty desde session_state
-        fecha_liquidacion = st.session_state.get('fecha_liquidacion_main', get_next_business_day())
-        precio_dirty = st.session_state.get('precio_dirty_main', 100.0)
-        
-        # Convertir fecha_liquidacion a datetime para comparación
-        fecha_liquidacion_dt = pd.to_datetime(fecha_liquidacion)
-        
-        # Calcular flujos de caja
-        flujos = []
-        fechas = []
-        flujos_capital = []
-        
-        for flujo in bono_actual['flujos']:
-            if flujo['fecha'] > fecha_liquidacion_dt:
-                flujos.append(flujo['total'])
-                fechas.append(flujo['fecha'])
-                flujos_capital.append(flujo['capital'])
-        
-        if not flujos:
-            st.error("❌ No hay flujos futuros para calcular")
-            st.stop()
-        
-        
-        # Calcular YTM
-        ytm_efectiva = calcular_ytm(
-            precio_dirty,
-            flujos,
-            fechas,
-            fecha_liquidacion,
-            bono_actual['base_calculo'],
-            bono_actual['periodicidad']
-        )
-        
-        # Calcular YTM anualizada según periodicidad
-        ytm_anualizada = bono_actual['periodicidad'] * ((1 + ytm_efectiva) ** (1 / bono_actual['periodicidad']) - 1)
-        
-        # Calcular duración Macaulay
-        duracion_macaulay = calcular_duracion_macaulay(
-            flujos,
-            fechas,
-            fecha_liquidacion,
-            ytm_efectiva,
-            bono_actual['base_calculo']
-        )
-        
-        # Calcular duración modificada
-        duracion_modificada = calcular_duracion_modificada(
-            duracion_macaulay,
-            ytm_anualizada / bono_actual['periodicidad'],
-            bono_actual['periodicidad']
-        )
-        
-        # Calcular capital residual
-        capital_residual = 100 - sum([flujo['capital'] for flujo in bono_actual['flujos'] if flujo['fecha'] <= fecha_liquidacion_dt])
-        
-        # Calcular intereses corridos
-        fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
-        if fecha_ultimo_cupon:
-            intereses_corridos = calcular_intereses_corridos(
-                fecha_liquidacion,
-                fecha_ultimo_cupon,
-                bono_actual['tasa_cupon'],
-                capital_residual,
-                bono_actual['base_calculo']
-            )
-        else:
-            intereses_corridos = 0
-        
-        # Calcular precio limpio
-        precio_limpio = precio_dirty - intereses_corridos
-        
-        # Calcular vida media
-        vida_media = calcular_vida_media(
-            flujos_capital,
-            fechas,
-            fecha_liquidacion,
-            bono_actual['base_calculo']
-        )
-        
-        # Calcular paridad
-        valor_tecnico = capital_residual + intereses_corridos
-        paridad = precio_limpio / valor_tecnico if valor_tecnico > 0 else 0
-        
-        # Encontrar próximo cupón
-        proximo_cupon = encontrar_proximo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
-        
-        # Calcular cupón vigente
-        cupon_vigente = encontrar_cupon_vigente(fecha_liquidacion, bono_actual['flujos'])
-        
-        # Mapear periodicidad a texto
-        periodicidad_texto = {
-            1: "anual",
-            2: "semestral", 
-            3: "trimestral",
-            4: "trimestral",
-            6: "bimestral",
-            12: "mensual"
-        }.get(bono_actual['periodicidad'], f"{bono_actual['periodicidad']} veces al año")
         
         # Layout principal
         col1, col2 = st.columns([1, 2])
@@ -2003,10 +1904,109 @@ try:
                 </div>
                 """, unsafe_allow_html=True)
         
-        # COLUMNA DERECHA - RESULTADOS
+        # COLUMNA DERECHA - RESULTADOS (solo si se presionó Calcular)
         with col2:
-            # Métricas principales
-            st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
+            if st.session_state.calcular:
+                # Obtener fecha_liquidacion y precio_dirty desde session_state
+                fecha_liquidacion = st.session_state.get('fecha_liquidacion_main', get_next_business_day())
+                precio_dirty = st.session_state.get('precio_dirty_main', 100.0)
+                
+                # Convertir fecha_liquidacion a datetime para comparación
+                fecha_liquidacion_dt = pd.to_datetime(fecha_liquidacion)
+                
+                # Calcular flujos de caja
+                flujos = []
+                fechas = []
+                flujos_capital = []
+                
+                for flujo in bono_actual['flujos']:
+                    if flujo['fecha'] > fecha_liquidacion_dt:
+                        flujos.append(flujo['total'])
+                        fechas.append(flujo['fecha'])
+                        flujos_capital.append(flujo['capital'])
+                
+                if not flujos:
+                    st.error("❌ No hay flujos futuros para calcular")
+                else:
+                    # Continuar con los cálculos solo si hay flujos
+                    # Calcular YTM
+                    ytm_efectiva = calcular_ytm(
+                        precio_dirty,
+                        flujos,
+                        fechas,
+                        fecha_liquidacion,
+                        bono_actual['base_calculo'],
+                        bono_actual['periodicidad']
+                    )
+                    
+                    # Calcular YTM anualizada según periodicidad
+                    ytm_anualizada = bono_actual['periodicidad'] * ((1 + ytm_efectiva) ** (1 / bono_actual['periodicidad']) - 1)
+                    
+                    # Calcular duración Macaulay
+                    duracion_macaulay = calcular_duracion_macaulay(
+                        flujos,
+                        fechas,
+                        fecha_liquidacion,
+                        ytm_efectiva,
+                        bono_actual['base_calculo']
+                    )
+                    
+                    # Calcular duración modificada
+                    duracion_modificada = calcular_duracion_modificada(
+                        duracion_macaulay,
+                        ytm_anualizada / bono_actual['periodicidad'],
+                        bono_actual['periodicidad']
+                    )
+                    
+                    # Calcular capital residual
+                    capital_residual = 100 - sum([flujo['capital'] for flujo in bono_actual['flujos'] if flujo['fecha'] <= fecha_liquidacion_dt])
+                    
+                    # Calcular intereses corridos
+                    fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
+                    if fecha_ultimo_cupon:
+                        intereses_corridos = calcular_intereses_corridos(
+                            fecha_liquidacion,
+                            fecha_ultimo_cupon,
+                            bono_actual['tasa_cupon'],
+                            capital_residual,
+                            bono_actual['base_calculo']
+                        )
+                    else:
+                        intereses_corridos = 0
+                    
+                    # Calcular precio limpio
+                    precio_limpio = precio_dirty - intereses_corridos
+                    
+                    # Calcular vida media
+                    vida_media = calcular_vida_media(
+                        flujos_capital,
+                        fechas,
+                        fecha_liquidacion,
+                        bono_actual['base_calculo']
+                    )
+                    
+                    # Calcular paridad
+                    valor_tecnico = capital_residual + intereses_corridos
+                    paridad = precio_limpio / valor_tecnico if valor_tecnico > 0 else 0
+                    
+                    # Encontrar próximo cupón
+                    proximo_cupon = encontrar_proximo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
+                    
+                    # Calcular cupón vigente
+                    cupon_vigente = encontrar_cupon_vigente(fecha_liquidacion, bono_actual['flujos'])
+                    
+                    # Mapear periodicidad a texto
+                    periodicidad_texto = {
+                        1: "anual",
+                        2: "semestral", 
+                        3: "trimestral",
+                        4: "trimestral",
+                        6: "bimestral",
+                        12: "mensual"
+                    }.get(bono_actual['periodicidad'], f"{bono_actual['periodicidad']} veces al año")
+                    
+                    # Métricas principales
+                    st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
             
             # Primera fila
             col1_1, col1_2, col1_3, col1_4 = st.columns(4)
@@ -2118,28 +2118,27 @@ try:
                 </div>
                 ''', unsafe_allow_html=True)
             
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-        
-        # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO
-        st.markdown("## Flujo de Fondos")
-        
-        # Crear DataFrame con formato mejorado
-        # Primera fila: fecha de liquidación y precio pagado (negativo)
-        fechas_con_liquidacion = [fecha_liquidacion] + fechas
-        capital_con_liquidacion = [""] + [formatear_numero(c, 1) if c > 0 else "" for c in flujos_capital]
-        cupon_con_liquidacion = [""] + [formatear_numero(f-c, 1) for f, c in zip(flujos, flujos_capital)]
-        total_con_liquidacion = [f"-{formatear_numero(precio_dirty, 1)}"] + [formatear_numero(f, 1) for f in flujos]
-        
-        df_simple = pd.DataFrame({
-            'Fecha': [f.strftime('%d/%m/%Y') for f in fechas_con_liquidacion],
-            'Capital': capital_con_liquidacion,
-            'Cupón': cupon_con_liquidacion,
-            'Total': total_con_liquidacion
-        })
-        
-        # CSS para mejorar la visualización de la tabla
-        st.markdown("""
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO
+                st.markdown("## Flujo de Fondos")
+                
+                # Crear DataFrame con formato mejorado
+                # Primera fila: fecha de liquidación y precio pagado (negativo)
+                fechas_con_liquidacion = [fecha_liquidacion] + fechas
+                capital_con_liquidacion = [""] + [formatear_numero(c, 1) if c > 0 else "" for c in flujos_capital]
+                cupon_con_liquidacion = [""] + [formatear_numero(f-c, 1) for f, c in zip(flujos, flujos_capital)]
+                total_con_liquidacion = [f"-{formatear_numero(precio_dirty, 1)}"] + [formatear_numero(f, 1) for f in flujos]
+                
+                df_simple = pd.DataFrame({
+                    'Fecha': [f.strftime('%d/%m/%Y') for f in fechas_con_liquidacion],
+                    'Capital': capital_con_liquidacion,
+                    'Cupón': cupon_con_liquidacion,
+                    'Total': total_con_liquidacion
+                })
+                
+                # CSS para mejorar la visualización de la tabla
+                st.markdown("""
         <style>
         .stTable {
             border: none !important;
@@ -2193,38 +2192,38 @@ try:
             position: relative !important;
             z-index: 5 !important;
         }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # Mostrar tabla con formato mejorado
-        st.table(df_simple)
-        
-        # Gráfico del bono seleccionado - Ancho completo (minigráfico expandido)
-        bono_avanzado_html = f"""
-        <div class="tradingview-widget-container" style="height: 500px; width: 100%;">
-            <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-            {{
-            "symbol": "{bono_actual['ticker']}",
-            "width": "100%",
-            "height": "500",
-            "locale": "es",
-            "dateRange": "12M",
-            "colorTheme": "light",
-            "isTransparent": true,
-            "autosize": false,
-            "largeChartUrl": "",
-            "hideTopToolbar": true,
-            "hideLegend": false,
-            "saveImage": false
-            }}
-            </script>
-        </div>
-        """
-        st.components.v1.html(bono_avanzado_html, height=500)
-        
-        # JavaScript para prevenir scroll automático al hacer clic en Calcular
-        st.markdown("""
+                </style>
+                """, unsafe_allow_html=True)
+                
+                # Mostrar tabla con formato mejorado
+                st.table(df_simple)
+                
+                # Gráfico del bono seleccionado - Ancho completo (minigráfico expandido)
+                bono_avanzado_html = f"""
+                <div class="tradingview-widget-container" style="height: 500px; width: 100%;">
+                    <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                    {{
+                    "symbol": "{bono_actual['ticker']}",
+                    "width": "100%",
+                    "height": "500",
+                    "locale": "es",
+                    "dateRange": "12M",
+                    "colorTheme": "light",
+                    "isTransparent": true,
+                    "autosize": false,
+                    "largeChartUrl": "",
+                    "hideTopToolbar": true,
+                    "hideLegend": false,
+                    "saveImage": false
+                    }}
+                    </script>
+                </div>
+                """
+                st.components.v1.html(bono_avanzado_html, height=500)
+                
+                # JavaScript para prevenir scroll automático al hacer clic en Calcular
+                st.markdown("""
         <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Interceptar clics en el botón Calcular
@@ -2261,6 +2260,9 @@ try:
         });
         </script>
         """, unsafe_allow_html=True)
+            else:
+                # Mostrar mensaje cuando hay bono seleccionado pero no se ha calculado
+                st.info("👆 Completa los datos y presiona 'Calcular' para ver los resultados")
             
     else:
         # Mostrar los 4 gráficos de TradingView cuando no se ha calculado
