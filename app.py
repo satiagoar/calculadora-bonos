@@ -1817,8 +1817,6 @@ try:
                     format="DD/MM/YYYY",
                     key="fecha_liquidacion_main"
                 )
-                # Guardar en session_state para uso en la sección de cálculo
-                st.session_state.fecha_liquidacion_main = fecha_liquidacion
                 
                 # Usar solo la key sin value, Streamlit manejará el valor automáticamente desde session_state
                 precio_dirty = st.number_input(
@@ -1830,8 +1828,6 @@ try:
                     key=precio_key_main,
                     help="💡 El precio se obtiene automáticamente desde BYMA (si está disponible). Puedes modificarlo manualmente si lo deseas."
                 )
-                # Guardar en session_state para uso en la sección de cálculo
-                st.session_state.precio_dirty_main = precio_dirty
         
                 # Botones de cálculo y volver
                 col_calc, col_volver = st.columns(2)
