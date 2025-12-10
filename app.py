@@ -1306,8 +1306,158 @@ try:
         col_mercados_left, col_mercados_right = st.columns([1, 1])
         
         with col_mercados_left:
-            # Columna izquierda vacía por ahora
-            pass
+            # Mostrar los gráficos de TradingView (misma información que página inicial)
+            # Crear 2 filas de 2 columnas cada una
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # S&P 500
+                sp500_html = """
+                    <div class="tradingview-widget-container" style="height: 300px; width: 100%;">
+                        <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
+                        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                        {
+                        "symbol": "SPX500",
+                        "width": "100%",
+                        "height": "300",
+                        "locale": "es",
+                        "dateRange": "1D",
+                        "colorTheme": "light",
+                        "isTransparent": true,
+                        "autosize": false,
+                        "largeChartUrl": "",
+                        "hideTopToolbar": true,
+                        "hideLegend": false,
+                        "saveImage": false
+                        }
+                        </script>
+                    </div>
+                """
+                st.components.v1.html(sp500_html, height=300)
+                
+            with col2:
+                # IMV Merval
+                imv_html = """
+                <div class="tradingview-widget-container" style="height: 300px; width: 100%;">
+                    <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                    {
+                    "symbol": "IMV",
+                    "width": "100%",
+                    "height": "300",
+                    "locale": "es",
+                    "dateRange": "1D",
+                    "colorTheme": "light",
+                    "isTransparent": true,
+                    "autosize": false,
+                    "largeChartUrl": "",
+                    "hideTopToolbar": true,
+                    "hideLegend": false,
+                    "saveImage": false
+                    }
+                    </script>
+                </div>
+                """
+                st.components.v1.html(imv_html, height=300)
+            
+            # Espaciado reducido antes de la tabla de datos de mercado
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Construir lista de bonos soberanos con ticker válido
+            bonos_soberano = []
+            
+            for bono in bonos:
+                ticker = bono.get('ticker', '').strip()
+                tipo_bono = bono.get('tipo_bono', '').strip()
+                
+                if ticker and ticker != '' and ticker != 'SPX500':  # Excluir default y vacíos
+                    # Agrupar por tipo de bono (case-insensitive y flexible)
+                    tipo_lower = tipo_bono.lower()
+                    
+                    # Solo incluir bonos soberanos
+                    if "soberano" in tipo_lower:
+                        symbol_entry = {
+                            "name": ticker,
+                            "displayName": bono.get('nombre', ticker)
+                        }
+                        bonos_soberano.append(symbol_entry)
+            
+            # Ordenar lista de bonos soberanos alfabéticamente por displayName
+            bonos_soberano.sort(key=lambda x: x['displayName'])
+            
+            # Construir JSON de símbolos solo con bonos soberanos
+            bonos_groups = []
+            
+            if bonos_soberano:
+                bonos_groups.append({
+                    "name": "Bonos Soberanos",
+                    "symbols": bonos_soberano
+                })
+            
+            # Construir JSON de símbolos
+            symbols_groups = [
+                    {
+                        "name": "Indices",
+                        "symbols": [
+                        {"name": "SPX500", "displayName": "S&P 500"},
+                        {"name": "NASDAQ:IXIC", "displayName": "NASDAQ"},
+                        {"name": "BMFBOVESPA:IBOV", "displayName": "Bovespa"},
+                        {"name": "IMV", "displayName": "Merval"}
+                    ]
+                }
+            ]
+            
+            # Agregar grupos de bonos
+            symbols_groups.extend(bonos_groups)
+            
+            # Agregar Monedas y Commodities
+            symbols_groups.append({
+                        "name": "Monedas",
+                        "symbols": [
+                    {"name": "FX_IDC:USDARS", "displayName": "USD/ARS"},
+                    {"name": "FX_IDC:USDEUR", "displayName": "USD/EUR"},
+                    {"name": "FX_IDC:USDGBP", "displayName": "USD/GBP"},
+                    {"name": "FX_IDC:USDJPY", "displayName": "USD/JPY"}
+                ]
+            })
+            
+            symbols_groups.append({
+                        "name": "Commodities",
+                        "symbols": [
+                    {"name": "TVC:USOIL", "displayName": "Petróleo WTI"},
+                    {"name": "TVC:UKOIL", "displayName": "Petróleo Brent"},
+                    {"name": "TVC:GOLD", "displayName": "Oro"},
+                    {"name": "TVC:SILVER", "displayName": "Plata"}
+                ]
+            })
+            
+            # Widget Market Data - Ancho completo
+            market_data_html = f"""
+            <div class="tradingview-widget-container" style="height: 800px; width: 100%; font-size: 8px; margin-top: 0;">
+                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 8px;"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
+                {{
+                "colorTheme": "light",
+                "locale": "es",
+                "largeChartUrl": "",
+                "isTransparent": true,
+                "showSymbolLogo": false,
+                "backgroundColor": "transparent",
+                "support_host": "https://www.tradingview.com",
+                "width": "100%",
+                "height": "800",
+                "symbolsGroups": {json.dumps(symbols_groups, ensure_ascii=False)}
+                }}
+                </script>
+            </div>
+            """
+            st.components.v1.html(market_data_html, height=800)
+            
+            # Botón para volver (debajo de las tablas)
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("Volver", type="secondary", use_container_width=True, key="mercados_volver_left"):
+                st.session_state.mercados_activo = False
+                st.rerun()
         
         with col_mercados_right:
             # Mostrar los gráficos de TradingView (misma información que página inicial)
@@ -1459,7 +1609,7 @@ try:
             
             # Botón para volver (debajo de las tablas)
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Volver", type="secondary", use_container_width=True, key="mercados_volver"):
+            if st.button("Volver", type="secondary", use_container_width=True, key="mercados_volver_right"):
                 st.session_state.mercados_activo = False
                 st.rerun()
     
