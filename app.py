@@ -1502,16 +1502,39 @@ try:
                         }
                         bonos_soberano.append(symbol_entry)
             
-            # Ordenar lista de bonos soberanos alfabéticamente por displayName
-            bonos_soberano.sort(key=lambda x: x['displayName'])
+            # Filtrar y reordenar bonos soberanos según especificaciones
+            # Eliminar AL41, GD41, GD46
+            bonos_soberano = [b for b in bonos_soberano if b['name'] not in ['AL41', 'GD41', 'GD46']]
+            
+            # Separar AL35, AE38 y el resto
+            al35_entry = next((b for b in bonos_soberano if b['name'] == 'AL35'), None)
+            ae38_entry = next((b for b in bonos_soberano if b['name'] == 'AE38'), None)
+            otros_bonos = [b for b in bonos_soberano if b['name'] not in ['AL35', 'AE38']]
+            
+            # Reconstruir lista: AL35, AE38, luego el resto ordenado alfabéticamente
+            bonos_soberano_ordenados = []
+            if al35_entry:
+                bonos_soberano_ordenados.append(al35_entry)
+            if ae38_entry:
+                bonos_soberano_ordenados.append(ae38_entry)
+            
+            # Ordenar el resto alfabéticamente por displayName
+            otros_bonos.sort(key=lambda x: x['displayName'])
+            bonos_soberano_ordenados.extend(otros_bonos)
+            
+            # Agregar ART30J6 (T30J6 argentino) al final
+            bonos_soberano_ordenados.append({
+                "name": "ART30J6",
+                "displayName": "T30J6 argentino"
+            })
             
             # Construir JSON de símbolos solo con bonos soberanos
             symbols_groups = []
             
-            if bonos_soberano:
+            if bonos_soberano_ordenados:
                 symbols_groups.append({
                     "name": "Bonos Soberanos",
-                    "symbols": bonos_soberano
+                    "symbols": bonos_soberano_ordenados
                 })
             
             # Widget Market Data - Ancho completo
@@ -1535,12 +1558,6 @@ try:
             </div>
             """
             st.components.v1.html(market_data_html, height=800)
-            
-            # Botón para volver (debajo de las tablas)
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Volver", type="secondary", use_container_width=True, key="mercados_volver_right"):
-                st.session_state.mercados_activo = False
-                st.rerun()
     
     # S2 (Calculadora de Flujos) - Prioridad alta (solo si mercados no está activo)
     elif st.session_state.get('flujos_bono_seleccionado') and not st.session_state.get('mercados_activo', False):
