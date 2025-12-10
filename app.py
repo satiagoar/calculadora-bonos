@@ -453,6 +453,22 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
     
+    /* Botones secondary (azul) */
+    .stButton > button[kind="secondary"] {
+        background-color: #6b7280 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 600 !important;
+    }
+    
+    .stButton > button[kind="secondary"]:hover {
+        background-color: #4b5563 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3) !important;
+    }
+    
     /* Ocultar botones +/- del number input */
     .stNumberInput button {
         display: none !important;
@@ -1353,19 +1369,6 @@ try:
             st.markdown("---")
             
             # Botón para calcular flujos
-            st.markdown("""
-            <style>
-            .stButton > button[kind="secondary"] {
-                background-color: #6b7280 !important;
-                color: white !important;
-                border: none !important;
-            }
-            .stButton > button[kind="secondary"]:hover {
-                background-color: #4b5563 !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
             if st.button("Calcular Flujos", type="secondary", use_container_width=True):
                 st.session_state.flujos_calcular = True
             
@@ -1888,15 +1891,15 @@ try:
                 from datetime import date
                 cupon_vigente_actual_info = encontrar_cupon_vigente(date.today(), bono_actual_main['flujos'])
                 
-                # Información del bono con espaciado reducido
+                # Información del bono con mejor formato y mayor interlineado
                 st.markdown(f"""
-                <div style="line-height: 1.1; margin: 0; padding: 0;">
-                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Nombre:</strong> {bono_actual_main['nombre']}</p>
-                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
-                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
-                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Periodicidad:</strong> {periodicidad_texto_info}</p>
-                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
-                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Ticker:</strong> {bono_actual_main['ticker']}</p>
+                <div style="line-height: 1.8; margin: 0.5rem 0; padding: 0;">
+                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Nombre:</strong> {bono_actual_main['nombre']}</p>
+                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
+                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
+                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Periodicidad:</strong> {periodicidad_texto_info}</p>
+                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
+                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Ticker:</strong> {bono_actual_main['ticker']}</p>
                 </div>
                 """, unsafe_allow_html=True)
         
