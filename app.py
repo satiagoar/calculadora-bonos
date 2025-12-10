@@ -2260,7 +2260,6 @@ try:
                 });
                 </script>
                 """, unsafe_allow_html=True)
-            
             else:
                 # Mostrar mensaje cuando hay bono seleccionado pero no se ha calculado
                 st.info("👆 Completa los datos y presiona 'Calcular' para ver los resultados")
