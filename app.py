@@ -695,6 +695,31 @@ st.markdown("""
     div[data-testid="stIFrame"] iframe[src*="market-overview"] {
         font-size: 8px !important;
     }
+    
+    /* Hacer sidebar fijo y ocultar botón de toggle */
+    [data-testid="stSidebar"] {
+        position: fixed !important;
+        visibility: visible !important;
+        display: block !important;
+    }
+    
+    /* Ocultar botón de toggle del sidebar */
+    button[aria-label*="sidebar"],
+    button[aria-label*="menu"],
+    [data-testid="stSidebar"] button[aria-label*="Close"],
+    [data-testid="stSidebar"] button[aria-label*="Open"],
+    [data-testid="stSidebar"] button[aria-label*="Cerrar"],
+    [data-testid="stSidebar"] button[aria-label*="Abrir"],
+    header button,
+    [data-testid="stHeader"] button {
+        display: none !important;
+    }
+    
+    /* Asegurar que el sidebar siempre esté visible */
+    [data-testid="stSidebar"] {
+        min-width: 21rem !important;
+        width: 21rem !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
