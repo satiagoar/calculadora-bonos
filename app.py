@@ -1321,7 +1321,7 @@ try:
                         "width": "100%",
                         "height": "300",
                         "locale": "es",
-                        "dateRange": "12M",
+                        "dateRange": "1D",
                         "colorTheme": "light",
                         "isTransparent": true,
                         "autosize": false,
@@ -1346,7 +1346,7 @@ try:
                     "width": "100%",
                     "height": "300",
                     "locale": "es",
-                    "dateRange": "12M",
+                    "dateRange": "1D",
                     "colorTheme": "light",
                     "isTransparent": true,
                     "autosize": false,
@@ -1363,70 +1363,35 @@ try:
             # Espaciado reducido antes de la tabla de datos de mercado
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # Construir listas de bonos agrupadas por tipo con ticker válido
+            # Construir lista de bonos soberanos con ticker válido
             bonos_soberano = []
-            bonos_corporativo_ley_arg = []
-            bonos_corporativo_ley_argentina = []
-            bonos_otros = []
             
             for bono in bonos:
                 ticker = bono.get('ticker', '').strip()
                 tipo_bono = bono.get('tipo_bono', '').strip()
                 
                 if ticker and ticker != '' and ticker != 'SPX500':  # Excluir default y vacíos
-                    symbol_entry = {
-                        "name": ticker,
-                        "displayName": bono.get('nombre', ticker)
-                    }
-                    
                     # Agrupar por tipo de bono (case-insensitive y flexible)
                     tipo_lower = tipo_bono.lower()
                     
-                    if "soberano" in tipo_lower and "usd" in tipo_lower:
+                    # Solo incluir bonos soberanos
+                    if "soberano" in tipo_lower:
+                        symbol_entry = {
+                            "name": ticker,
+                            "displayName": bono.get('nombre', ticker)
+                        }
                         bonos_soberano.append(symbol_entry)
-                    elif "corporativo" in tipo_lower and "ley" in tipo_lower and "arg" in tipo_lower and "argentina" not in tipo_lower:
-                        # Corporativo Ley Arg (sin "Argentina")
-                        bonos_corporativo_ley_arg.append(symbol_entry)
-                    elif "corporativo" in tipo_lower and "ley" in tipo_lower and "argentina" in tipo_lower:
-                        # Corporativo Ley Argentina
-                        bonos_corporativo_ley_argentina.append(symbol_entry)
-                    elif "soberano" in tipo_lower:
-                        # Cualquier otro tipo soberano
-                        bonos_soberano.append(symbol_entry)
-                    else:
-                        bonos_otros.append(symbol_entry)
             
-            # Ordenar cada lista de bonos alfabéticamente por displayName
+            # Ordenar lista de bonos soberanos alfabéticamente por displayName
             bonos_soberano.sort(key=lambda x: x['displayName'])
-            bonos_corporativo_ley_arg.sort(key=lambda x: x['displayName'])
-            bonos_corporativo_ley_argentina.sort(key=lambda x: x['displayName'])
-            bonos_otros.sort(key=lambda x: x['displayName'])
             
-            # Construir JSON de símbolos con bonos segmentados
+            # Construir JSON de símbolos solo con bonos soberanos
             bonos_groups = []
             
             if bonos_soberano:
                 bonos_groups.append({
                     "name": "Bonos Soberanos",
                     "symbols": bonos_soberano
-                })
-            
-            if bonos_corporativo_ley_arg:
-                bonos_groups.append({
-                    "name": "Corporativo Ley Arg",
-                    "symbols": bonos_corporativo_ley_arg
-                })
-            
-            if bonos_corporativo_ley_argentina:
-                bonos_groups.append({
-                    "name": "Corporativo Ley Argentina",
-                    "symbols": bonos_corporativo_ley_argentina
-                })
-            
-            if bonos_otros:
-                bonos_groups.append({
-                    "name": "Corporativos Ley NY",
-                    "symbols": bonos_otros
                 })
             
             # Construir JSON de símbolos
