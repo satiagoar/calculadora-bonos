@@ -1557,54 +1557,9 @@ try:
                         }
                         bonos_soberano.append(symbol_entry)
             
-            # Filtrar y reordenar bonos soberanos según especificaciones
-            # Eliminar AL41, GD41, GD46, AE38 (por ticker o por nombre)
+            # Filtrar bonos: eliminar AL41, GD41, GD46, AE38
             bonos_soberano = [b for b in bonos_soberano if b['name'] not in ['AL41', 'GD41', 'GD46', 'AE38'] and 'AL41' not in b['name'] and 'GD41' not in b['name'] and 'GD46' not in b['name'] and 'AE38' not in b['name']]
-            # También filtrar por displayName por si el ticker tiene formato diferente
             bonos_soberano = [b for b in bonos_soberano if 'AL41' not in b.get('displayName', '') and 'GD41' not in b.get('displayName', '') and 'GD46' not in b.get('displayName', '') and 'AE38' not in b.get('displayName', '')]
-            
-            # Función para determinar el grupo de un bono
-            def obtener_grupo_bono(bono):
-                ticker = bono['name'].upper()
-                # Limpiar prefijo de exchange si existe
-                if ':' in ticker:
-                    ticker = ticker.split(':')[1]
-                
-                # Grupo 1: AL29 hasta GD38 (bonos que empiezan con AL, AE, o GD hasta GD38)
-                if ticker.startswith('AL') or ticker.startswith('AE'):
-                    return 1
-                elif ticker.startswith('GD'):
-                    # Verificar si es GD38 o menor (comparar números)
-                    try:
-                        num = int(ticker[2:])
-                        if num <= 38:
-                            return 1
-                    except:
-                        pass
-                
-                # Grupo 2: T30E6 hasta TZX28 (bonos que empiezan con T y están en el rango)
-                if ticker.startswith('T'):
-                    # Lista de bonos específicos del grupo 2
-                    bonos_grupo2 = ['T30E6', 'T30J6', 'T15E7', 'TY30P', 'TZXM6', 'TZXD6', 'TZXD7', 'TZX28']
-                    if any(bono_ticker in ticker for bono_ticker in bonos_grupo2):
-                        return 2
-                
-                # Resto de bonos
-                return 3
-            
-            # Separar bonos en grupos
-            grupo1_bonos = []  # AL29 hasta GD38
-            grupo2_bonos = []  # T30E6 hasta TZX28
-            grupo3_bonos = []  # Resto
-            
-            for bono in bonos_soberano:
-                grupo = obtener_grupo_bono(bono)
-                if grupo == 1:
-                    grupo1_bonos.append(bono)
-                elif grupo == 2:
-                    grupo2_bonos.append(bono)
-                else:
-                    grupo3_bonos.append(bono)
             
             # Función auxiliar para normalizar ticker
             def normalizar_ticker(ticker_str):
@@ -1613,52 +1568,44 @@ try:
                     return ticker_str.split(':')[1].upper()
                 return ticker_str.upper()
             
-            # Separar los bonos específicos del resto del grupo 1
-            # Orden requerido: AL29, AL30, AL35, GD29, GD30, GD35, GD38
-            al29_entry = None
-            al30_entry = None
-            al35_entry = None
-            gd29_entry = None
-            gd30_entry = None
-            gd35_entry = None
-            gd38_entry = None
+            # Definir orden de prioridad para los bonos específicos
+            orden_prioridad = {
+                'AL29': 1,
+                'AL30': 2,
+                'AL35': 3,
+                'GD29': 4,
+                'GD30': 5,
+                'GD35': 6,
+                'GD38': 7
+            }
             
-            # Función auxiliar para verificar si un bono coincide con un ticker específico
-            def coincide_ticker(bono, ticker_buscado):
-                """Verifica si un bono coincide con un ticker específico"""
+            # Bonos T específicos que van después
+            bonos_t_especificos = ['T30E6', 'T30J6', 'T15E7', 'TY30P', 'TZXM6', 'TZXD6', 'TZXD7', 'TZX28']
+            inicio_t = 100  # Prioridad base para bonos T específicos
+            
+            def obtener_prioridad(bono):
+                """Obtiene la prioridad de ordenamiento de un bono"""
                 ticker_norm = normalizar_ticker(bono['name'])
                 display_norm = bono.get('displayName', '').upper()
-                # Buscar el ticker como parte del ticker normalizado o del displayName
-                # Usar regex o verificación más precisa
-                return (ticker_buscado in ticker_norm or ticker_buscado in display_norm)
+                
+                # Buscar en orden de prioridad
+                for ticker_prioritario, prioridad in orden_prioridad.items():
+                    if ticker_prioritario in ticker_norm or ticker_prioritario in display_norm:
+                        return (prioridad, '')  # Tupla con prioridad y string vacío para ordenamiento estable
+                
+                # Buscar en bonos T específicos
+                for i, ticker_t in enumerate(bonos_t_especificos):
+                    if ticker_t in ticker_norm or ticker_t in display_norm:
+                        return (inicio_t + i, '')  # Tupla con prioridad y string vacío
+                
+                # Resto de bonos: ordenar alfabéticamente después de los específicos
+                return (1000, bono.get('displayName', bono['name']))
             
-            for b in grupo1_bonos:
-                # Usar if separados para que cada bono pueda ser encontrado independientemente
-                if coincide_ticker(b, 'AL29') and al29_entry is None:
-                    al29_entry = b
-                if coincide_ticker(b, 'AL30') and al30_entry is None:
-                    al30_entry = b
-                if coincide_ticker(b, 'AL35') and al35_entry is None:
-                    al35_entry = b
-                if coincide_ticker(b, 'GD29') and gd29_entry is None:
-                    gd29_entry = b
-                if coincide_ticker(b, 'GD30') and gd30_entry is None:
-                    gd30_entry = b
-                if coincide_ticker(b, 'GD35') and gd35_entry is None:
-                    gd35_entry = b
-                if coincide_ticker(b, 'GD38') and gd38_entry is None:
-                    gd38_entry = b
+            # Ordenar la lista completa según prioridad
+            bonos_soberano_ordenados = sorted(bonos_soberano, key=obtener_prioridad)
             
-            # Resto del grupo 1 (sin los bonos específicos)
-            grupo1_resto = [b for b in grupo1_bonos if b not in [al29_entry, al30_entry, al35_entry, gd29_entry, gd30_entry, gd35_entry, gd38_entry] and b is not None]
-            grupo1_resto.sort(key=lambda x: x['displayName'])
-            
-            # Ordenar grupos 2 y 3 alfabéticamente
-            grupo2_bonos.sort(key=lambda x: x['displayName'])
-            grupo3_bonos.sort(key=lambda x: x['displayName'])
-            
-            # Agregar bonos específicos del grupo 2 en el orden solicitado
-            bonos_especificos_grupo2 = [
+            # Agregar bonos T específicos que no estén en la lista (si es necesario)
+            bonos_t_manuales = [
                 {"name": "BCBA:T30E6", "displayName": "T30E6"},
                 {"name": "BCBA:T30J6", "displayName": "T30J6"},
                 {"name": "BCBA:T15E7", "displayName": "T15E7"},
@@ -1669,40 +1616,21 @@ try:
                 {"name": "BCBA:TZX28", "displayName": "TZX28"}
             ]
             
-            # Reconstruir lista en el orden específico: AL29, AL30, AL35, GD29, GD30, GD35, GD38, luego resto
-            bonos_soberano_ordenados = []
-            
-            # Orden exacto de los bonos específicos
-            orden_bonos_especificos = [
-                ('AL29', al29_entry),
-                ('AL30', al30_entry),
-                ('AL35', al35_entry),
-                ('GD29', gd29_entry),
-                ('GD30', gd30_entry),
-                ('GD35', gd35_entry),
-                ('GD38', gd38_entry)
-            ]
-            
-            # Agregar bonos específicos en el orden correcto
-            for ticker_esperado, bono_entry in orden_bonos_especificos:
-                if bono_entry:
-                    bonos_soberano_ordenados.append(bono_entry)
-                else:
-                    # Si no se encontró, buscar en grupo1_resto
-                    for b in grupo1_resto[:]:  # Usar slice para evitar problemas al modificar durante iteración
-                        if coincide_ticker(b, ticker_esperado):
-                            bonos_soberano_ordenados.append(b)
-                            grupo1_resto.remove(b)
+            # Verificar si los bonos T ya están en la lista, si no, agregarlos
+            tickers_existentes = {normalizar_ticker(b['name']) for b in bonos_soberano_ordenados}
+            for bono_t in bonos_t_manuales:
+                ticker_t_norm = normalizar_ticker(bono_t['name'])
+                if ticker_t_norm not in tickers_existentes:
+                    # Insertar en la posición correcta según prioridad
+                    prioridad_t = obtener_prioridad(bono_t)
+                    insertado = False
+                    for i, b in enumerate(bonos_soberano_ordenados):
+                        if obtener_prioridad(b) > prioridad_t:
+                            bonos_soberano_ordenados.insert(i, bono_t)
+                            insertado = True
                             break
-            
-            # Resto del grupo 1
-            bonos_soberano_ordenados.extend(grupo1_resto)
-            
-            # Grupo 2 (bonos T específicos)
-            bonos_soberano_ordenados.extend(bonos_especificos_grupo2)
-            
-            # Resto (grupo 3)
-            bonos_soberano_ordenados.extend(grupo3_bonos)
+                    if not insertado:
+                        bonos_soberano_ordenados.append(bono_t)
             
             # Construir JSON de símbolos solo con bonos soberanos
             symbols_groups = []
