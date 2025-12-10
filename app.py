@@ -1421,30 +1421,47 @@ try:
                 }}
                 </script>
                 <script>
-                    setTimeout(function() {{
+                    function ocultarColumnaAperturaLeft() {{
                         var container = document.querySelector('.tradingview-widget-container-left');
-                        if (container) {{
-                            var iframe = container.querySelector('iframe');
-                            if (iframe) {{
-                                iframe.onload = function() {{
-                                    try {{
-                                        var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                                        var headers = iframeDoc.querySelectorAll('th');
-                                        headers.forEach(function(th, index) {{
-                                            if (th.textContent.includes('Apertura') || th.textContent.includes('Open')) {{
-                                                var colIndex = index + 1;
-                                                iframeDoc.querySelectorAll('th:nth-child(' + colIndex + '), td:nth-child(' + colIndex + ')').forEach(function(el) {{
-                                                    el.style.display = 'none';
-                                                }});
-                                            }}
-                                        }});
-                                    }} catch(e) {{
-                                        console.log('No se pudo acceder al iframe:', e);
-                                    }}
-                                }};
-                            }}
+                        if (!container) return;
+                        
+                        var iframe = container.querySelector('iframe');
+                        if (!iframe) {{
+                            setTimeout(ocultarColumnaAperturaLeft, 500);
+                            return;
                         }}
-                    }}, 2000);
+                        
+                        try {{
+                            var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                            if (!iframeDoc) {{
+                                setTimeout(ocultarColumnaAperturaLeft, 500);
+                                return;
+                            }}
+                            
+                            // Intentar ocultar columna Apertura (generalmente es la 3ra columna)
+                            var tables = iframeDoc.querySelectorAll('table');
+                            tables.forEach(function(table) {{
+                                var headers = table.querySelectorAll('th');
+                                headers.forEach(function(th, index) {{
+                                    var text = th.textContent || th.innerText || '';
+                                    if (text.includes('Apertura') || text.includes('Open') || text.includes('Abrir')) {{
+                                        var colIndex = index + 1;
+                                        table.querySelectorAll('th:nth-child(' + colIndex + '), td:nth-child(' + colIndex + ')').forEach(function(el) {{
+                                            el.style.display = 'none';
+                                        }});
+                                    }}
+                                }});
+                            }});
+                        }} catch(e) {{
+                            // No se puede acceder al iframe por CORS - esto es normal
+                            console.log('No se puede acceder al contenido del iframe de TradingView por políticas de seguridad del navegador');
+                        }}
+                    }}
+                    
+                    // Intentar múltiples veces después de que se cargue el iframe
+                    setTimeout(ocultarColumnaAperturaLeft, 1000);
+                    setTimeout(ocultarColumnaAperturaLeft, 2000);
+                    setTimeout(ocultarColumnaAperturaLeft, 3000);
                 </script>
             </div>
             """
@@ -1582,8 +1599,18 @@ try:
                 else:
                     grupo3_bonos.append(bono)
             
-            # Ordenar cada grupo alfabéticamente por displayName
-            grupo1_bonos.sort(key=lambda x: x['displayName'])
+            # Separar AL35 y los GD específicos del resto del grupo 1
+            al35_entry = next((b for b in grupo1_bonos if 'AL35' in b['name'].upper() or 'AL35' in b.get('displayName', '').upper()), None)
+            gd29_entry = next((b for b in grupo1_bonos if 'GD29' in b['name'].upper() or 'GD29' in b.get('displayName', '').upper()), None)
+            gd30_entry = next((b for b in grupo1_bonos if 'GD30' in b['name'].upper() or 'GD30' in b.get('displayName', '').upper()), None)
+            gd35_entry = next((b for b in grupo1_bonos if 'GD35' in b['name'].upper() or 'GD35' in b.get('displayName', '').upper()), None)
+            gd38_entry = next((b for b in grupo1_bonos if 'GD38' in b['name'].upper() or 'GD38' in b.get('displayName', '').upper()), None)
+            
+            # Resto del grupo 1 (sin AL35 y los GD específicos)
+            grupo1_resto = [b for b in grupo1_bonos if b != al35_entry and b != gd29_entry and b != gd30_entry and b != gd35_entry and b != gd38_entry]
+            grupo1_resto.sort(key=lambda x: x['displayName'])
+            
+            # Ordenar grupos 2 y 3 alfabéticamente
             grupo2_bonos.sort(key=lambda x: x['displayName'])
             grupo3_bonos.sort(key=lambda x: x['displayName'])
             
@@ -1599,9 +1626,19 @@ try:
                 {"name": "BCBA:TZX28", "displayName": "TZX28"}
             ]
             
-            # Reconstruir lista: Grupo 1 (AL29-GD38), luego Grupo 2 (T30E6-TZX28), luego resto
+            # Reconstruir lista: AL35, luego GD29, GD30, GD35, GD38, luego resto grupo 1, luego Grupo 2, luego resto
             bonos_soberano_ordenados = []
-            bonos_soberano_ordenados.extend(grupo1_bonos)
+            if al35_entry:
+                bonos_soberano_ordenados.append(al35_entry)
+            if gd29_entry:
+                bonos_soberano_ordenados.append(gd29_entry)
+            if gd30_entry:
+                bonos_soberano_ordenados.append(gd30_entry)
+            if gd35_entry:
+                bonos_soberano_ordenados.append(gd35_entry)
+            if gd38_entry:
+                bonos_soberano_ordenados.append(gd38_entry)
+            bonos_soberano_ordenados.extend(grupo1_resto)
             bonos_soberano_ordenados.extend(bonos_especificos_grupo2)
             bonos_soberano_ordenados.extend(grupo3_bonos)
             
@@ -1638,30 +1675,47 @@ try:
                 }}
                 </script>
                 <script>
-                    setTimeout(function() {{
+                    function ocultarColumnaApertura() {{
                         var container = document.querySelector('.tradingview-widget-container-right');
-                        if (container) {{
-                            var iframe = container.querySelector('iframe');
-                            if (iframe) {{
-                                iframe.onload = function() {{
-                                    try {{
-                                        var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                                        var headers = iframeDoc.querySelectorAll('th');
-                                        headers.forEach(function(th, index) {{
-                                            if (th.textContent.includes('Apertura') || th.textContent.includes('Open')) {{
-                                                var colIndex = index + 1;
-                                                iframeDoc.querySelectorAll('th:nth-child(' + colIndex + '), td:nth-child(' + colIndex + ')').forEach(function(el) {{
-                                                    el.style.display = 'none';
-                                                }});
-                                            }}
-                                        }});
-                                    }} catch(e) {{
-                                        console.log('No se pudo acceder al iframe:', e);
-                                    }}
-                                }};
-                            }}
+                        if (!container) return;
+                        
+                        var iframe = container.querySelector('iframe');
+                        if (!iframe) {{
+                            setTimeout(ocultarColumnaApertura, 500);
+                            return;
                         }}
-                    }}, 2000);
+                        
+                        try {{
+                            var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                            if (!iframeDoc) {{
+                                setTimeout(ocultarColumnaApertura, 500);
+                                return;
+                            }}
+                            
+                            // Intentar ocultar columna Apertura (generalmente es la 3ra columna)
+                            var tables = iframeDoc.querySelectorAll('table');
+                            tables.forEach(function(table) {{
+                                var headers = table.querySelectorAll('th');
+                                headers.forEach(function(th, index) {{
+                                    var text = th.textContent || th.innerText || '';
+                                    if (text.includes('Apertura') || text.includes('Open') || text.includes('Abrir')) {{
+                                        var colIndex = index + 1;
+                                        table.querySelectorAll('th:nth-child(' + colIndex + '), td:nth-child(' + colIndex + ')').forEach(function(el) {{
+                                            el.style.display = 'none';
+                                        }});
+                                    }}
+                                }});
+                            }});
+                        }} catch(e) {{
+                            // No se puede acceder al iframe por CORS - esto es normal
+                            console.log('No se puede acceder al contenido del iframe de TradingView por políticas de seguridad del navegador');
+                        }}
+                    }}
+                    
+                    // Intentar múltiples veces después de que se cargue el iframe
+                    setTimeout(ocultarColumnaApertura, 1000);
+                    setTimeout(ocultarColumnaApertura, 2000);
+                    setTimeout(ocultarColumnaApertura, 3000);
                 </script>
             </div>
             """
