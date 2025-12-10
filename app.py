@@ -1155,118 +1155,9 @@ try:
             st.session_state.bono_seleccionado = bono_seleccionado
             st.session_state.calcular = False
         
-        # S1: Solo mostrar inputs si hay bono seleccionado Y NO hay bono en S2
+        # Variables para uso en la sección principal
         if bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado'):
-            # Encontrar el bono seleccionado
             bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == bono_seleccionado)
-            
-            # Crear una key única basada en el bono para que el input se resetee al cambiar de bono
-            precio_key = f"precio_dirty_{bono_seleccionado}"
-            
-            # Inicializar el precio en session_state si no existe
-            if precio_key not in st.session_state:
-                # Intentar obtener precio desde PyOBD (BYMA Data)
-                ticker = bono_actual.get('ticker', '').strip()
-                precio_byma = None
-                
-                if ticker and ticker != '' and ticker != 'SPX500':
-                    precio_byma = obtener_precio_byma(ticker)
-                
-                # Usar precio de BYMA si está disponible, sino usar 100.0 como default
-                if precio_byma and precio_byma > 0:
-                    st.session_state[precio_key] = precio_byma
-                else:
-                    st.session_state[precio_key] = 100.0
-            
-            # Inputs
-            fecha_liquidacion = st.date_input(
-                "Fecha de Liquidación",
-                value=get_next_business_day(),
-                format="DD/MM/YYYY"
-            )
-            
-            # Usar solo la key sin value, Streamlit manejará el valor automáticamente desde session_state
-            precio_dirty = st.number_input(
-                "Precio Dirty (base 100)",
-            min_value=0.0,
-            max_value=200.0,
-            step=0.01,
-                format="%.2f",
-                key=precio_key,
-                help="💡 El precio se obtiene automáticamente desde BYMA (si está disponible). Puedes modificarlo manualmente si lo deseas."
-        )
-    
-            # Botones de cálculo y volver
-            col_calc, col_volver = st.columns(2)
-            
-            with col_calc:
-                if st.button("Calcular", type="primary", use_container_width=True):
-                    st.session_state.calcular = True
-                calcular = st.session_state.calcular
-            
-            with col_volver:
-                if st.button("Volver", type="secondary", use_container_width=True):
-                    # Resetear TODAS las selecciones - estado inicial completo
-                    st.session_state.calcular = False
-                    st.session_state.bono_seleccionado = None
-                    st.session_state.tipo_seleccionado = "Seleccione un Tipo"
-                    
-                    # Limpiar keys de precio
-                    keys_to_delete = [key for key in st.session_state.keys() if key.startswith('precio_dirty_')]
-                    for key in keys_to_delete:
-                        del st.session_state[key]
-                    
-                    # Limpiar TODAS las selecciones de flujos
-                    st.session_state.flujos_bono_seleccionado = None
-                    st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
-                    st.session_state.flujos_calcular = False
-                    if 'flujos_bonos_seleccionados' in st.session_state:
-                        del st.session_state['flujos_bonos_seleccionados']
-                    
-                    # Incrementar claves únicas para forzar reset de selectbox
-                    st.session_state.tipo_selectbox_key += 1
-                    st.session_state.flujos_tipo_selectbox_key += 1
-                    
-                    # Limpiar TODOS los selectbox para forzar reset
-                    if 'bono_selectbox' in st.session_state:
-                        del st.session_state['bono_selectbox']
-                    if 'flujos_bono_selectbox' in st.session_state:
-                        del st.session_state['flujos_bono_selectbox']
-                    
-                    st.rerun()
-            
-            # Mostrar información del bono seleccionado en el sidebar (más cerca del botón)
-            st.markdown("---")
-            st.markdown("### Información del Bono")
-            
-            # Mapear periodicidad a texto
-            periodicidad_texto = {
-                1: "anual",
-                2: "semestral", 
-                3: "trimestral",
-                4: "trimestral",
-                6: "bimestral",
-                12: "mensual"
-            }.get(bono_actual['periodicidad'], f"{bono_actual['periodicidad']} veces al año")
-            
-            # Calcular fecha de vencimiento
-            fecha_vencimiento = encontrar_fecha_vencimiento(bono_actual['flujos'])
-            
-            # Calcular cupón vigente basado en la fecha actual
-            from datetime import date
-            cupon_vigente_actual = encontrar_cupon_vigente(date.today(), bono_actual['flujos'])
-            
-            # Información del bono con espaciado reducido
-            st.markdown(f"""
-            <div style="line-height: 1.1; margin: 0; padding: 0;">
-                <p style="margin: 0.1rem 0; padding: 0;"><strong>Nombre:</strong> {bono_actual['nombre']}</p>
-                <p style="margin: 0.1rem 0; padding: 0;"><strong>Vencimiento:</strong> {fecha_vencimiento.strftime('%d/%m/%Y') if fecha_vencimiento else 'N/A'}</p>
-                <p style="margin: 0.1rem 0; padding: 0;"><strong>Tasa de cupón:</strong> {cupon_vigente_actual:.2%}</p>
-                <p style="margin: 0.1rem 0; padding: 0;"><strong>Periodicidad:</strong> {periodicidad_texto}</p>
-                <p style="margin: 0.1rem 0; padding: 0;"><strong>Base de cálculo:</strong> {bono_actual['base_calculo']}</p>
-                <p style="margin: 0.1rem 0; padding: 0;"><strong>Ticker:</strong> {bono_actual['ticker']}</p>
-            </div>
-            """, unsafe_allow_html=True)
         else:
             st.session_state.calcular = False
             bono_actual = None
@@ -1891,6 +1782,10 @@ try:
         # Obtener el bono actual del session_state
         bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado)
         
+        # Obtener fecha_liquidacion y precio_dirty desde session_state
+        fecha_liquidacion = st.session_state.get('fecha_liquidacion_main', get_next_business_day())
+        precio_dirty = st.session_state.get('precio_dirty_main', 100.0)
+        
         # Convertir fecha_liquidacion a datetime para comparación
         fecha_liquidacion_dt = pd.to_datetime(fecha_liquidacion)
         
@@ -1989,39 +1884,124 @@ try:
         # Layout principal
         col1, col2 = st.columns([1, 2])
         
-        # COLUMNA IZQUIERDA - GRÁFICOS DE TRADINGVIEW
+        # COLUMNA IZQUIERDA - INPUTS Y BOTONES
         with col1:
-            # Espaciador para alinear el borde inferior del gráfico con el borde inferior de las tarjetas
-            # Las tarjetas tienen 3 filas (120px cada una) + gaps (1rem = 16px entre filas) = ~392px total
-            # El gráfico tiene 270px, así que necesitamos ~122px de espaciado superior
-            st.markdown("""
-            <div style="height: 122px;"></div>
-            """, unsafe_allow_html=True)
-            
-            # Gráfico del bono seleccionado
-            bono_html = f"""
-            <div class="tradingview-widget-container" style="height: 270px; width: 100%;">
-                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
-                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                {{
-                "symbol": "{bono_actual['ticker']}",
-                "width": "100%",
-                "height": "270",
-                "locale": "es",
-                "dateRange": "12M",
-                "colorTheme": "light",
-                "isTransparent": true,
-                "autosize": false,
-                "largeChartUrl": "",
-                "hideTopToolbar": true,
-                "hideLegend": false,
-                "saveImage": false
-                }}
-                </script>
-            </div>
-            """
-            
-            st.components.v1.html(bono_html, height=270)
+            # Solo mostrar inputs si hay bono seleccionado Y NO hay bono en S2
+            if st.session_state.bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado'):
+                # Encontrar el bono seleccionado
+                bono_actual_main = next(bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado)
+                
+                # Crear una key única basada en el bono para que el input se resetee al cambiar de bono
+                precio_key_main = f"precio_dirty_{st.session_state.bono_seleccionado}"
+                
+                # Inicializar el precio en session_state si no existe
+                if precio_key_main not in st.session_state:
+                    # Intentar obtener precio desde PyOBD (BYMA Data)
+                    ticker = bono_actual_main.get('ticker', '').strip()
+                    precio_byma = None
+                    
+                    if ticker and ticker != '' and ticker != 'SPX500':
+                        precio_byma = obtener_precio_byma(ticker)
+                    
+                    # Usar precio de BYMA si está disponible, sino usar 100.0 como default
+                    if precio_byma and precio_byma > 0:
+                        st.session_state[precio_key_main] = precio_byma
+                    else:
+                        st.session_state[precio_key_main] = 100.0
+                
+                # Inputs
+                fecha_liquidacion = st.date_input(
+                    "Fecha de Liquidación",
+                    value=get_next_business_day(),
+                    format="DD/MM/YYYY",
+                    key="fecha_liquidacion_main"
+                )
+                # Guardar en session_state para uso en la sección de cálculo
+                st.session_state.fecha_liquidacion_main = fecha_liquidacion
+                
+                # Usar solo la key sin value, Streamlit manejará el valor automáticamente desde session_state
+                precio_dirty = st.number_input(
+                    "Precio Dirty (base 100)",
+                    min_value=0.0,
+                    max_value=200.0,
+                    step=0.01,
+                    format="%.2f",
+                    key=precio_key_main,
+                    help="💡 El precio se obtiene automáticamente desde BYMA (si está disponible). Puedes modificarlo manualmente si lo deseas."
+                )
+                # Guardar en session_state para uso en la sección de cálculo
+                st.session_state.precio_dirty_main = precio_dirty
+        
+                # Botones de cálculo y volver
+                col_calc, col_volver = st.columns(2)
+                
+                with col_calc:
+                    if st.button("Calcular", type="primary", use_container_width=True, key="calcular_main"):
+                        st.session_state.calcular = True
+                
+                with col_volver:
+                    if st.button("Volver", type="secondary", use_container_width=True, key="volver_main"):
+                        # Resetear TODAS las selecciones - estado inicial completo
+                        st.session_state.calcular = False
+                        st.session_state.bono_seleccionado = None
+                        st.session_state.tipo_seleccionado = "Seleccione un Tipo"
+                        
+                        # Limpiar keys de precio
+                        keys_to_delete = [key for key in st.session_state.keys() if key.startswith('precio_dirty_')]
+                        for key in keys_to_delete:
+                            del st.session_state[key]
+                        
+                        # Limpiar TODAS las selecciones de flujos
+                        st.session_state.flujos_bono_seleccionado = None
+                        st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
+                        st.session_state.flujos_calcular = False
+                        if 'flujos_bonos_seleccionados' in st.session_state:
+                            del st.session_state['flujos_bonos_seleccionados']
+                        
+                        # Incrementar claves únicas para forzar reset de selectbox
+                        st.session_state.tipo_selectbox_key += 1
+                        st.session_state.flujos_tipo_selectbox_key += 1
+                        
+                        # Limpiar TODOS los selectbox para forzar reset
+                        if 'bono_selectbox' in st.session_state:
+                            del st.session_state['bono_selectbox']
+                        if 'flujos_bono_selectbox' in st.session_state:
+                            del st.session_state['flujos_bono_selectbox']
+                        
+                        st.rerun()
+                
+                # Mostrar información del bono seleccionado
+                st.markdown("---")
+                st.markdown("### Información del Bono")
+                
+                # Mapear periodicidad a texto
+                periodicidad_texto_info = {
+                    1: "anual",
+                    2: "semestral", 
+                    3: "trimestral",
+                    4: "trimestral",
+                    6: "bimestral",
+                    12: "mensual"
+                }.get(bono_actual_main['periodicidad'], f"{bono_actual_main['periodicidad']} veces al año")
+                
+                # Calcular fecha de vencimiento
+                fecha_vencimiento_info = encontrar_fecha_vencimiento(bono_actual_main['flujos'])
+                
+                # Calcular cupón vigente basado en la fecha actual
+                from datetime import date
+                cupon_vigente_actual_info = encontrar_cupon_vigente(date.today(), bono_actual_main['flujos'])
+                
+                # Información del bono con espaciado reducido
+                st.markdown(f"""
+                <div style="line-height: 1.1; margin: 0; padding: 0;">
+                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Nombre:</strong> {bono_actual_main['nombre']}</p>
+                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
+                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
+                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Periodicidad:</strong> {periodicidad_texto_info}</p>
+                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
+                    <p style="margin: 0.1rem 0; padding: 0;"><strong>Ticker:</strong> {bono_actual_main['ticker']}</p>
+                </div>
+                """, unsafe_allow_html=True)
         
         # COLUMNA DERECHA - RESULTADOS
         with col2:
