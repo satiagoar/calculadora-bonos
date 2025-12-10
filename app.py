@@ -1401,11 +1401,11 @@ try:
             market_data_html = f"""
             <style>
                 .tradingview-widget-container-left {{
-                    font-size: 9.2px !important;
+                    font-size: 11.04px !important;
                 }}
             </style>
-            <div class="tradingview-widget-container tradingview-widget-container-left" style="height: 800px; width: 100%; font-size: 9.2px; margin-top: 0;">
-                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 9.2px;"></div>
+            <div class="tradingview-widget-container tradingview-widget-container-left" style="height: 800px; width: 100%; font-size: 11.04px; margin-top: 0;">
+                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 11.04px;"></div>
                 <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
                 {{
                 "colorTheme": "light",
@@ -1544,22 +1544,29 @@ try:
             ae38_entry = next((b for b in bonos_soberano if b['name'] == 'AE38'), None)
             otros_bonos = [b for b in bonos_soberano if b['name'] not in ['AL35', 'AE38']]
             
-            # Reconstruir lista: AL35, AE38, luego el resto ordenado alfabéticamente
+            # Reconstruir lista: AL35, AE38, luego bonos específicos, luego el resto ordenado alfabéticamente
             bonos_soberano_ordenados = []
             if al35_entry:
                 bonos_soberano_ordenados.append(al35_entry)
             if ae38_entry:
                 bonos_soberano_ordenados.append(ae38_entry)
             
+            # Agregar bonos específicos en el orden solicitado
+            bonos_especificos = [
+                {"name": "BCBA:T30E6", "displayName": "T30E6"},
+                {"name": "BCBA:T30J6", "displayName": "T30J6"},
+                {"name": "BCBA:T15E7", "displayName": "T15E7"},
+                {"name": "BCBA:TY30P", "displayName": "TY30P"},
+                {"name": "BCBA:TZXM6", "displayName": "TZXM6"},
+                {"name": "BCBA:TZXD6", "displayName": "TZXD6"},
+                {"name": "BCBA:TZXD7", "displayName": "TZXD7"},
+                {"name": "BCBA:TZX28", "displayName": "TZX28"}
+            ]
+            bonos_soberano_ordenados.extend(bonos_especificos)
+            
             # Ordenar el resto alfabéticamente por displayName
             otros_bonos.sort(key=lambda x: x['displayName'])
             bonos_soberano_ordenados.extend(otros_bonos)
-            
-            # Agregar T30J6 al final
-            bonos_soberano_ordenados.append({
-                "name": "BCBA:T30J6",
-                "displayName": "T30J6"
-            })
             
             # Construir JSON de símbolos solo con bonos soberanos
             symbols_groups = []
@@ -1574,11 +1581,11 @@ try:
             market_data_html = f"""
             <style>
                 .tradingview-widget-container-right {{
-                    font-size: 9.2px !important;
+                    font-size: 11.04px !important;
                 }}
             </style>
-            <div class="tradingview-widget-container tradingview-widget-container-right" style="height: 800px; width: 100%; font-size: 9.2px; margin-top: 0;">
-                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 9.2px;"></div>
+            <div class="tradingview-widget-container tradingview-widget-container-right" style="height: 800px; width: 100%; font-size: 11.04px; margin-top: 0;">
+                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 11.04px;"></div>
                 <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
                 {{
                 "colorTheme": "light",
