@@ -1302,6 +1302,24 @@ try:
     
     # S3 (Mercados) - Prioridad más alta
     if st.session_state.get('mercados_activo', False):
+        # CSS para reducir espacio superior
+        st.markdown("""
+        <style>
+            .stColumn:first-child {
+                padding-top: 0 !important;
+                margin-top: 0 !important;
+            }
+            div[data-testid="column"]:first-child {
+                padding-top: 0 !important;
+                margin-top: 0 !important;
+            }
+            .element-container:first-child {
+                padding-top: 0 !important;
+                margin-top: 0 !important;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+        
         # Layout con dos columnas: izquierda vacía, derecha para gráficos
         col_mercados_left, col_mercados_right = st.columns([1, 1])
         
@@ -1313,7 +1331,7 @@ try:
             with col1:
                 # S&P 500
                 sp500_html = """
-                    <div class="tradingview-widget-container" style="height: 300px; width: 100%;">
+                    <div class="tradingview-widget-container" style="height: 300px; width: 100%; margin-top: -20px;">
                         <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
                         <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
                         {
@@ -1501,7 +1519,7 @@ try:
             with col1:
                 # AL30
                 al30_html = """
-                    <div class="tradingview-widget-container" style="height: 300px; width: 100%;">
+                    <div class="tradingview-widget-container" style="height: 300px; width: 100%; margin-top: -20px;">
                         <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
                         <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
                         {
