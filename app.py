@@ -1991,8 +1991,12 @@ try:
         
         # COLUMNA IZQUIERDA - GRÁFICOS DE TRADINGVIEW
         with col1:
-            # Espaciado para alinear con las tarjetas
-            st.markdown("<br>", unsafe_allow_html=True)
+            # Espaciador para alinear el borde inferior del gráfico con el borde inferior de las tarjetas
+            # Las tarjetas tienen 3 filas (120px cada una) + gaps (1rem = 16px entre filas) = ~392px total
+            # El gráfico tiene 270px, así que necesitamos ~122px de espaciado superior
+            st.markdown("""
+            <div style="height: 122px;"></div>
+            """, unsafe_allow_html=True)
             
             # Gráfico del bono seleccionado
             bono_html = f"""
