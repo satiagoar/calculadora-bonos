@@ -1522,10 +1522,10 @@ try:
             otros_bonos.sort(key=lambda x: x['displayName'])
             bonos_soberano_ordenados.extend(otros_bonos)
             
-            # Agregar ART30J6 (T30J6 argentino) al final
+            # Agregar T30J6 al final
             bonos_soberano_ordenados.append({
-                "name": "ART30J6",
-                "displayName": "T30J6 argentino"
+                "name": "BCBA:T30J6",
+                "displayName": "T30J6"
             })
             
             # Construir JSON de símbolos solo con bonos soberanos
