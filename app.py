@@ -1876,38 +1876,41 @@ try:
                             
                             st.rerun()
                 
-                # Mostrar información del bono seleccionado
-                st.markdown("---")
-                st.markdown("### Información del Bono")
+                # Mostrar información del bono seleccionado con el mismo centrado que los inputs
+                col_info_left, col_info_center, col_info_right = st.columns([0.15, 0.7, 0.15])
                 
-                # Mapear periodicidad a texto
-                periodicidad_texto_info = {
-                    1: "anual",
-                    2: "semestral", 
-                    3: "trimestral",
-                    4: "trimestral",
-                    6: "bimestral",
-                    12: "mensual"
-                }.get(bono_actual_main['periodicidad'], f"{bono_actual_main['periodicidad']} veces al año")
-                
-                # Calcular fecha de vencimiento
-                fecha_vencimiento_info = encontrar_fecha_vencimiento(bono_actual_main['flujos'])
-                
-                # Calcular cupón vigente basado en la fecha actual
-                from datetime import date
-                cupon_vigente_actual_info = encontrar_cupon_vigente(date.today(), bono_actual_main['flujos'])
-                
-                # Información del bono con mejor formato y mayor interlineado
-                st.markdown(f"""
-                <div style="line-height: 1.8; margin: 0.5rem 0; padding: 0;">
-                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Nombre:</strong> {bono_actual_main['nombre']}</p>
-                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
-                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
-                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Periodicidad:</strong> {periodicidad_texto_info}</p>
-                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
-                    <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Ticker:</strong> {bono_actual_main['ticker']}</p>
-                </div>
-                """, unsafe_allow_html=True)
+                with col_info_center:
+                    st.markdown("---")
+                    st.markdown("### Información del Bono")
+                    
+                    # Mapear periodicidad a texto
+                    periodicidad_texto_info = {
+                        1: "anual",
+                        2: "semestral", 
+                        3: "trimestral",
+                        4: "trimestral",
+                        6: "bimestral",
+                        12: "mensual"
+                    }.get(bono_actual_main['periodicidad'], f"{bono_actual_main['periodicidad']} veces al año")
+                    
+                    # Calcular fecha de vencimiento
+                    fecha_vencimiento_info = encontrar_fecha_vencimiento(bono_actual_main['flujos'])
+                    
+                    # Calcular cupón vigente basado en la fecha actual
+                    from datetime import date
+                    cupon_vigente_actual_info = encontrar_cupon_vigente(date.today(), bono_actual_main['flujos'])
+                    
+                    # Información del bono con mejor formato y mayor interlineado
+                    st.markdown(f"""
+                    <div style="line-height: 1.8; margin: 0.5rem 0; padding: 0;">
+                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Nombre:</strong> {bono_actual_main['nombre']}</p>
+                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
+                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
+                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Periodicidad:</strong> {periodicidad_texto_info}</p>
+                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
+                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Ticker:</strong> {bono_actual_main['ticker']}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
         
         # COLUMNA DERECHA - RESULTADOS (solo si se presionó Calcular)
         with col2:
