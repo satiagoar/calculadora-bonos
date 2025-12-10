@@ -1302,10 +1302,14 @@ try:
     
     # S3 (Mercados) - Prioridad más alta
     if st.session_state.get('mercados_activo', False):
-        # Layout con dos columnas: izquierda para gráficos, derecha vacía
+        # Layout con dos columnas: izquierda vacía, derecha para gráficos
         col_mercados_left, col_mercados_right = st.columns([1, 1])
         
         with col_mercados_left:
+            # Columna izquierda vacía por ahora
+            pass
+        
+        with col_mercados_right:
             # Mostrar los gráficos de TradingView (misma información que página inicial)
             # Crear 2 filas de 2 columnas cada una
             col1, col2 = st.columns(2)
@@ -1452,9 +1456,8 @@ try:
             </div>
             """
             st.components.v1.html(market_data_html, height=800)
-        
-        with col_mercados_right:
-            # Botón para volver
+            
+            # Botón para volver (debajo de las tablas)
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Volver", type="secondary", use_container_width=True, key="mercados_volver"):
                 st.session_state.mercados_activo = False
