@@ -1613,7 +1613,10 @@ try:
                     return ticker_str.split(':')[1].upper()
                 return ticker_str.upper()
             
-            # Separar AL35 y los GD específicos del resto del grupo 1
+            # Separar los bonos específicos del resto del grupo 1
+            # Orden requerido: AL29, AL30, AL35, GD29, GD30, GD35, GD38
+            al29_entry = None
+            al30_entry = None
             al35_entry = None
             gd29_entry = None
             gd30_entry = None
@@ -1624,7 +1627,11 @@ try:
                 ticker_norm = normalizar_ticker(b['name'])
                 display_norm = b.get('displayName', '').upper()
                 
-                if 'AL35' in ticker_norm or 'AL35' in display_norm:
+                if 'AL29' in ticker_norm or 'AL29' in display_norm:
+                    al29_entry = b
+                elif 'AL30' in ticker_norm or 'AL30' in display_norm:
+                    al30_entry = b
+                elif 'AL35' in ticker_norm or 'AL35' in display_norm:
                     al35_entry = b
                 elif 'GD29' in ticker_norm or 'GD29' in display_norm:
                     gd29_entry = b
@@ -1635,8 +1642,8 @@ try:
                 elif 'GD38' in ticker_norm or 'GD38' in display_norm:
                     gd38_entry = b
             
-            # Resto del grupo 1 (sin AL35 y los GD específicos)
-            grupo1_resto = [b for b in grupo1_bonos if b != al35_entry and b != gd29_entry and b != gd30_entry and b != gd35_entry and b != gd38_entry]
+            # Resto del grupo 1 (sin los bonos específicos)
+            grupo1_resto = [b for b in grupo1_bonos if b not in [al29_entry, al30_entry, al35_entry, gd29_entry, gd30_entry, gd35_entry, gd38_entry] and b is not None]
             grupo1_resto.sort(key=lambda x: x['displayName'])
             
             # Ordenar grupos 2 y 3 alfabéticamente
@@ -1655,27 +1662,29 @@ try:
                 {"name": "BCBA:TZX28", "displayName": "TZX28"}
             ]
             
-            # Reconstruir lista: AL35, luego GD29, GD30, GD35, GD38, luego resto grupo 1, luego Grupo 2, luego resto
+            # Reconstruir lista en el orden específico: AL29, AL30, AL35, GD29, GD30, GD35, GD38, luego resto
             bonos_soberano_ordenados = []
             
-            # AL35 primero
-            if al35_entry:
-                bonos_soberano_ordenados.append(al35_entry)
+            # Orden exacto de los bonos específicos
+            orden_bonos_especificos = [
+                ('AL29', al29_entry),
+                ('AL30', al30_entry),
+                ('AL35', al35_entry),
+                ('GD29', gd29_entry),
+                ('GD30', gd30_entry),
+                ('GD35', gd35_entry),
+                ('GD38', gd38_entry)
+            ]
             
-            # Luego los GD específicos en el orden solicitado
-            gd_bonos_orden = [gd29_entry, gd30_entry, gd35_entry, gd38_entry]
-            for gd_bono in gd_bonos_orden:
-                if gd_bono:
-                    bonos_soberano_ordenados.append(gd_bono)
-            
-            # Si algún GD no se encontró, intentar agregarlo manualmente
-            gd_tickers_esperados = ['GD29', 'GD30', 'GD35', 'GD38']
-            gd_encontrados = [normalizar_ticker(b['name']) for b in bonos_soberano_ordenados if 'GD' in normalizar_ticker(b['name'])]
-            for gd_ticker in gd_tickers_esperados:
-                if gd_ticker not in gd_encontrados:
-                    # Buscar en grupo1_resto si está ahí
-                    for b in grupo1_resto:
-                        if gd_ticker in normalizar_ticker(b['name']):
+            # Agregar bonos específicos en el orden correcto
+            for ticker_esperado, bono_entry in orden_bonos_especificos:
+                if bono_entry:
+                    bonos_soberano_ordenados.append(bono_entry)
+                else:
+                    # Si no se encontró, buscar en grupo1_resto
+                    for b in grupo1_resto[:]:  # Usar slice para evitar problemas al modificar durante iteración
+                        ticker_b = normalizar_ticker(b['name'])
+                        if ticker_esperado in ticker_b:
                             bonos_soberano_ordenados.append(b)
                             grupo1_resto.remove(b)
                             break
