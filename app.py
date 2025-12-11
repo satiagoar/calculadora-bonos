@@ -1512,18 +1512,36 @@ try:
                 st.rerun()
         
         with col_mercados_right:
+            # Buscar el ticker de AL30 en la lista de bonos original (el que aparece en la tabla)
+            # Buscar en bonos soberanos para encontrar el ticker en USD
+            ticker_al30 = "AL30"  # Default
+            for bono in bonos:
+                ticker = bono.get('ticker', '').strip()
+                nombre = bono.get('nombre', '').upper()
+                tipo_bono = bono.get('tipo_bono', '').strip().lower()
+                
+                # Buscar AL30 que sea soberano y en USD
+                if ticker and 'soberano' in tipo_bono and ('AL30' in ticker.upper() or 'AL30' in nombre):
+                    # Preferir tickers que contengan USD o D (formato común para USD)
+                    if 'USD' in tipo_bono or 'D' in ticker.upper()[-1:] or 'USD' in nombre:
+                        ticker_al30 = ticker
+                        break
+                    elif ticker_al30 == "AL30":  # Si no encontramos uno en USD, usar el primero que encontremos
+                        ticker_al30 = ticker
+            
             # Mostrar los gráficos de TradingView
             # Crear 2 filas de 2 columnas cada una
             col1, col2 = st.columns(2)
             
             with col1:
+                
                 # AL30
-                al30_html = """
+                al30_html = f"""
                     <div class="tradingview-widget-container" style="height: 300px; width: 100%; margin-top: -20px;">
                         <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
                         <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                        {
-                        "symbol": "AL30",
+                        {{
+                        "symbol": "{ticker_al30}",
                         "width": "100%",
                         "height": "300",
                         "locale": "es",
@@ -1535,7 +1553,7 @@ try:
                         "hideTopToolbar": true,
                         "hideLegend": false,
                         "saveImage": false
-                        }
+                        }}
                         </script>
                     </div>
                 """
