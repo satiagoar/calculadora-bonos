@@ -1529,6 +1529,18 @@ try:
                     elif ticker_al30 == "AL30":  # Si no encontramos uno en USD, usar el primero que encontremos
                         ticker_al30 = ticker
             
+            # Buscar el ticker de T30J6 en la lista de bonos (el que aparece en la tabla)
+            ticker_t30j6 = "BCBA:T30J6"  # Default
+            for bono in bonos:
+                ticker = bono.get('ticker', '').strip()
+                nombre = bono.get('nombre', '').upper()
+                tipo_bono = bono.get('tipo_bono', '').strip().lower()
+                
+                # Buscar T30J6 que sea soberano
+                if ticker and 'soberano' in tipo_bono and ('T30J6' in ticker.upper() or 'T30J6' in nombre):
+                    ticker_t30j6 = ticker
+                    break
+            
             # Mostrar los gráficos de TradingView
             # Crear 2 filas de 2 columnas cada una
             col1, col2 = st.columns(2)
@@ -1560,13 +1572,13 @@ try:
                 st.components.v1.html(al30_html, height=300)
                 
             with col2:
-                # AL35
-                al35_html = """
+                # T30J6
+                t30j6_html = f"""
                 <div class="tradingview-widget-container" style="height: 300px; width: 100%;">
                     <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
                     <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                    {
-                    "symbol": "AL35",
+                    {{
+                    "symbol": "{ticker_t30j6}",
                     "width": "100%",
                     "height": "300",
                     "locale": "es",
@@ -1578,11 +1590,11 @@ try:
                     "hideTopToolbar": true,
                     "hideLegend": false,
                     "saveImage": false
-                    }
+                    }}
                     </script>
                 </div>
                 """
-                st.components.v1.html(al35_html, height=300)
+                st.components.v1.html(t30j6_html, height=300)
             
             # Espaciado reducido antes de la tabla de datos de mercado
             st.markdown("<br>", unsafe_allow_html=True)
