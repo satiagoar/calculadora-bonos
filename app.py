@@ -1294,6 +1294,22 @@ try:
             st.session_state.flujos_bono_seleccionado = None
             st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
             st.session_state.flujos_calcular = False
+            st.session_state.indices_activo = False
+            if 'flujos_bonos_seleccionados' in st.session_state:
+                del st.session_state['flujos_bonos_seleccionados']
+            st.rerun()
+        
+        # Botón Indices
+        if st.button("Indices", type="secondary", use_container_width=True, key="indices_button"):
+            st.session_state.indices_activo = True
+            # Limpiar otras selecciones
+            st.session_state.calcular = False
+            st.session_state.bono_seleccionado = None
+            st.session_state.tipo_seleccionado = "Seleccione un Tipo"
+            st.session_state.flujos_bono_seleccionado = None
+            st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
+            st.session_state.flujos_calcular = False
+            st.session_state.mercados_activo = False
             if 'flujos_bonos_seleccionados' in st.session_state:
                 del st.session_state['flujos_bonos_seleccionados']
             st.rerun()
@@ -1818,8 +1834,54 @@ try:
             """
             st.components.v1.html(market_data_html, height=800)
     
-    # S2 (Calculadora de Flujos) - Prioridad alta (solo si mercados no está activo)
-    elif st.session_state.get('flujos_bono_seleccionado') and not st.session_state.get('mercados_activo', False):
+    # S4 (Indices) - Prioridad más alta (después de S3)
+    elif st.session_state.get('indices_activo', False):
+        # Ocultar sidebar cuando Indices está activo
+        st.markdown("""
+        <style>
+            .stSidebar {
+                display: none !important;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Widget Ticket Tape de TradingView con acciones del Merval
+        # Acciones principales del índice Merval de Argentina
+        symbols_merval = [
+            "BCBA:GGAL",  # Grupo Financiero Galicia
+            "BCBA:PAMP",  # Pampa Energía
+            "BCBA:YPF",   # YPF
+            "BCBA:BBAR",  # Banco BBVA Argentina
+            "BCBA:BMA",   # Banco Macro
+            "BCBA:CRESY", # Cresud
+            "BCBA:LOMA",  # Loma Negra
+            "BCBA:MIRG",  # Mirgor
+            "BCBA:PGR",   # Phoenix Global Resources
+            "BCBA:TX",    # Ternium Argentina
+            "BCBA:TGSU2", # Transportadora de Gas del Sur
+            "BCBA:VALO"   # Valores
+        ]
+        
+        ticket_tape_html = f"""
+        <div class="tradingview-widget-container" style="width: 100%; height: 100px;">
+            <div class="tradingview-widget-container__widget" style="width: 100%; height: 100px;"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+            {{
+            "symbols": {json.dumps([{{"proName": symbol, "title": symbol.split(':')[1] if ':' in symbol else symbol}} for symbol in symbols_merval], ensure_ascii=False)},
+            "showSymbolLogo": true,
+            "colorTheme": "light",
+            "isTransparent": true,
+            "displayMode": "adaptive",
+            "locale": "es",
+            "backgroundColor": "transparent"
+            }}
+            </script>
+        </div>
+        """
+        st.components.v1.html(ticket_tape_html, height=100)
+    
+    # S2 (Calculadora de Flujos) - Prioridad alta (solo si mercados e indices no están activos)
+    elif st.session_state.get('flujos_bono_seleccionado') and not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False):
         # Inicializar lista de bonos seleccionados si no existe
         if 'flujos_bonos_seleccionados' not in st.session_state:
             st.session_state.flujos_bonos_seleccionados = []
@@ -2329,7 +2391,7 @@ try:
             st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
     
     # S1 (Calculadora de Rendimientos) - Mostrar cuando hay bono seleccionado (sin necesidad de calcular)
-    elif st.session_state.bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado') and not st.session_state.get('mercados_activo', False):
+    elif st.session_state.bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado') and not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False):
         # Obtener el bono actual del session_state
         bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado)
         
@@ -2487,78 +2549,78 @@ try:
             # Continuar con los cálculos solo si hay flujos
             # Calcular YTM
             ytm_efectiva = calcular_ytm(
-            precio_dirty,
-            flujos,
-            fechas,
-            fecha_liquidacion,
-            bono_actual['base_calculo'],
-            bono_actual['periodicidad']
-            )
-            
-            # Calcular YTM anualizada según periodicidad
-            ytm_anualizada = bono_actual['periodicidad'] * ((1 + ytm_efectiva) ** (1 / bono_actual['periodicidad']) - 1)
-            
-            # Calcular duración Macaulay
-            duracion_macaulay = calcular_duracion_macaulay(
+                precio_dirty,
                 flujos,
                 fechas,
                 fecha_liquidacion,
-                ytm_efectiva,
-                bono_actual['base_calculo']
-            )
-            
-            # Calcular duración modificada
-            duracion_modificada = calcular_duracion_modificada(
-                duracion_macaulay,
-                ytm_anualizada / bono_actual['periodicidad'],
+                bono_actual['base_calculo'],
                 bono_actual['periodicidad']
             )
-            
-            # Calcular capital residual
-            capital_residual = 100 - sum([flujo['capital'] for flujo in bono_actual['flujos'] if flujo['fecha'] <= fecha_liquidacion_dt])
-            
-            # Calcular intereses corridos
-            fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
-            if fecha_ultimo_cupon:
-                intereses_corridos = calcular_intereses_corridos(
-                    fecha_liquidacion,
-                    fecha_ultimo_cupon,
-                    bono_actual['tasa_cupon'],
-                    capital_residual,
-                    bono_actual['base_calculo']
-                )
-            else:
-                intereses_corridos = 0
-            
-            # Calcular precio limpio
-            precio_limpio = precio_dirty - intereses_corridos
-            
-            # Calcular vida media
-            vida_media = calcular_vida_media(
-                flujos_capital,
-                fechas,
+        
+        # Calcular YTM anualizada según periodicidad
+        ytm_anualizada = bono_actual['periodicidad'] * ((1 + ytm_efectiva) ** (1 / bono_actual['periodicidad']) - 1)
+        
+        # Calcular duración Macaulay
+        duracion_macaulay = calcular_duracion_macaulay(
+            flujos,
+            fechas,
+            fecha_liquidacion,
+            ytm_efectiva,
+            bono_actual['base_calculo']
+        )
+        
+        # Calcular duración modificada
+        duracion_modificada = calcular_duracion_modificada(
+            duracion_macaulay,
+            ytm_anualizada / bono_actual['periodicidad'],
+            bono_actual['periodicidad']
+        )
+        
+        # Calcular capital residual
+        capital_residual = 100 - sum([flujo['capital'] for flujo in bono_actual['flujos'] if flujo['fecha'] <= fecha_liquidacion_dt])
+        
+        # Calcular intereses corridos
+        fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
+        if fecha_ultimo_cupon:
+            intereses_corridos = calcular_intereses_corridos(
                 fecha_liquidacion,
+                fecha_ultimo_cupon,
+                bono_actual['tasa_cupon'],
+                capital_residual,
                 bono_actual['base_calculo']
             )
-            
-            # Calcular paridad
-            valor_tecnico = capital_residual + intereses_corridos
-            paridad = precio_limpio / valor_tecnico if valor_tecnico > 0 else 0
-            
-            # Encontrar próximo cupón
-            proximo_cupon = encontrar_proximo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
-            
-            # Calcular cupón vigente
-            cupon_vigente = encontrar_cupon_vigente(fecha_liquidacion, bono_actual['flujos'])
-            
-            # Mapear periodicidad a texto
-            periodicidad_texto = {
-                1: "anual",
-                2: "semestral", 
-                3: "trimestral",
-                4: "trimestral",
-                6: "bimestral",
-                12: "mensual"
+        else:
+            intereses_corridos = 0
+        
+        # Calcular precio limpio
+        precio_limpio = precio_dirty - intereses_corridos
+        
+        # Calcular vida media
+        vida_media = calcular_vida_media(
+            flujos_capital,
+            fechas,
+            fecha_liquidacion,
+            bono_actual['base_calculo']
+        )
+        
+        # Calcular paridad
+        valor_tecnico = capital_residual + intereses_corridos
+        paridad = precio_limpio / valor_tecnico if valor_tecnico > 0 else 0
+        
+        # Encontrar próximo cupón
+        proximo_cupon = encontrar_proximo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
+        
+        # Calcular cupón vigente
+        cupon_vigente = encontrar_cupon_vigente(fecha_liquidacion, bono_actual['flujos'])
+        
+        # Mapear periodicidad a texto
+        periodicidad_texto = {
+            1: "anual",
+            2: "semestral", 
+            3: "trimestral",
+            4: "trimestral",
+            6: "bimestral",
+            12: "mensual"
             }.get(bono_actual['periodicidad'], f"{bono_actual['periodicidad']} veces al año")
             
             # Métricas principales
@@ -2677,7 +2739,7 @@ try:
             st.markdown('</div>', unsafe_allow_html=True)
             
             # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO
-        st.markdown("## Flujo de Fondos")
+            st.markdown("## Flujo de Fondos")
         
         # Crear DataFrame con formato mejorado
         # Primera fila: fecha de liquidación y precio pagado (negativo)
@@ -2820,8 +2882,8 @@ try:
         # No mostrar nada cuando hay bono seleccionado pero no se ha calculado
         pass
     
-    if not st.session_state.get('mercados_activo', False) and not st.session_state.get('bono_seleccionado'):
-        # Mostrar los 4 gráficos de TradingView cuando no se ha calculado (solo si mercados no está activo)
+    if not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False) and not st.session_state.get('bono_seleccionado'):
+        # Mostrar los 4 gráficos de TradingView cuando no se ha calculado (solo si mercados e indices no están activos)
         # Crear 2 filas de 2 columnas cada una
         col1, col2 = st.columns(2)
         
