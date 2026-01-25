@@ -2625,7 +2625,73 @@ try:
                 # Mostrar tabla con formato mejorado
                 st.table(df_simple)
                 
-                # COLUMNA DERECHA - RESULTADOS (métricas y gráfico)
+                # Gráfico del bono seleccionado - Solo si el ticker está disponible y es válido
+                ticker_bono = bono_actual.get('ticker', '').strip()
+                # Validar que el ticker existe, no está vacío, y no es un símbolo especial
+                if ticker_bono and ticker_bono != '' and ticker_bono != 'SPX500':
+                    bono_avanzado_html = f"""
+                    <div class="tradingview-widget-container" style="height: 500px; width: 100%;">
+                        <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
+                        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                        {{
+                        "symbol": "{ticker_bono}",
+                        "width": "100%",
+                        "height": "500",
+                        "locale": "es",
+                        "dateRange": "12M",
+                        "colorTheme": "light",
+                        "isTransparent": true,
+                        "autosize": false,
+                        "largeChartUrl": "",
+                        "hideTopToolbar": true,
+                        "hideLegend": false,
+                        "saveImage": false
+                        }}
+                        </script>
+                    </div>
+                    """
+                    st.components.v1.html(bono_avanzado_html, height=500)
+                
+                # JavaScript para prevenir scroll automático al hacer clic en Calcular
+                st.markdown("""
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Interceptar clics en el botón Calcular
+                    document.addEventListener('click', function(e) {
+                        // Verificar si es el botón Calcular
+                        if (e.target.matches('button[data-testid="baseButton-primary"]') || 
+                            e.target.textContent.includes('Calcular')) {
+                            
+                            // Prevenir el comportamiento por defecto
+                            e.preventDefault();
+                            
+                            // Forzar scroll hacia arriba después de un pequeño delay
+                            setTimeout(function() {
+                                window.scrollTo({
+                                    top: 0,
+                                    left: 0,
+                                    behavior: 'auto'
+                                });
+                            }, 100);
+                        }
+                    });
+                    
+                    // También interceptar el evento de submit del formulario
+                    document.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        setTimeout(function() {
+                            window.scrollTo({
+                                top: 0,
+                                left: 0,
+                                behavior: 'auto'
+                            });
+                        }, 100);
+                    });
+                });
+                </script>
+                """, unsafe_allow_html=True)
+                
+                # COLUMNA DERECHA - RESULTADOS (métricas)
                 with col2:
                     # Continuar con los cálculos solo si hay flujos
                     # Calcular YTM
@@ -2818,69 +2884,6 @@ try:
                         ''', unsafe_allow_html=True)
                     
                     st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # Gráfico del bono seleccionado - Ancho completo (minigráfico expandido)
-                    bono_avanzado_html = f"""
-                    <div class="tradingview-widget-container" style="height: 500px; width: 100%;">
-                        <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
-                        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                        {{
-                        "symbol": "{bono_actual['ticker']}",
-                        "width": "100%",
-                        "height": "500",
-                        "locale": "es",
-                        "dateRange": "12M",
-                        "colorTheme": "light",
-                        "isTransparent": true,
-                        "autosize": false,
-                        "largeChartUrl": "",
-                        "hideTopToolbar": true,
-                        "hideLegend": false,
-                        "saveImage": false
-                        }}
-                        </script>
-                    </div>
-                    """
-                    st.components.v1.html(bono_avanzado_html, height=500)
-                    
-                    # JavaScript para prevenir scroll automático al hacer clic en Calcular
-                    st.markdown("""
-                    <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Interceptar clics en el botón Calcular
-                        document.addEventListener('click', function(e) {
-                            // Verificar si es el botón Calcular
-                            if (e.target.matches('button[data-testid="baseButton-primary"]') || 
-                                e.target.textContent.includes('Calcular')) {
-                                
-                                // Prevenir el comportamiento por defecto
-                                e.preventDefault();
-                                
-                                // Forzar scroll hacia arriba después de un pequeño delay
-                                setTimeout(function() {
-                                    window.scrollTo({
-                                        top: 0,
-                                        left: 0,
-                                        behavior: 'auto'
-                                    });
-                                }, 100);
-                            }
-                        });
-                        
-                        // También interceptar el evento de submit del formulario
-                        document.addEventListener('submit', function(e) {
-                            e.preventDefault();
-                            setTimeout(function() {
-                                window.scrollTo({
-                                    top: 0,
-                                    left: 0,
-                                    behavior: 'auto'
-                                });
-                            }, 100);
-                        });
-                    });
-                    </script>
-                    """, unsafe_allow_html=True)
     else:
         # No mostrar nada cuando hay bono seleccionado pero no se ha calculado
         pass
