@@ -2522,32 +2522,111 @@ try:
                     </div>
                     """, unsafe_allow_html=True)
         
-        # COLUMNA DERECHA - RESULTADOS (solo si se presionó Calcular)
-        with col2:
-            if st.session_state.calcular:
-                # Obtener fecha_liquidacion y precio_dirty desde session_state
-                # Usar la misma key que se usó para guardar el precio
-                precio_key_main = f"precio_dirty_{st.session_state.bono_seleccionado}"
-                fecha_liquidacion = st.session_state.get('fecha_liquidacion_main', get_next_business_day())
-                precio_dirty = st.session_state.get(precio_key_main, 100.0)
+        # CÁLCULOS Y FLUJO DE FONDOS (solo si se presionó Calcular)
+        if st.session_state.calcular:
+            # Obtener fecha_liquidacion y precio_dirty desde session_state
+            # Usar la misma key que se usó para guardar el precio
+            precio_key_main = f"precio_dirty_{st.session_state.bono_seleccionado}"
+            fecha_liquidacion = st.session_state.get('fecha_liquidacion_main', get_next_business_day())
+            precio_dirty = st.session_state.get(precio_key_main, 100.0)
+            
+            # Convertir fecha_liquidacion a datetime para comparación
+            fecha_liquidacion_dt = pd.to_datetime(fecha_liquidacion)
+            
+            # Calcular flujos de caja
+            flujos = []
+            fechas = []
+            flujos_capital = []
+            
+            for flujo in bono_actual['flujos']:
+                if flujo['fecha'] > fecha_liquidacion_dt:
+                    flujos.append(flujo['total'])
+                    fechas.append(flujo['fecha'])
+                    flujos_capital.append(flujo['capital'])
+            
+            if not flujos:
+                st.error("❌ No hay flujos futuros para calcular")
+            else:
+                # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO (ocupa todo el ancho, después de Información del Bono)
+                st.markdown("## Flujo de Fondos")
                 
-                # Convertir fecha_liquidacion a datetime para comparación
-                fecha_liquidacion_dt = pd.to_datetime(fecha_liquidacion)
+                # Crear DataFrame con formato mejorado
+                # Primera fila: fecha de liquidación y precio pagado (negativo)
+                fechas_con_liquidacion = [fecha_liquidacion] + fechas
+                capital_con_liquidacion = [""] + [formatear_numero(c, 1) if c > 0 else "" for c in flujos_capital]
+                cupon_con_liquidacion = [""] + [formatear_numero(f-c, 1) for f, c in zip(flujos, flujos_capital)]
+                total_con_liquidacion = [f"-{formatear_numero(precio_dirty, 1)}"] + [formatear_numero(f, 1) for f in flujos]
                 
-                # Calcular flujos de caja
-                flujos = []
-                fechas = []
-                flujos_capital = []
+                df_simple = pd.DataFrame({
+                    'Fecha': [f.strftime('%d/%m/%Y') for f in fechas_con_liquidacion],
+                    'Capital': capital_con_liquidacion,
+                    'Cupón': cupon_con_liquidacion,
+                    'Total': total_con_liquidacion
+                })
                 
-                for flujo in bono_actual['flujos']:
-                    if flujo['fecha'] > fecha_liquidacion_dt:
-                        flujos.append(flujo['total'])
-                        fechas.append(flujo['fecha'])
-                        flujos_capital.append(flujo['capital'])
+                # CSS para mejorar la visualización de la tabla
+                st.markdown("""
+                <style>
+                .stTable {
+                    border: none !important;
+                    border-radius: 8px !important;
+                    background-color: #f8f9fa !important;
+                }
+                .stTable table {
+                    width: 100% !important;
+                    border-collapse: collapse !important;
+                    font-size: 12px !important;
+                }
+                .stTable th {
+                    background-color: #64748b !important;
+                    color: white !important;
+                    font-weight: bold !important;
+                    padding: 5px 3px !important;
+                    text-align: center !important;
+                    border: 1px solid #64748b !important;
+                    height: 22px !important;
+                }
+                .stTable td {
+                    padding: 3px 3px !important;
+                    text-align: center !important;
+                    border: 1px solid #ddd !important;
+                    background-color: white !important;
+                    color: black !important;
+                    height: 18px !important;
+                }
+                .stTable tbody tr {
+                    height: 18px !important;
+                }
+                /* Ocultar la primera columna (índice) */
+                .stTable table tr th:first-child,
+                .stTable table tr td:first-child {
+                    display: none !important;
+                }
                 
-                if not flujos:
-                    st.error("❌ No hay flujos futuros para calcular")
-                else:
+                /* Prevenir scroll automático al hacer clic en Calcular */
+                .main {
+                    scroll-behavior: auto !important;
+                }
+                
+                /* Mantener la sección de resultados visible */
+                .main .stColumn:first-child {
+                    position: sticky !important;
+                    top: 0 !important;
+                    z-index: 10 !important;
+                }
+                
+                .metrics-grid {
+                    position: relative !important;
+                    z-index: 5 !important;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                # Mostrar tabla con formato mejorado
+                st.table(df_simple)
+                
+                # COLUMNA DERECHA - RESULTADOS (métricas y gráfico)
+                with col2:
                     # Continuar con los cálculos solo si hay flujos
                     # Calcular YTM
                     ytm_efectiva = calcular_ytm(
@@ -2739,84 +2818,6 @@ try:
                         ''', unsafe_allow_html=True)
                     
                     st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO
-                    st.markdown("## Flujo de Fondos")
-                    
-                    # Crear DataFrame con formato mejorado
-                    # Primera fila: fecha de liquidación y precio pagado (negativo)
-                    fechas_con_liquidacion = [fecha_liquidacion] + fechas
-                    capital_con_liquidacion = [""] + [formatear_numero(c, 1) if c > 0 else "" for c in flujos_capital]
-                    cupon_con_liquidacion = [""] + [formatear_numero(f-c, 1) for f, c in zip(flujos, flujos_capital)]
-                    total_con_liquidacion = [f"-{formatear_numero(precio_dirty, 1)}"] + [formatear_numero(f, 1) for f in flujos]
-                    
-                    df_simple = pd.DataFrame({
-                        'Fecha': [f.strftime('%d/%m/%Y') for f in fechas_con_liquidacion],
-                        'Capital': capital_con_liquidacion,
-                        'Cupón': cupon_con_liquidacion,
-                        'Total': total_con_liquidacion
-                    })
-                    
-                    # CSS para mejorar la visualización de la tabla
-                    st.markdown("""
-                    <style>
-                    .stTable {
-                        border: none !important;
-                        border-radius: 8px !important;
-                        background-color: #f8f9fa !important;
-                    }
-                    .stTable table {
-                        width: 100% !important;
-                        border-collapse: collapse !important;
-                        font-size: 12px !important;
-                    }
-                    .stTable th {
-                        background-color: #64748b !important;
-                        color: white !important;
-                        font-weight: bold !important;
-                        padding: 5px 3px !important;
-                        text-align: center !important;
-                        border: 1px solid #64748b !important;
-                        height: 22px !important;
-                    }
-                    .stTable td {
-                        padding: 3px 3px !important;
-                        text-align: center !important;
-                        border: 1px solid #ddd !important;
-                        background-color: white !important;
-                        color: black !important;
-                        height: 18px !important;
-                    }
-                    .stTable tbody tr {
-                        height: 18px !important;
-                    }
-                    /* Ocultar la primera columna (índice) */
-                    .stTable table tr th:first-child,
-                    .stTable table tr td:first-child {
-                        display: none !important;
-                    }
-                    
-                    /* Prevenir scroll automático al hacer clic en Calcular */
-                    .main {
-                        scroll-behavior: auto !important;
-                    }
-                    
-                    /* Mantener la sección de resultados visible */
-                    .main .stColumn:first-child {
-                        position: sticky !important;
-                        top: 0 !important;
-                        z-index: 10 !important;
-                    }
-                    
-                    .metrics-grid {
-                        position: relative !important;
-                        z-index: 5 !important;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
-                    
-                    # Mostrar tabla con formato mejorado
-                    st.table(df_simple)
                     
                     # Gráfico del bono seleccionado - Ancho completo (minigráfico expandido)
                     bono_avanzado_html = f"""
