@@ -2417,11 +2417,10 @@ try:
                     if ticker and ticker != '' and ticker != 'SPX500':
                         precio_byma = obtener_precio_byma(ticker)
                     
-                    # Usar precio de BYMA si está disponible, sino usar 100.0 como default
+                    # Usar precio de BYMA si está disponible, sino no inicializar (None)
                     if precio_byma and precio_byma > 0:
                         st.session_state[precio_key_main] = precio_byma
-                    else:
-                        st.session_state[precio_key_main] = 100.0
+                    # Si no hay precio de BYMA, no inicializar - el campo mostrará 0.0 por defecto
                 
                 # Inputs con ancho reducido al 70%
                 col_input_left, col_input_center, col_input_right = st.columns([0.15, 0.7, 0.15])
@@ -2434,7 +2433,9 @@ try:
                         key="fecha_liquidacion_main"
                     )
                     
-                    # Usar solo la key sin value, Streamlit manejará el valor automáticamente desde session_state
+                    # Input de precio
+                    # Si no hay precio de BYMA, el campo quedará con 0.0 (que el usuario puede cambiar)
+                    # Nota: st.number_input no puede estar realmente "vacío", pero 0.0 actúa como placeholder
                     precio_dirty = st.number_input(
                         "Precio Dirty (base 100)",
                         min_value=0.0,
@@ -2521,6 +2522,10 @@ try:
                         <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Ticker:</strong> {bono_actual_main['ticker']}</p>
                     </div>
                     """, unsafe_allow_html=True)
+        
+        # Espaciado adicional antes de Flujo de Fondos
+        if st.session_state.calcular:
+            st.markdown("<br><br>", unsafe_allow_html=True)
         
         # CÁLCULOS Y FLUJO DE FONDOS (solo si se presionó Calcular)
         if st.session_state.calcular:
