@@ -2622,124 +2622,124 @@ try:
             6: "bimestral",
             12: "mensual"
             }.get(bono_actual['periodicidad'], f"{bono_actual['periodicidad']} veces al año")
-            
-            # Métricas principales
-            st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
-            
-            # Primera fila
-            col1_1, col1_2, col1_3, col1_4 = st.columns(4)
-            with col1_1:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">Precio Limpio</div>
-                    <div class="metric-value">{formatear_numero(precio_limpio, 4)}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            with col1_2:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">Intereses Corridos</div>
-                    <div class="metric-value">{formatear_numero(intereses_corridos, 4)}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            with col1_3:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">Capital Residual</div>
-                    <div class="metric-value">{formatear_numero(capital_residual, 2)}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            with col1_4:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">Cupón Vigente</div>
-                    <div class="metric-value">{cupon_vigente:.2%}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # Segunda fila
-            st.markdown('<div class="metrics-row">', unsafe_allow_html=True)
-            col2_1, col2_2, col2_3, col2_4 = st.columns(4)
-            
-            with col2_1:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">TIR Efectiva</div>
-                    <div class="metric-value">{ytm_efectiva:.4%}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            with col2_2:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">TIR {periodicidad_texto.title()}</div>
-                    <div class="metric-value">{ytm_anualizada:.4%}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            with col2_3:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">Duración Modificada</div>
-                    <div class="metric-value">{formatear_numero(duracion_modificada, 2)} años</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            with col2_4:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">Duración Macaulay</div>
-                    <div class="metric-value">{formatear_numero(duracion_macaulay, 2)} años</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # Tercera fila
-            st.markdown('<div class="metrics-row">', unsafe_allow_html=True)
-            col3_1, col3_2, col3_3, col3_4 = st.columns(4)
-            
-            with col3_1:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">Valor Técnico</div>
-                    <div class="metric-value">{formatear_numero(valor_tecnico, 4)}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            with col3_2:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">Paridad</div>
-                    <div class="metric-value">{formatear_numero(paridad, 4)}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            with col3_3:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">Próximo Cupón</div>
-                    <div class="metric-value">{proximo_cupon.strftime('%d/%m/%Y') if proximo_cupon else 'N/A'}</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            with col3_4:
-                st.markdown(f'''
-                <div class="metric-card">
-                    <div class="metric-label">Vida Media</div>
-                    <div class="metric-value">{formatear_numero(vida_media, 2)} años</div>
-                </div>
-                ''', unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO
-            st.markdown("## Flujo de Fondos")
+        
+        # Métricas principales
+        st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
+        
+        # Primera fila
+        col1_1, col1_2, col1_3, col1_4 = st.columns(4)
+        with col1_1:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">Precio Limpio</div>
+                <div class="metric-value">{formatear_numero(precio_limpio, 4)}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col1_2:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">Intereses Corridos</div>
+                <div class="metric-value">{formatear_numero(intereses_corridos, 4)}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col1_3:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">Capital Residual</div>
+                <div class="metric-value">{formatear_numero(capital_residual, 2)}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col1_4:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">Cupón Vigente</div>
+                <div class="metric-value">{cupon_vigente:.2%}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Segunda fila
+        st.markdown('<div class="metrics-row">', unsafe_allow_html=True)
+        col2_1, col2_2, col2_3, col2_4 = st.columns(4)
+        
+        with col2_1:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">TIR Efectiva</div>
+                <div class="metric-value">{ytm_efectiva:.4%}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col2_2:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">TIR {periodicidad_texto.title()}</div>
+                <div class="metric-value">{ytm_anualizada:.4%}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col2_3:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">Duración Modificada</div>
+                <div class="metric-value">{formatear_numero(duracion_modificada, 2)} años</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col2_4:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">Duración Macaulay</div>
+                <div class="metric-value">{formatear_numero(duracion_macaulay, 2)} años</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Tercera fila
+        st.markdown('<div class="metrics-row">', unsafe_allow_html=True)
+        col3_1, col3_2, col3_3, col3_4 = st.columns(4)
+        
+        with col3_1:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">Valor Técnico</div>
+                <div class="metric-value">{formatear_numero(valor_tecnico, 4)}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col3_2:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">Paridad</div>
+                <div class="metric-value">{formatear_numero(paridad, 4)}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col3_3:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">Próximo Cupón</div>
+                <div class="metric-value">{proximo_cupon.strftime('%d/%m/%Y') if proximo_cupon else 'N/A'}</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        with col3_4:
+            st.markdown(f'''
+            <div class="metric-card">
+                <div class="metric-label">Vida Media</div>
+                <div class="metric-value">{formatear_numero(vida_media, 2)} años</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # SECCIÓN FLUJO DE FONDOS - FORMATO MEJORADO
+        st.markdown("## Flujo de Fondos")
         
         # Crear DataFrame con formato mejorado
         # Primera fila: fecha de liquidación y precio pagado (negativo)
