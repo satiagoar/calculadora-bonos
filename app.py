@@ -3043,6 +3043,8 @@ try:
                         precio, flujos, fechas, fecha_hoy,
                         bono['base_calculo'], bono['periodicidad']
                     )
+                    if (1 + ytm_efectiva) <= 0:
+                        continue
                     tir_semestral = 2 * ((1 + ytm_efectiva) ** (1/2) - 1)
 
                     duracion_macaulay = calcular_duracion_macaulay(
@@ -3058,9 +3060,7 @@ try:
                     cupon_vigente = encontrar_cupon_vigente(fecha_hoy, bono['flujos'])
 
                     tipo = bono.get('tipo_bono', 'Otros')
-                    if tipo not in grupos:
-                        grupos[tipo] = []
-                    grupos[tipo].append({
+                    fila = {
                         'Activo': bono['nombre'],
                         'Ticker': ticker,
                         'Precio': precio,
@@ -3069,13 +3069,18 @@ try:
                         'Cupón Vigente': round(cupon_vigente * 100, 4),
                         'TIR Semestral': round(tir_semestral * 100, 2),
                         'Dur. Modificada': round(duracion_modificada, 2),
-                    })
+                    }
+                    if tipo not in grupos:
+                        grupos[tipo] = []
+                    grupos[tipo].append(fila)
 
                 except Exception:
                     continue
 
         if grupos:
             for tipo in sorted(grupos.keys()):
+                if not grupos[tipo]:
+                    continue
                 st.markdown(f"### {tipo}")
                 df_tabla = pd.DataFrame(grupos[tipo])
                 st.dataframe(
