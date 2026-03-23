@@ -113,7 +113,15 @@ st.markdown("""
     
     /* Sidebar siempre visible - ocultar botón de colapsar */
     [data-testid="collapsedControl"] { display: none !important; }
-    [data-testid="stSidebar"] { display: flex !important; visibility: visible !important; }
+    [data-testid="stSidebar"] {
+        display: flex !important;
+        visibility: visible !important;
+        transform: none !important;
+        left: 0 !important;
+        min-width: 244px !important;
+        width: 244px !important;
+    }
+    [data-testid="stSidebarContent"] { display: flex !important; }
 
     /* Estilos generales */
     .main > div {
