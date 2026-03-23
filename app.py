@@ -3034,6 +3034,7 @@ try:
         TABLE_CSS = """
         <style>
         .bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
+        .bond-title { background:#fafafa; color:#333; font-weight:700; font-size:14px; padding:11px 14px; border-bottom:2px solid #e0e0e0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; letter-spacing:0.02em; }
         .bond-table { width:100%; border-collapse:collapse; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
         .bond-table th { background:#fafafa; color:#555; font-weight:600; padding:9px 12px; text-align:center; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
         .bond-table th:first-child { text-align:left; }
@@ -3045,7 +3046,7 @@ try:
         </style>
         """
 
-        def render_tabla_html(df):
+        def render_tabla_html(df, titulo=''):
             cols = list(df.columns)
             headers = ''.join(f'<th>{c}</th>' for c in cols)
             rows = ''
@@ -3059,7 +3060,8 @@ try:
                     else:
                         cells += f'<td>{val}</td>'
                 rows += f'<tr>{cells}</tr>'
-            return f'<div class="bond-wrap"><table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
+            title_html = f'<div class="bond-title">{titulo}</div>' if titulo else ''
+            return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
         if grupos:
             st.markdown(TABLE_CSS, unsafe_allow_html=True)
@@ -3069,7 +3071,6 @@ try:
                 if not grupos[tipo]:
                     continue
                 st.markdown(f"<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(f"### {tipo}")
                 df_tabla = pd.DataFrame(grupos[tipo])
                 if 'corporativo' in tipo.lower():
                     df_tabla = df_tabla.sort_values(['Activo', 'Dur. Modificada']).reset_index(drop=True)
@@ -3117,8 +3118,8 @@ try:
                             title='Cueva de Rendimientos — Soberano USD',
                             xaxis_title='Duración Modificada (años)',
                             yaxis_title='TIR Semestral (%)',
-                            xaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
-                            yaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
+                            xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True),
+                            yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True),
                             plot_bgcolor='white',
                             paper_bgcolor='white',
                             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
@@ -3206,8 +3207,8 @@ try:
                             title=titulo_cueva,
                             xaxis_title='Duración Modificada (años)',
                             yaxis_title='TIR Semestral (%)',
-                            xaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
-                            yaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
+                            xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True),
+                            yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True),
                             plot_bgcolor='white',
                             paper_bgcolor='white',
                             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
@@ -3226,7 +3227,7 @@ try:
                 df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
-                st.markdown(render_tabla_html(df_tabla), unsafe_allow_html=True)
+                st.markdown(render_tabla_html(df_tabla, titulo=tipo), unsafe_allow_html=True)
         else:
             st.info("No hay precios disponibles en este momento.")
 
