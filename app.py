@@ -3199,21 +3199,32 @@ try:
                         coeffs = np.polyfit(np.log(x), y, 1)
                         x_line = np.linspace(x.min(), x.max(), 200)
                         y_line = coeffs[0] * np.log(x_line) + coeffs[1]
+
+                        # Asignar posición de etiqueta alternando arriba/abajo para evitar superposición
+                        x_range = x.max() - x.min() if x.max() != x.min() else 1
+                        y_range = y.max() - y.min() if y.max() != y.min() else 1
+                        positions = []
+                        for i in range(len(x)):
+                            dists = [np.sqrt(((x[i]-x[j])/x_range)**2 + ((y[i]-y[j])/y_range)**2)
+                                     for j in range(len(x)) if j != i]
+                            too_close = any(d < 0.08 for d in dists)
+                            positions.append('bottom center' if too_close and i % 2 == 0 else 'top center')
+
                         fig_corp = go.Figure()
                         fig_corp.add_trace(go.Scatter(
                             x=x, y=y,
                             mode='markers+text',
                             text=df_curva['Activo'],
-                            textposition='top center',
-                            textfont=dict(size=10, color='#4a148c'),
-                            marker=dict(size=9, color='#4a148c'),
+                            textposition=positions,
+                            textfont=dict(size=10, color='#1a237e'),
+                            marker=dict(size=9, color='#1a237e'),
                             name='Corp. Ley ARG',
                             hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
                         ))
                         fig_corp.add_trace(go.Scatter(
                             x=x_line, y=y_line,
                             mode='lines',
-                            line=dict(color='#ab47bc', width=2, dash='dash'),
+                            line=dict(color='#42a5f5', width=2, dash='dash'),
                             name='Tendencia log.',
                             hoverinfo='skip',
                             showlegend=False,
@@ -3227,7 +3238,7 @@ try:
                             plot_bgcolor='white',
                             paper_bgcolor='white',
                             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
-                            height=420,
+                            height=480,
                             margin=dict(t=60, b=40, l=60, r=20),
                         )
                         st.plotly_chart(fig_corp, use_container_width=True)
