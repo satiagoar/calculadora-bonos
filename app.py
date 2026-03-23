@@ -114,7 +114,10 @@ st.markdown("""
     /* Sidebar siempre visible - ocultar botón de colapsar */
     [data-testid="collapsedControl"] { display: none !important; }
     [data-testid="stSidebarCollapseButton"] { display: none !important; }
-    [data-testid="stSidebar"] > div > button:first-child { display: none !important; }
+    [data-testid="stSidebar"] > div > button { display: none !important; }
+    [data-testid="stSidebarNav"] { display: none !important; }
+    button[kind="header"] { display: none !important; }
+    .st-emotion-cache-1dp5vir, .st-emotion-cache-czk5ss { display: none !important; }
     [data-testid="stSidebar"] {
         display: flex !important;
         visibility: visible !important;
@@ -133,18 +136,18 @@ st.markdown("""
     /* Margen del contenido principal para alinearse con el sidebar */
     .main .block-container {
         padding-left: 2rem !important;
-        padding-top: 1.5rem !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 1rem !important;
     }
 
     /* Estilos generales */
     .main > div {
         padding-top: 0rem;
     }
-    
-    /* Eliminar espaciado superior adicional */
-    .main .block-container {
-        padding-top: 0rem !important;
-    }
+
+    /* Eliminar barra de herramientas de Streamlit */
+    [data-testid="stToolbar"] { display: none !important; }
+    header[data-testid="stHeader"] { display: none !important; }
     
     .main .element-container {
         margin-top: 0rem !important;
