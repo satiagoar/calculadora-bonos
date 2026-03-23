@@ -133,21 +133,32 @@ st.markdown("""
         width: 100% !important;
         overflow: visible !important;
     }
-    /* Ocultar barra superior de Streamlit y compensar su espacio */
+    /* Ocultar barra superior de Streamlit */
     [data-testid="stToolbar"] { display: none !important; }
     [data-testid="stDecoration"] { display: none !important; }
+    [data-testid="stStatusWidget"] { display: none !important; }
     header[data-testid="stHeader"] {
         height: 0px !important;
         min-height: 0px !important;
         padding: 0 !important;
+        overflow: hidden !important;
     }
 
-    /* Subir el contenido principal compensando el espacio del header */
+    /* Eliminar padding superior del contenedor principal */
+    [data-testid="stAppViewContainer"] > .main {
+        padding-top: 0 !important;
+    }
+    .main {
+        padding-top: 0 !important;
+    }
+
+    /* Subir el contenido principal */
     .main .block-container {
         padding-left: 2rem !important;
-        padding-top: 1rem !important;
+        padding-top: 0.75rem !important;
         padding-bottom: 1rem !important;
-        margin-top: -4rem !important;
+        margin-top: -6rem !important;
+        max-width: 100% !important;
     }
 
     /* Estilos generales */
