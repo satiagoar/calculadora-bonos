@@ -3086,6 +3086,7 @@ try:
 
         TABLE_CSS = """
         <style>
+        .bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
         .bond-table { width:100%; border-collapse:collapse; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
         .bond-table th { background:#fafafa; color:#555; font-weight:600; padding:9px 12px; text-align:center; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
         .bond-table th:first-child { text-align:left; }
@@ -3094,8 +3095,6 @@ try:
         .bond-table tr:nth-child(even) td { background:#f7f7f7; }
         .bond-table tr:nth-child(odd) td { background:#ffffff; }
         .bond-table tr:hover td { background:#eef2ff; }
-        .var-pos { color:#2e7d32; font-weight:600; }
-        .var-neg { color:#c62828; font-weight:600; }
         </style>
         """
 
@@ -3108,12 +3107,12 @@ try:
                 for col in cols:
                     val = row[col]
                     if col == 'Var. Diaria %' and val != '-':
-                        css = 'var-pos' if val.startswith('+') else 'var-neg'
-                        cells += f'<td class="{css}">{val}</td>'
+                        color = '#2e7d32' if val.startswith('+') else '#c62828'
+                        cells += f'<td style="color:{color};font-weight:600">{val}</td>'
                     else:
                         cells += f'<td>{val}</td>'
                 rows += f'<tr>{cells}</tr>'
-            return f'<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
+            return f'<div class="bond-wrap"><table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
         if grupos:
             st.markdown(TABLE_CSS, unsafe_allow_html=True)
