@@ -975,7 +975,7 @@ def obtener_precios_data912(endpoint):
         if response.status_code == 200:
             data = response.json()
             return {
-                item['symbol']: item['c']
+                item['symbol']: {'c': item['c'], 'pct_change': item.get('pct_change')}
                 for item in data
                 if item.get('symbol') and item.get('c') and item['c'] > 0
             }
@@ -1001,7 +1001,7 @@ def obtener_precio_data912(ticker):
     for endpoint in ['arg_bonds', 'arg_corp']:
         precios = obtener_precios_data912(endpoint)
         if ticker_clean in precios:
-            return round(float(precios[ticker_clean]), 2)
+            return round(float(precios[ticker_clean]['c']), 2)
 
     return None
 
@@ -3011,7 +3011,11 @@ try:
                 if len(ticker_api) == 4:
                     ticker_api = ticker_api + 'D'
 
-                precio = precios_todos.get(ticker_api)
+                precio_data = precios_todos.get(ticker_api)
+                if not precio_data:
+                    continue
+                precio = precio_data['c']
+                pct_change = precio_data.get('pct_change')
                 if not precio or precio <= 0:
                     continue
 
@@ -3069,6 +3073,7 @@ try:
                         'Cupón Vigente': round(cupon_vigente * 100, 4),
                         'TIR Semestral': round(tir_semestral * 100, 2),
                         'Dur. Modificada': round(duracion_modificada, 2),
+                        'Var. Diaria %': pct_change,
                     }
                     if tipo not in grupos:
                         grupos[tipo] = []
@@ -3083,12 +3088,17 @@ try:
                     continue
                 st.markdown(f"### {tipo}")
                 df_tabla = pd.DataFrame(grupos[tipo])
+                if 'corporativo' in tipo.lower():
+                    df_tabla = df_tabla.sort_values(['Activo', 'Dur. Modificada']).reset_index(drop=True)
                 df_tabla['Precio'] = df_tabla['Precio'].map('{:.2f}'.format)
                 df_tabla['Int. Corridos'] = df_tabla['Int. Corridos'].map('{:.4f}'.format)
                 df_tabla['Cap. Residual'] = df_tabla['Cap. Residual'].map('{:.2f}'.format)
                 df_tabla['Cupón Vigente'] = df_tabla['Cupón Vigente'].map('{:.4f}%'.format)
                 df_tabla['TIR Semestral'] = df_tabla['TIR Semestral'].map('{:.2f}%'.format)
                 df_tabla['Dur. Modificada'] = df_tabla['Dur. Modificada'].map('{:.2f}'.format)
+                df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
+                    lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
+                )
                 st.table(df_tabla)
         else:
             st.info("No hay precios disponibles en este momento.")
