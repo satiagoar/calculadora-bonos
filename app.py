@@ -118,10 +118,16 @@ st.markdown("""
         visibility: visible !important;
         transform: none !important;
         left: 0 !important;
-        min-width: 244px !important;
-        width: 244px !important;
+        min-width: 280px !important;
+        width: 280px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
     }
-    [data-testid="stSidebarContent"] { display: flex !important; }
+    [data-testid="stSidebarContent"] {
+        display: flex !important;
+        width: 100% !important;
+        overflow: visible !important;
+    }
 
     /* Estilos generales */
     .main > div {
