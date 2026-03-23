@@ -3064,9 +3064,11 @@ try:
                     cupon_vigente = encontrar_cupon_vigente(fecha_hoy, bono['flujos'])
 
                     tipo = bono.get('tipo_bono', 'Otros')
+                    fecha_vcto = encontrar_fecha_vencimiento(bono['flujos'])
                     fila = {
                         'Activo': bono['nombre'],
                         'Ticker': ticker,
+                        'Vencimiento': fecha_vcto.strftime('%d/%m/%Y') if fecha_vcto else '-',
                         'Precio': precio,
                         'Int. Corridos': round(intereses_corridos, 4),
                         'Cap. Residual': round(capital_residual, 2),
@@ -3099,6 +3101,7 @@ try:
                 df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
+                df_tabla.index = [''] * len(df_tabla)
                 st.table(df_tabla)
         else:
             st.info("No hay precios disponibles en este momento.")
