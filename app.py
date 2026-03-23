@@ -132,6 +132,7 @@ st.markdown("""
         display: flex !important;
         width: 100% !important;
         overflow: visible !important;
+        padding-top: 1.5rem !important;
     }
     /* Ocultar barra superior de Streamlit */
     [data-testid="stToolbar"] { display: none !important; }
@@ -741,7 +742,7 @@ st.markdown("""
     function applyFix() {
         var el = document.querySelector('[data-testid="stMainBlockContainer"]');
         if (el) {
-            el.style.setProperty('padding-top', '0.75rem', 'important');
+            el.style.setProperty('padding-top', '0.25rem', 'important');
         }
         var header = document.querySelector('header[data-testid="stHeader"]');
         if (header) {
