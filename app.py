@@ -808,18 +808,30 @@ st.markdown("""
 # JS para reducir padding-top del bloque principal (emotion CSS-in-JS se inyecta tarde)
 st.markdown("""
 <script>
-(function fixPadding() {
+(function fixStyles() {
     function applyFix() {
+        // Padding superior
         var el = document.querySelector('[data-testid="stMainBlockContainer"]');
-        if (el) {
-            el.style.setProperty('padding-top', '0.25rem', 'important');
-        }
+        if (el) el.style.setProperty('padding-top', '0.25rem', 'important');
         var header = document.querySelector('header[data-testid="stHeader"]');
         if (header) {
             header.style.setProperty('height', '0px', 'important');
             header.style.setProperty('min-height', '0px', 'important');
             header.style.setProperty('overflow', 'hidden', 'important');
         }
+        // Inputs: fondo blanco, texto oscuro
+        document.querySelectorAll('[data-baseweb="input"], [data-baseweb="base-input"]').forEach(function(el) {
+            el.style.setProperty('background-color', 'white', 'important');
+            el.style.setProperty('color', '#1a1a1a', 'important');
+        });
+        document.querySelectorAll('input[type="number"], input[type="text"], input[type="date"]').forEach(function(el) {
+            el.style.setProperty('background-color', 'white', 'important');
+            el.style.setProperty('color', '#1a1a1a', 'important');
+        });
+        // Contenedor de inputs (div que envuelve el input nativo)
+        document.querySelectorAll('[data-testid="stNumberInput"] > div, [data-testid="stDateInput"] > div').forEach(function(el) {
+            el.style.setProperty('background-color', 'white', 'important');
+        });
     }
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() { setTimeout(applyFix, 100); });
@@ -828,6 +840,9 @@ st.markdown("""
     }
     setTimeout(applyFix, 500);
     setTimeout(applyFix, 1500);
+    // Reaplica cada vez que Streamlit hace rerender
+    var observer = new MutationObserver(function() { setTimeout(applyFix, 100); });
+    observer.observe(document.body, { childList: true, subtree: true });
 })();
 </script>
 """, unsafe_allow_html=True)
@@ -2600,8 +2615,7 @@ try:
                         st.session_state[precio_key_main] = precio_inicial
                         st.session_state.calcular = True
                 
-                # Encabezado card de parámetros
-                st.markdown('<div class="calc-card"><div class="calc-card-title">Parámetros de cálculo</div></div>', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Parámetros de cálculo</p>', unsafe_allow_html=True)
 
                 # Inputs con ancho reducido al 70%
                 col_input_left, col_input_center, col_input_right = st.columns([0.15, 0.7, 0.15])
@@ -2634,7 +2648,7 @@ try:
                     col_calc, col_volver = st.columns(2)
                     
                     with col_calc:
-                        if st.button("Calcular", type="secondary", use_container_width=True, key="calcular_main"):
+                        if st.button("Calcular", type="primary", use_container_width=True, key="calcular_main"):
                             st.session_state.calcular = True
                     
                     with col_volver:
