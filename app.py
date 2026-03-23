@@ -3077,7 +3077,8 @@ try:
                         grupos[tipo] = []
                     grupos[tipo].append(fila)
 
-                except Exception:
+                except Exception as e:
+                    debug_skip.append(f"ERR {ticker}: {type(e).__name__}: {e}")
                     continue
 
         st.caption(f"DEBUG: {len(debug_skip)} sin precio: {debug_skip[:5]}")
