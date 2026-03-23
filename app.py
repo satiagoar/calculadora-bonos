@@ -3200,15 +3200,32 @@ try:
                         x_line = np.linspace(x.min(), x.max(), 200)
                         y_line = coeffs[0] * np.log(x_line) + coeffs[1]
 
-                        # Asignar posición de etiqueta alternando arriba/abajo para evitar superposición
-                        x_range = x.max() - x.min() if x.max() != x.min() else 1
-                        y_range = y.max() - y.min() if y.max() != y.min() else 1
+                        # Algoritmo greedy 8 direcciones para minimizar superposición
+                        x_r = x.max() - x.min() if x.max() != x.min() else 1
+                        y_r = y.max() - y.min() if y.max() != y.min() else 1
+                        dirs = ['top center','bottom center','middle right','middle left',
+                                'top right','top left','bottom right','bottom left']
+                        offsets = {'top center':(0,.06),'bottom center':(0,-.06),
+                                   'middle right':(.06,0),'middle left':(-.06,0),
+                                   'top right':(.05,.05),'top left':(-.05,.05),
+                                   'bottom right':(.05,-.05),'bottom left':(-.05,-.05)}
+                        placed = []
                         positions = []
                         for i in range(len(x)):
-                            dists = [np.sqrt(((x[i]-x[j])/x_range)**2 + ((y[i]-y[j])/y_range)**2)
-                                     for j in range(len(x)) if j != i]
-                            too_close = any(d < 0.08 for d in dists)
-                            positions.append('bottom center' if too_close and i % 2 == 0 else 'top center')
+                            best_pos, best_score = 'top center', -1
+                            for d in dirs:
+                                ox, oy = offsets[d]
+                                lx = x[i]/x_r + ox
+                                ly = y[i]/y_r + oy
+                                dists = [np.sqrt((lx - px)**2 + (ly - py)**2) for px, py in placed]
+                                dists += [np.sqrt(((x[i]-x[j])/x_r)**2 + ((y[i]-y[j])/y_r)**2)
+                                          for j in range(len(x)) if j != i]
+                                score = min(dists) if dists else 1
+                                if score > best_score:
+                                    best_score, best_pos = score, d
+                                    best_lx, best_ly = lx, ly
+                            positions.append(best_pos)
+                            placed.append((best_lx, best_ly))
 
                         fig_corp = go.Figure()
                         fig_corp.add_trace(go.Scatter(
@@ -3216,7 +3233,7 @@ try:
                             mode='markers+text',
                             text=df_curva['Activo'],
                             textposition=positions,
-                            textfont=dict(size=10, color='#1a237e'),
+                            textfont=dict(size=9, color='#1a237e'),
                             marker=dict(size=9, color='#1a237e'),
                             name='Corp. Ley ARG',
                             hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
@@ -3238,8 +3255,8 @@ try:
                             plot_bgcolor='white',
                             paper_bgcolor='white',
                             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
-                            height=480,
-                            margin=dict(t=60, b=40, l=60, r=20),
+                            height=560,
+                            margin=dict(t=60, b=40, l=60, r=40),
                         )
                         st.plotly_chart(fig_corp, use_container_width=True)
         else:
