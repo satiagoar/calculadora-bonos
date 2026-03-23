@@ -966,7 +966,7 @@ def encontrar_fecha_vencimiento(flujos):
 def obtener_precios_data912(endpoint):
     """
     Obtiene todos los precios desde data912.com para un endpoint dado.
-    endpoint: 'arg_abonds' para soberanos USD, 'arg_corp' para corporativos
+    endpoint: 'arg_bonds' para soberanos USD, 'arg_corp' para corporativos
     Retorna dict {symbol: last_price} o {} si falla
     """
     try:
@@ -986,7 +986,7 @@ def obtener_precios_data912(endpoint):
 def obtener_precio_data912(ticker):
     """
     Obtiene el último precio operado de un bono desde data912.com.
-    Busca en soberanos (arg_abonds) y corporativos (arg_corp).
+    Busca en soberanos (arg_bonds) y corporativos (arg_corp).
     Retorna el precio (float) o None si no se encuentra.
     """
     if not ticker or ticker.strip() == '':
@@ -998,7 +998,7 @@ def obtener_precio_data912(ticker):
     if len(ticker_clean) == 4:
         ticker_clean = ticker_clean + 'D'
 
-    for endpoint in ['arg_abonds', 'arg_corp']:
+    for endpoint in ['arg_bonds', 'arg_corp']:
         precios = obtener_precios_data912(endpoint)
         if ticker_clean in precios:
             return round(float(precios[ticker_clean]), 2)
@@ -2997,11 +2997,13 @@ try:
         with st.spinner("Cargando precios y calculando métricas..."):
             fecha_hoy = get_next_business_day()
 
-            precios_bonds = obtener_precios_data912('arg_abonds')
+            precios_bonds = obtener_precios_data912('arg_bonds')
             precios_corp = obtener_precios_data912('arg_corp')
             precios_todos = {**precios_bonds, **precios_corp}
 
+            st.caption(f"DEBUG: arg_bonds={len(precios_bonds)} precios, arg_corp={len(precios_corp)} precios, total={len(precios_todos)}")
             grupos = {}
+            debug_skip = []
             for bono in bonos:
                 ticker = bono.get('ticker', '').strip()
                 if not ticker or ticker == 'SPX500':
@@ -3013,6 +3015,7 @@ try:
 
                 precio = precios_todos.get(ticker_api)
                 if not precio or precio <= 0:
+                    debug_skip.append(f"{ticker}→{ticker_api}=None")
                     continue
 
                 try:
@@ -3077,6 +3080,7 @@ try:
                 except Exception:
                     continue
 
+        st.caption(f"DEBUG: {len(debug_skip)} sin precio: {debug_skip[:5]}")
         if grupos:
             for tipo in sorted(grupos.keys()):
                 if not grupos[tipo]:
