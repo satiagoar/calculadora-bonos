@@ -3213,7 +3213,7 @@ try:
                             )
                             densidad.append(vecinos)
                         densidad = np.array(densidad)
-                        UMBRAL_DENSO = 2  # ≥2 vecinos cercanos = zona densa
+                        UMBRAL_DENSO = 1  # ≥1 vecino cercano = zona densa
 
                         # En zona densa: ordenar por |desviación de la tendencia| y quedarse con 1/3
                         y_trend = coeffs[0] * np.log(x) + coeffs[1]
