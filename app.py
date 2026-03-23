@@ -400,8 +400,15 @@ st.markdown("""
     
     /* Reducir espaciado entre elementos */
     .stSelectbox, .stDateInput, .stNumberInput, .stButton {
-        margin-top: 0.2rem !important;
-        margin-bottom: 0.2rem !important;
+        margin-top: 0.1rem !important;
+        margin-bottom: 0.1rem !important;
+    }
+    /* Reducir gap entre fecha y precio en la calculadora */
+    [data-testid="stDateInput"] {
+        margin-bottom: 0.3rem !important;
+    }
+    [data-testid="stNumberInput"] {
+        margin-top: 0.3rem !important;
     }
     
     div[data-testid="stMarkdownContainer"] h1 {
@@ -534,25 +541,6 @@ st.markdown("""
         height: 100% !important;
     }
 
-    /* Columna derecha: toda la cadena flex para que las cards llenen el alto disponible */
-    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child > [data-testid="stVerticalBlock"],
-    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child [data-testid="stVerticalBlock"] {
-        display: flex !important;
-        flex-direction: column !important;
-        height: 100% !important;
-    }
-    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child [data-testid="stMarkdownContainer"],
-    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child [data-testid="stMarkdownContainer"] > div {
-        flex: 1 !important;
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child .metrics-card {
-        flex: 1 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between !important;
-    }
 
     /* Card contenedor de grupo de métricas */
     .metrics-card {
@@ -877,28 +865,6 @@ st.markdown("""
     setTimeout(applyFix, 500);
     setTimeout(applyFix, 1500);
 
-    function alignMetricCards() {
-        // Buscar las metrics-cards en el DOM
-        var cards = document.querySelectorAll('.metrics-card');
-        if (cards.length !== 3) return;
-        // Buscar el card de información del bono
-        var infoCard = document.querySelector('.calc-card-fill');
-        if (!infoCard) return;
-        var totalH = infoCard.offsetHeight;
-        if (totalH < 100) return;
-        // Distribuir el alto total entre las 3 cards (con 16px de gap entre ellas)
-        var cardH = Math.floor((totalH - 32) / 3);
-        if (cardH < 80) return;
-        cards.forEach(function(card) {
-            card.style.setProperty('min-height', cardH + 'px', 'important');
-            card.style.setProperty('display', 'flex', 'important');
-            card.style.setProperty('flex-direction', 'column', 'important');
-            card.style.setProperty('justify-content', 'center', 'important');
-        });
-    }
-
-    setTimeout(alignMetricCards, 700);
-    setTimeout(alignMetricCards, 1800);
 
     // Reaplica cada vez que Streamlit hace rerender
     var observer = new MutationObserver(function() {
