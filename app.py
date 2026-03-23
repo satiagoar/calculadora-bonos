@@ -3119,6 +3119,7 @@ try:
             for tipo in sorted(grupos.keys()):
                 if not grupos[tipo]:
                     continue
+                st.markdown(f"<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
                 st.markdown(f"### {tipo}")
                 df_tabla = pd.DataFrame(grupos[tipo])
                 if 'corporativo' in tipo.lower():
