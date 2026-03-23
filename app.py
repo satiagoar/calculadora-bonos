@@ -878,25 +878,27 @@ st.markdown("""
     setTimeout(applyFix, 1500);
 
     function alignMetricCards() {
-        var blocks = document.querySelectorAll('[data-testid="stHorizontalBlock"]');
-        blocks.forEach(function(block) {
-            var cols = block.querySelectorAll(':scope > [data-testid="stColumn"]');
-            if (cols.length < 2) return;
-            var leftH = cols[0].offsetHeight;
-            if (leftH < 100) return;
-            var rightCol = cols[cols.length - 1];
-            var cards = rightCol.querySelectorAll('.metrics-card');
-            if (cards.length === 0) return;
-            var cardH = Math.floor((leftH - (cards.length - 1) * 16) / cards.length);
-            if (cardH < 80) return;
-            cards.forEach(function(card) {
-                card.style.setProperty('min-height', cardH + 'px', 'important');
-            });
+        // Buscar las metrics-cards en el DOM
+        var cards = document.querySelectorAll('.metrics-card');
+        if (cards.length !== 3) return;
+        // Buscar el card de información del bono
+        var infoCard = document.querySelector('.calc-card-fill');
+        if (!infoCard) return;
+        var totalH = infoCard.offsetHeight;
+        if (totalH < 100) return;
+        // Distribuir el alto total entre las 3 cards (con 16px de gap entre ellas)
+        var cardH = Math.floor((totalH - 32) / 3);
+        if (cardH < 80) return;
+        cards.forEach(function(card) {
+            card.style.setProperty('min-height', cardH + 'px', 'important');
+            card.style.setProperty('display', 'flex', 'important');
+            card.style.setProperty('flex-direction', 'column', 'important');
+            card.style.setProperty('justify-content', 'center', 'important');
         });
     }
 
-    setTimeout(alignMetricCards, 600);
-    setTimeout(alignMetricCards, 1600);
+    setTimeout(alignMetricCards, 700);
+    setTimeout(alignMetricCards, 1800);
 
     // Reaplica cada vez que Streamlit hace rerender
     var observer = new MutationObserver(function() {
