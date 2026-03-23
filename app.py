@@ -3087,8 +3087,10 @@ try:
         TABLE_CSS = """
         <style>
         .bond-table { width:100%; border-collapse:collapse; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
-        .bond-table th { background:#fafafa; color:#555; font-weight:600; padding:9px 12px; text-align:left; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
-        .bond-table td { padding:8px 12px; color:#333; white-space:nowrap; }
+        .bond-table th { background:#fafafa; color:#555; font-weight:600; padding:9px 12px; text-align:center; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
+        .bond-table th:first-child { text-align:left; }
+        .bond-table td { padding:8px 12px; color:#333; white-space:nowrap; text-align:center; }
+        .bond-table td:first-child { text-align:left; }
         .bond-table tr:nth-child(even) td { background:#f7f7f7; }
         .bond-table tr:nth-child(odd) td { background:#ffffff; }
         .bond-table tr:hover td { background:#eef2ff; }
