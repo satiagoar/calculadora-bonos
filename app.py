@@ -144,24 +144,21 @@ st.markdown("""
         overflow: hidden !important;
     }
 
-    /* Eliminar padding superior del contenedor principal */
-    [data-testid="stAppViewContainer"] > .main {
-        padding-top: 0 !important;
+    /* Selectores modernos Streamlit 1.x */
+    [data-testid="stMainBlockContainer"] {
+        padding-top: 0.75rem !important;
+        padding-left: 2rem !important;
     }
-    .main {
+    [data-testid="stAppViewContainer"] > section {
         padding-top: 0 !important;
     }
 
-    /* Subir el contenido principal */
+    /* Selectores legacy (versiones anteriores) */
     .main .block-container {
         padding-left: 2rem !important;
         padding-top: 0.75rem !important;
         padding-bottom: 1rem !important;
-        margin-top: -6rem !important;
-        max-width: 100% !important;
     }
-
-    /* Estilos generales */
     .main > div {
         padding-top: 0rem;
     }
@@ -735,6 +732,33 @@ st.markdown("""
         font-size: 8px !important;
     }
 </style>
+""", unsafe_allow_html=True)
+
+# JS para reducir padding-top del bloque principal (emotion CSS-in-JS se inyecta tarde)
+st.markdown("""
+<script>
+(function fixPadding() {
+    function applyFix() {
+        var el = document.querySelector('[data-testid="stMainBlockContainer"]');
+        if (el) {
+            el.style.setProperty('padding-top', '0.75rem', 'important');
+        }
+        var header = document.querySelector('header[data-testid="stHeader"]');
+        if (header) {
+            header.style.setProperty('height', '0px', 'important');
+            header.style.setProperty('min-height', '0px', 'important');
+            header.style.setProperty('overflow', 'hidden', 'important');
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { setTimeout(applyFix, 100); });
+    } else {
+        setTimeout(applyFix, 100);
+    }
+    setTimeout(applyFix, 500);
+    setTimeout(applyFix, 1500);
+})();
+</script>
 """, unsafe_allow_html=True)
 
 # CSS condicional para ocultar sidebar cuando mercados está activo
