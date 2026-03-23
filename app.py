@@ -962,6 +962,50 @@ def encontrar_fecha_vencimiento(flujos):
     
     return fecha_vencimiento
 
+@st.cache_data(ttl=60)  # Cache por 1 minuto
+def obtener_precios_data912(endpoint):
+    """
+    Obtiene todos los precios desde data912.com para un endpoint dado.
+    endpoint: 'arg_bonds' para soberanos USD, 'arg_corp' para corporativos
+    Retorna dict {symbol: last_price} o {} si falla
+    """
+    try:
+        url = f"https://data912.com/live/{endpoint}"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                item['symbol']: item['c']
+                for item in data
+                if item.get('symbol') and item.get('c') and item['c'] > 0
+            }
+    except Exception:
+        pass
+    return {}
+
+def obtener_precio_data912(ticker):
+    """
+    Obtiene el último precio operado de un bono desde data912.com.
+    Busca en soberanos (arg_bonds) y corporativos (arg_corp).
+    Retorna el precio (float) o None si no se encuentra.
+    """
+    if not ticker or ticker.strip() == '':
+        return None
+
+    ticker_clean = ticker.strip().upper()
+
+    # Si el ticker tiene exactamente 4 caracteres, agregar 'D' al final
+    if len(ticker_clean) == 4:
+        ticker_clean = ticker_clean + 'D'
+
+    for endpoint in ['arg_bonds', 'arg_corp']:
+        precios = obtener_precios_data912(endpoint)
+        if ticker_clean in precios:
+            return round(float(precios[ticker_clean]), 2)
+
+    return None
+
+
 @st.cache_data(ttl=300)  # Cache por 5 minutos
 def obtener_precio_byma(ticker):
     """
@@ -2410,17 +2454,16 @@ try:
                 
                 # Inicializar el precio en session_state si no existe
                 if precio_key_main not in st.session_state:
-                    # Intentar obtener precio desde PyOBD (BYMA Data)
+                    # Intentar obtener último precio desde data912.com
                     ticker = bono_actual_main.get('ticker', '').strip()
-                    precio_byma = None
-                    
+                    precio_inicial = None
+
                     if ticker and ticker != '' and ticker != 'SPX500':
-                        precio_byma = obtener_precio_byma(ticker)
-                    
-                    # Usar precio de BYMA si está disponible, sino no inicializar (None)
-                    if precio_byma and precio_byma > 0:
-                        st.session_state[precio_key_main] = precio_byma
-                    # Si no hay precio de BYMA, no inicializar - el campo mostrará 0.0 por defecto
+                        precio_inicial = obtener_precio_data912(ticker)
+
+                    # Usar precio de data912 si está disponible, sino el campo mostrará 0.0
+                    if precio_inicial and precio_inicial > 0:
+                        st.session_state[precio_key_main] = precio_inicial
                 
                 # Inputs con ancho reducido al 70%
                 col_input_left, col_input_center, col_input_right = st.columns([0.15, 0.7, 0.15])
@@ -2443,7 +2486,7 @@ try:
                         step=0.01,
                         format="%.2f",
                         key=precio_key_main,
-                        help="💡 El precio se obtiene automáticamente desde BYMA (si está disponible). Puedes modificarlo manualmente si lo deseas."
+                        help="💡 El precio se obtiene automáticamente desde data912.com (último operado). Puedes modificarlo manualmente si lo deseas."
                     )
         
                 # Botones de cálculo y volver con ancho reducido al 70%
