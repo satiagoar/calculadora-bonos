@@ -3081,7 +3081,11 @@ try:
                     debug_skip.append(f"ERR {ticker}: {type(e).__name__}: {e}")
                     continue
 
-        st.caption(f"DEBUG: {len(debug_skip)} sin precio: {debug_skip[:5]}")
+        errores = [x for x in debug_skip if x.startswith('ERR')]
+        sin_precio = [x for x in debug_skip if not x.startswith('ERR')]
+        grupos_info = {k: len(v) for k, v in grupos.items()}
+        st.caption(f"DEBUG grupos: {grupos_info}")
+        st.caption(f"DEBUG sin precio: {len(sin_precio)}, errores: {len(errores)}: {errores[:5]}")
         if grupos:
             for tipo in sorted(grupos.keys()):
                 if not grupos[tipo]:
