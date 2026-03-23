@@ -133,21 +133,27 @@ st.markdown("""
         width: 100% !important;
         overflow: visible !important;
     }
-    /* Margen del contenido principal para alinearse con el sidebar */
+    /* Ocultar barra superior de Streamlit y compensar su espacio */
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stDecoration"] { display: none !important; }
+    header[data-testid="stHeader"] {
+        height: 0px !important;
+        min-height: 0px !important;
+        padding: 0 !important;
+    }
+
+    /* Subir el contenido principal compensando el espacio del header */
     .main .block-container {
         padding-left: 2rem !important;
-        padding-top: 0.5rem !important;
+        padding-top: 1rem !important;
         padding-bottom: 1rem !important;
+        margin-top: -4rem !important;
     }
 
     /* Estilos generales */
     .main > div {
         padding-top: 0rem;
     }
-
-    /* Eliminar barra de herramientas de Streamlit */
-    [data-testid="stToolbar"] { display: none !important; }
-    header[data-testid="stHeader"] { display: none !important; }
     
     .main .element-container {
         margin-top: 0rem !important;
@@ -376,12 +382,6 @@ st.markdown("""
     .css-1d391kg .stMarkdown {
         margin-top: 0.2rem !important;
         margin-bottom: 0.2rem !important;
-    }
-    
-    /* Reducir espaciado en sección principal */
-    .main .block-container {
-        padding-top: 0.5rem !important;
-        padding-bottom: 0.5rem !important;
     }
     
     .main .element-container {
