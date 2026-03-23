@@ -3188,8 +3188,10 @@ try:
                         )
                         st.plotly_chart(fig, use_container_width=True)
 
-                # Cueva de rendimientos para Corporativo Ley ARG
-                if 'corporativo ley arg' in tipo.lower():
+                # Cueva de rendimientos para Corporativos
+                if 'corporativo' in tipo.lower():
+                    titulo_cueva = f'Cueva de Rendimientos — {tipo}'
+                    nombre_serie = tipo
                     df_curva = df_raw[['Activo', 'Dur. Modificada', 'TIR Semestral']].dropna()
                     df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
                     df_curva = df_curva[(df_curva['TIR Semestral'] >= 3) & (df_curva['TIR Semestral'] <= 15)]
@@ -3204,13 +3206,11 @@ try:
                         y_r = y.max() - y.min() if y.max() != y.min() else 1
                         nombres = df_curva['Activo'].values
 
-                        # Ordenar por |desviación de la curva| desc: los outliers tienen prioridad
                         y_trend_pts = coeffs[0] * np.log(x) + coeffs[1]
                         desviacion = np.abs(y - y_trend_pts)
                         orden = np.argsort(desviacion)[::-1]
 
-                        # Greedy global: mostrar etiqueta si no solapa con ninguna ya colocada
-                        MIN_DIST = 0.11  # distancia mínima normalizada entre etiquetas
+                        MIN_DIST = 0.11
                         dirs = ['top center','bottom center','middle right','middle left',
                                 'top right','top left','bottom right','bottom left']
                         offsets = {'top center':(0,.06),'bottom center':(0,-.06),
@@ -3220,16 +3220,13 @@ try:
 
                         texto_visible = [''] * len(x)
                         positions = ['top center'] * len(x)
-                        placed = []  # (lx, ly) de etiquetas colocadas
+                        placed = []
 
                         for i in orden:
-                            # Verificar si el punto está demasiado cerca de alguna etiqueta ya colocada
                             nx, ny = x[i]/x_r, y[i]/y_r
                             dists_to_placed = [np.sqrt((nx-px)**2+(ny-py)**2) for px,py in placed]
                             if dists_to_placed and min(dists_to_placed) < MIN_DIST:
-                                continue  # muy cerca de otra etiqueta ya colocada, omitir
-
-                            # Elegir la mejor dirección
+                                continue
                             best_pos, best_score = 'top center', -1
                             best_lx, best_ly = nx, ny + 0.06
                             for d in dirs:
@@ -3242,7 +3239,6 @@ try:
                                 if score > best_score:
                                     best_score, best_pos = score, d
                                     best_lx, best_ly = lx, ly
-
                             texto_visible[i] = nombres[i]
                             positions[i] = best_pos
                             placed.append((best_lx, best_ly))
@@ -3256,7 +3252,7 @@ try:
                             textposition=positions,
                             textfont=dict(size=9, color='#1a237e'),
                             marker=dict(size=9, color='#1a237e'),
-                            name='Corp. Ley ARG',
+                            name=nombre_serie,
                             hovertemplate='<b>%{customdata}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
                         ))
                         fig_corp.add_trace(go.Scatter(
@@ -3268,7 +3264,7 @@ try:
                             showlegend=False,
                         ))
                         fig_corp.update_layout(
-                            title='Cueva de Rendimientos — Corporativo Ley ARG',
+                            title=titulo_cueva,
                             xaxis_title='Duración Modificada (años)',
                             yaxis_title='TIR Semestral (%)',
                             xaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
