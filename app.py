@@ -3092,19 +3092,8 @@ try:
                     continue
                 st.markdown(f"### {tipo}")
                 df_tabla = pd.DataFrame(grupos[tipo])
-                st.dataframe(
-                    df_tabla,
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        'Precio':         st.column_config.NumberColumn(format="%.2f"),
-                        'Int. Corridos':  st.column_config.NumberColumn(format="%.4f"),
-                        'Cap. Residual':  st.column_config.NumberColumn(format="%.2f"),
-                        'Cupón Vigente':  st.column_config.NumberColumn("Cupón Vigente (%)", format="%.4f %%"),
-                        'TIR Semestral':  st.column_config.NumberColumn("TIR Semestral (%)", format="%.2f %%"),
-                        'Dur. Modificada':st.column_config.NumberColumn(format="%.2f"),
-                    }
-                )
+                st.write(f"Filas: {len(df_tabla)}, Columnas: {list(df_tabla.columns)}")
+                st.table(df_tabla)
         else:
             st.info("No hay precios disponibles en este momento.")
 
