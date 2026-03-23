@@ -113,6 +113,9 @@ st.markdown("""
     
     /* Sidebar siempre visible - ocultar botón de colapsar */
     [data-testid="collapsedControl"] { display: none !important; }
+    [data-testid="stSidebarCollapseButton"] { display: none !important; }
+    button[kind="header"] { display: none !important; }
+    [data-testid="stSidebar"] button { display: none !important; }
     [data-testid="stSidebar"] {
         display: flex !important;
         visibility: visible !important;
@@ -127,6 +130,10 @@ st.markdown("""
         display: flex !important;
         width: 100% !important;
         overflow: visible !important;
+    }
+    /* Margen del contenido principal para alinearse con el sidebar */
+    .main .block-container {
+        padding-left: 2rem !important;
     }
 
     /* Estilos generales */
