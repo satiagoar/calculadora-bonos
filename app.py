@@ -103,12 +103,12 @@ st.markdown("""
 <style>
     /* Forzar tema claro */
     .stApp {
-        background-color: white !important;
+        background-color: #f4f6fb !important;
         color: black !important;
     }
-    
+
     .stApp > div {
-        background-color: white !important;
+        background-color: #f4f6fb !important;
     }
     
     /* Sidebar siempre visible - ocultar botón de colapsar */
@@ -511,58 +511,82 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Cards de métricas */
+    /* Card contenedor de grupo de métricas */
+    .metrics-card {
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+        padding: 1.2rem 1.2rem 1rem;
+        margin-bottom: 1rem;
+    }
+    .metrics-card-title {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.9rem;
+        padding-bottom: 0.6rem;
+        border-bottom: 1px solid #f0f2f7;
+    }
+
+    /* Cards de métricas individuales */
     .metric-card {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin: 0.5rem 0;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-        height: 120px !important;
+        background: #f4f6fb;
+        border-radius: 10px;
+        padding: 0.85rem 0.6rem;
+        text-align: center;
         display: flex !important;
         flex-direction: column !important;
         justify-content: center !important;
         align-items: center !important;
     }
-    
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    }
-    
     .metric-label {
-        font-size: 0.875rem;
-        font-weight: 600;
+        font-size: 0.63rem;
+        font-weight: 700;
         color: #64748b;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.45rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.06em;
         text-align: center;
     }
-    
     .metric-value {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         font-weight: 700;
-        color: #1e293b;
+        color: #1a237e;
         line-height: 1.2;
         text-align: center;
     }
-    
+
     /* Grid de métricas */
     .metrics-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 1rem;
-        margin: 1rem 0;
+        gap: 0.6rem;
     }
-    
     .metrics-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 1rem;
-        margin-bottom: 0.75rem;
+        gap: 0.6rem;
+    }
+
+    /* Card para inputs y para info del bono */
+    .calc-card {
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+        padding: 1.2rem 1.2rem 1rem;
+        margin-bottom: 1rem;
+    }
+    .calc-card-title {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.9rem;
+        padding-bottom: 0.6rem;
+        border-bottom: 1px solid #f0f2f7;
     }
     
     /* Info bullets */
@@ -2561,9 +2585,12 @@ try:
                         st.session_state[precio_key_main] = precio_inicial
                         st.session_state.calcular = True
                 
+                # Encabezado card de parámetros
+                st.markdown('<div class="calc-card"><div class="calc-card-title">Parámetros de cálculo</div></div>', unsafe_allow_html=True)
+
                 # Inputs con ancho reducido al 70%
                 col_input_left, col_input_center, col_input_right = st.columns([0.15, 0.7, 0.15])
-                
+
                 with col_input_center:
                     fecha_liquidacion = st.date_input(
                         "Fecha de Liquidación",
@@ -2630,35 +2657,34 @@ try:
                 col_info_left, col_info_center, col_info_right = st.columns([0.15, 0.7, 0.15])
                 
                 with col_info_center:
-                    st.markdown("---")
-                    st.markdown("### Información del Bono")
-                    
                     # Mapear periodicidad a texto
                     periodicidad_texto_info = {
                         1: "anual",
-                        2: "semestral", 
+                        2: "semestral",
                         3: "trimestral",
                         4: "trimestral",
                         6: "bimestral",
                         12: "mensual"
                     }.get(bono_actual_main['periodicidad'], f"{bono_actual_main['periodicidad']} veces al año")
-                    
+
                     # Calcular fecha de vencimiento
                     fecha_vencimiento_info = encontrar_fecha_vencimiento(bono_actual_main['flujos'])
-                    
+
                     # Calcular cupón vigente basado en la fecha actual
                     from datetime import date
                     cupon_vigente_actual_info = encontrar_cupon_vigente(date.today(), bono_actual_main['flujos'])
-                    
-                    # Información del bono con mejor formato y mayor interlineado
+
                     st.markdown(f"""
-                    <div style="line-height: 1.8; margin: 0.5rem 0; padding: 0;">
-                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Nombre:</strong> {bono_actual_main['nombre']}</p>
-                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
-                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
-                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Periodicidad:</strong> {periodicidad_texto_info}</p>
-                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
-                        <p style="margin: 0.5rem 0; padding: 0.2rem 0;"><strong>Ticker:</strong> {bono_actual_main['ticker']}</p>
+                    <div class="calc-card">
+                        <div class="calc-card-title">Información del Bono</div>
+                        <div style="font-size:0.83rem; color:#444; line-height:1.8;">
+                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Nombre:</strong> {bono_actual_main['nombre']}</p>
+                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
+                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
+                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Periodicidad:</strong> {periodicidad_texto_info}</p>
+                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
+                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Ticker:</strong> {bono_actual_main['ticker']}</p>
+                        </div>
                     </div>
                     """, unsafe_allow_html=True)
         
@@ -2914,120 +2940,72 @@ try:
                         12: "mensual"
                         }.get(bono_actual['periodicidad'], f"{bono_actual['periodicidad']} veces al año")
                     
-                    # Métricas principales
-                    st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
-                    
-                    # Primera fila
-                    col1_1, col1_2, col1_3, col1_4 = st.columns(4)
-                    with col1_1:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Precio Limpio</div>
-                            <div class="metric-value">{formatear_numero(precio_limpio, 4)}</div>
+                    # Métricas principales — 3 cards agrupadas
+                    st.markdown(f'''
+                    <div class="metrics-card">
+                        <div class="metrics-card-title">Precio y estructura</div>
+                        <div class="metrics-row">
+                            <div class="metric-card">
+                                <div class="metric-label">Precio Limpio</div>
+                                <div class="metric-value">{formatear_numero(precio_limpio, 4)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Intereses Corridos</div>
+                                <div class="metric-value">{formatear_numero(intereses_corridos, 4)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Capital Residual</div>
+                                <div class="metric-value">{formatear_numero(capital_residual, 2)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Cupón Vigente</div>
+                                <div class="metric-value">{cupon_vigente:.2%}</div>
+                            </div>
                         </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col1_2:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Intereses Corridos</div>
-                            <div class="metric-value">{formatear_numero(intereses_corridos, 4)}</div>
+                    </div>
+                    <div class="metrics-card">
+                        <div class="metrics-card-title">Rendimiento y duración</div>
+                        <div class="metrics-row">
+                            <div class="metric-card">
+                                <div class="metric-label">TIR Efectiva</div>
+                                <div class="metric-value">{ytm_efectiva:.4%}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">TIR {periodicidad_texto.title()}</div>
+                                <div class="metric-value">{ytm_anualizada:.4%}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Duración Modificada</div>
+                                <div class="metric-value">{formatear_numero(duracion_modificada, 2)} años</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Duración Macaulay</div>
+                                <div class="metric-value">{formatear_numero(duracion_macaulay, 2)} años</div>
+                            </div>
                         </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col1_3:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Capital Residual</div>
-                            <div class="metric-value">{formatear_numero(capital_residual, 2)}</div>
+                    </div>
+                    <div class="metrics-card">
+                        <div class="metrics-card-title">Otros indicadores</div>
+                        <div class="metrics-row">
+                            <div class="metric-card">
+                                <div class="metric-label">Valor Técnico</div>
+                                <div class="metric-value">{formatear_numero(valor_tecnico, 4)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Paridad</div>
+                                <div class="metric-value">{formatear_numero(paridad, 4)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Próximo Cupón</div>
+                                <div class="metric-value">{proximo_cupon.strftime('%d/%m/%Y') if proximo_cupon else 'N/A'}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Vida Media</div>
+                                <div class="metric-value">{formatear_numero(vida_media, 2)} años</div>
+                            </div>
                         </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col1_4:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Cupón Vigente</div>
-                            <div class="metric-value">{cupon_vigente:.2%}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # Segunda fila
-                    st.markdown('<div class="metrics-row">', unsafe_allow_html=True)
-                    col2_1, col2_2, col2_3, col2_4 = st.columns(4)
-                    
-                    with col2_1:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">TIR Efectiva</div>
-                            <div class="metric-value">{ytm_efectiva:.4%}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col2_2:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">TIR {periodicidad_texto.title()}</div>
-                            <div class="metric-value">{ytm_anualizada:.4%}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col2_3:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Duración Modificada</div>
-                            <div class="metric-value">{formatear_numero(duracion_modificada, 2)} años</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col2_4:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Duración Macaulay</div>
-                            <div class="metric-value">{formatear_numero(duracion_macaulay, 2)} años</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # Tercera fila
-                    st.markdown('<div class="metrics-row">', unsafe_allow_html=True)
-                    col3_1, col3_2, col3_3, col3_4 = st.columns(4)
-                    
-                    with col3_1:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Valor Técnico</div>
-                            <div class="metric-value">{formatear_numero(valor_tecnico, 4)}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col3_2:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Paridad</div>
-                            <div class="metric-value">{formatear_numero(paridad, 4)}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col3_3:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Próximo Cupón</div>
-                            <div class="metric-value">{proximo_cupon.strftime('%d/%m/%Y') if proximo_cupon else 'N/A'}</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    with col3_4:
-                        st.markdown(f'''
-                        <div class="metric-card">
-                            <div class="metric-label">Vida Media</div>
-                            <div class="metric-value">{formatear_numero(vida_media, 2)} años</div>
-                        </div>
-                        ''', unsafe_allow_html=True)
-                    
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    </div>
+                    ''', unsafe_allow_html=True)
     else:
         # No mostrar nada cuando hay bono seleccionado pero no se ha calculado
         pass
