@@ -132,7 +132,7 @@ st.markdown("""
         display: flex !important;
         width: 100% !important;
         overflow: visible !important;
-        padding-top: 1.5rem !important;
+        padding-top: 3.5rem !important;
     }
     /* Ocultar barra superior de Streamlit */
     [data-testid="stToolbar"] { display: none !important; }
