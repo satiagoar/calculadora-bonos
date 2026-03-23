@@ -490,7 +490,7 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
     
-    /* Botones secondary (azul) */
+    /* Botones secondary (gris) */
     .stButton > button[kind="secondary"] {
         background-color: #6b7280 !important;
         color: white !important;
@@ -499,11 +499,27 @@ st.markdown("""
         padding: 0.5rem 1rem !important;
         font-weight: 600 !important;
     }
-    
+
     .stButton > button[kind="secondary"]:hover {
         background-color: #4b5563 !important;
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3) !important;
+    }
+
+    /* Botón primary — mismo azul que sidebar */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 600 !important;
+    }
+
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
     }
     
     /* Ocultar botones +/- del number input */
@@ -511,10 +527,18 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Columna izquierda de la calculadora como flex para que el card de info llene el espacio */
+    /* Columna izquierda: flex para que el card de info llene el espacio */
     [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child > [data-testid="stVerticalBlock"] {
         display: flex !important;
         flex-direction: column !important;
+        height: 100% !important;
+    }
+
+    /* Columna derecha: distribuir cards uniformemente para alinear con columna izquierda */
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child > [data-testid="stVerticalBlock"] {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
         height: 100% !important;
     }
 
@@ -2615,7 +2639,7 @@ try:
                         st.session_state[precio_key_main] = precio_inicial
                         st.session_state.calcular = True
                 
-                st.markdown('<p style="font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Parámetros de cálculo</p>', unsafe_allow_html=True)
+                st.markdown('<p style="font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;padding-left:15%;">Parámetros de cálculo</p>', unsafe_allow_html=True)
 
                 # Inputs con ancho reducido al 70%
                 col_input_left, col_input_center, col_input_right = st.columns([0.15, 0.7, 0.15])
