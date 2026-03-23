@@ -962,7 +962,7 @@ def encontrar_fecha_vencimiento(flujos):
     
     return fecha_vencimiento
 
-@st.cache_data(ttl=60)  # Cache por 1 minuto
+@st.cache_data(ttl=300)  # Cache por 5 minutos
 def obtener_precios_data912(endpoint):
     """
     Obtiene todos los precios desde data912.com para un endpoint dado.
@@ -2937,8 +2937,8 @@ try:
         pass
     
     if not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False) and not st.session_state.get('bono_seleccionado'):
-        # Mostrar los 4 gráficos de TradingView cuando no se ha calculado (solo si mercados e indices no están activos)
-        # Crear 2 filas de 2 columnas cada una
+        # Auto-refresh cada 10 minutos
+        st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 600000);</script>", height=0)
         # Tabla de bonos con métricas en tiempo real
 
         with st.spinner("Cargando precios y calculando métricas..."):
