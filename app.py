@@ -3139,33 +3139,41 @@ try:
 
                 # Cueva de rendimientos solo para Soberano USD
                 if 'soberano' in tipo.lower():
-                    df_curva = df_raw[['Activo', 'Dur. Modificada', 'TIR Semestral']].dropna()
+                    df_curva = df_raw[['Activo', 'Ticker', 'Dur. Modificada', 'TIR Semestral']].dropna()
                     df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
+                    df_gd = df_curva[df_curva['Ticker'].str.upper().str.startswith('GD')]
+                    df_al = df_curva[~df_curva['Ticker'].str.upper().str.startswith('GD')]
                     if len(df_curva) >= 3:
-                        x = df_curva['Dur. Modificada'].values
-                        y = df_curva['TIR Semestral'].values
-                        # Regresión logarítmica: y = a*ln(x) + b
-                        coeffs = np.polyfit(np.log(x), y, 1)
-                        x_line = np.linspace(x.min(), x.max(), 200)
-                        y_line = coeffs[0] * np.log(x_line) + coeffs[1]
                         fig = go.Figure()
-                        fig.add_trace(go.Scatter(
-                            x=x, y=y,
-                            mode='markers+text',
-                            text=df_curva['Activo'],
-                            textposition='top center',
-                            textfont=dict(size=10),
-                            marker=dict(size=9, color='#1a237e'),
-                            name='Soberanos USD',
-                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
-                        ))
-                        fig.add_trace(go.Scatter(
-                            x=x_line, y=y_line,
-                            mode='lines',
-                            line=dict(color='#e53935', width=2, dash='dash'),
-                            name='Tendencia log.',
-                            hoverinfo='skip',
-                        ))
+                        for df_serie, color_pt, color_ln, nombre in [
+                            (df_gd, '#1a237e', '#42a5f5', 'GD (Ley NY)'),
+                            (df_al, '#1b5e20', '#66bb6a', 'AL/otros (Ley ARG)'),
+                        ]:
+                            if len(df_serie) < 2:
+                                continue
+                            x = df_serie['Dur. Modificada'].values
+                            y = df_serie['TIR Semestral'].values
+                            coeffs = np.polyfit(np.log(x), y, 1)
+                            x_line = np.linspace(x.min(), x.max(), 200)
+                            y_line = coeffs[0] * np.log(x_line) + coeffs[1]
+                            fig.add_trace(go.Scatter(
+                                x=x, y=y,
+                                mode='markers+text',
+                                text=df_serie['Activo'],
+                                textposition='top center',
+                                textfont=dict(size=10, color=color_pt),
+                                marker=dict(size=9, color=color_pt),
+                                name=nombre,
+                                hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
+                            ))
+                            fig.add_trace(go.Scatter(
+                                x=x_line, y=y_line,
+                                mode='lines',
+                                line=dict(color=color_ln, width=2, dash='dash'),
+                                name=f'Tend. {nombre}',
+                                hoverinfo='skip',
+                                showlegend=False,
+                            ))
                         fig.update_layout(
                             title='Cueva de Rendimientos — Soberano USD',
                             xaxis_title='Duración Modificada (años)',
