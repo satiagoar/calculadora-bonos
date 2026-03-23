@@ -3124,6 +3124,8 @@ try:
                 df_tabla = pd.DataFrame(grupos[tipo])
                 if 'corporativo' in tipo.lower():
                     df_tabla = df_tabla.sort_values(['Activo', 'Dur. Modificada']).reset_index(drop=True)
+                # Guardar datos numéricos antes de formatear (para el gráfico)
+                df_raw = df_tabla.copy()
                 df_tabla['Precio'] = df_tabla['Precio'].map('{:.2f}'.format)
                 df_tabla['Int. Corridos'] = df_tabla['Int. Corridos'].map('{:.4f}'.format)
                 df_tabla['Cap. Residual'] = df_tabla['Cap. Residual'].map('{:.2f}'.format)
@@ -3134,6 +3136,49 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown(render_tabla_html(df_tabla), unsafe_allow_html=True)
+
+                # Cueva de rendimientos solo para Soberano USD
+                if 'soberano' in tipo.lower():
+                    df_curva = df_raw[['Activo', 'Dur. Modificada', 'TIR Semestral']].dropna()
+                    df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
+                    if len(df_curva) >= 3:
+                        x = df_curva['Dur. Modificada'].values
+                        y = df_curva['TIR Semestral'].values
+                        # Regresión logarítmica: y = a*ln(x) + b
+                        coeffs = np.polyfit(np.log(x), y, 1)
+                        x_line = np.linspace(x.min(), x.max(), 200)
+                        y_line = coeffs[0] * np.log(x_line) + coeffs[1]
+                        fig = go.Figure()
+                        fig.add_trace(go.Scatter(
+                            x=x, y=y,
+                            mode='markers+text',
+                            text=df_curva['Activo'],
+                            textposition='top center',
+                            textfont=dict(size=10),
+                            marker=dict(size=9, color='#1a237e'),
+                            name='Soberanos USD',
+                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
+                        ))
+                        fig.add_trace(go.Scatter(
+                            x=x_line, y=y_line,
+                            mode='lines',
+                            line=dict(color='#e53935', width=2, dash='dash'),
+                            name='Tendencia log.',
+                            hoverinfo='skip',
+                        ))
+                        fig.update_layout(
+                            title='Cueva de Rendimientos — Soberano USD',
+                            xaxis_title='Duración Modificada (años)',
+                            yaxis_title='TIR Semestral (%)',
+                            xaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
+                            yaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
+                            plot_bgcolor='white',
+                            paper_bgcolor='white',
+                            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                            height=420,
+                            margin=dict(t=60, b=40, l=60, r=20),
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No hay precios disponibles en este momento.")
 
