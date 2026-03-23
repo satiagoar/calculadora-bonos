@@ -3071,6 +3071,7 @@ try:
                 if not grupos[tipo]:
                     continue
                 st.markdown(f"<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
+                st.markdown(f'<div class="bond-wrap"><div class="bond-title">{tipo}</div></div>', unsafe_allow_html=True)
                 df_tabla = pd.DataFrame(grupos[tipo])
                 if 'corporativo' in tipo.lower():
                     df_tabla = df_tabla.sort_values(['Activo', 'Dur. Modificada']).reset_index(drop=True)
@@ -3118,8 +3119,8 @@ try:
                             title='Cueva de Rendimientos — Soberano USD',
                             xaxis_title='Duración Modificada (años)',
                             yaxis_title='TIR Semestral (%)',
-                            xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True),
-                            yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True),
+                            xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
+                            yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
                             plot_bgcolor='white',
                             paper_bgcolor='white',
                             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
@@ -3207,8 +3208,8 @@ try:
                             title=titulo_cueva,
                             xaxis_title='Duración Modificada (años)',
                             yaxis_title='TIR Semestral (%)',
-                            xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True),
-                            yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True),
+                            xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
+                            yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
                             plot_bgcolor='white',
                             paper_bgcolor='white',
                             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
@@ -3227,7 +3228,7 @@ try:
                 df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
-                st.markdown(render_tabla_html(df_tabla, titulo=tipo), unsafe_allow_html=True)
+                st.markdown(render_tabla_html(df_tabla), unsafe_allow_html=True)
         else:
             st.info("No hay precios disponibles en este momento.")
 
