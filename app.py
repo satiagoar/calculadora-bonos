@@ -534,12 +534,24 @@ st.markdown("""
         height: 100% !important;
     }
 
-    /* Columna derecha: distribuir cards uniformemente para alinear con columna izquierda */
-    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child > [data-testid="stVerticalBlock"] {
+    /* Columna derecha: toda la cadena flex para que las cards llenen el alto disponible */
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child > [data-testid="stVerticalBlock"],
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child [data-testid="stVerticalBlock"] {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+    }
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child [data-testid="stMarkdownContainer"],
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child [data-testid="stMarkdownContainer"] > div {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child .metrics-card {
+        flex: 1 !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
-        height: 100% !important;
     }
 
     /* Card contenedor de grupo de métricas */
