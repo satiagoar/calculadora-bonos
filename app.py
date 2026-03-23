@@ -111,6 +111,10 @@ st.markdown("""
         background-color: white !important;
     }
     
+    /* Sidebar siempre visible - ocultar botón de colapsar */
+    [data-testid="collapsedControl"] { display: none !important; }
+    [data-testid="stSidebar"] { display: flex !important; visibility: visible !important; }
+
     /* Estilos generales */
     .main > div {
         padding-top: 0rem;
