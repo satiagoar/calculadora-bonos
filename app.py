@@ -2991,133 +2991,109 @@ try:
             """
             st.components.v1.html(imv_html, height=300)
         
-        # Espaciado reducido antes de la tabla de datos de mercado
+        # Tabla de bonos con métricas en tiempo real
         st.markdown("<br>", unsafe_allow_html=True)
-        
-        # Construir listas de bonos agrupadas por tipo con ticker válido
-        bonos_soberano = []
-        bonos_corporativo_ley_arg = []
-        bonos_corporativo_ley_argentina = []
-        bonos_otros = []
-        
-        for bono in bonos:
-            ticker = bono.get('ticker', '').strip()
-            tipo_bono = bono.get('tipo_bono', '').strip()
-            
-            if ticker and ticker != '' and ticker != 'SPX500':  # Excluir default y vacíos
-                symbol_entry = {
-                    "name": ticker,
-                    "displayName": bono.get('nombre', ticker)
-                }
-                
-                # Agrupar por tipo de bono (case-insensitive y flexible)
-                tipo_lower = tipo_bono.lower()
-                
-                if "soberano" in tipo_lower and "usd" in tipo_lower:
-                    bonos_soberano.append(symbol_entry)
-                elif "corporativo" in tipo_lower and "ley" in tipo_lower and "arg" in tipo_lower and "argentina" not in tipo_lower:
-                    # Corporativo Ley Arg (sin "Argentina")
-                    bonos_corporativo_ley_arg.append(symbol_entry)
-                elif "corporativo" in tipo_lower and "ley" in tipo_lower and "argentina" in tipo_lower:
-                    # Corporativo Ley Argentina
-                    bonos_corporativo_ley_argentina.append(symbol_entry)
-                elif "soberano" in tipo_lower:
-                    # Cualquier otro tipo soberano
-                    bonos_soberano.append(symbol_entry)
-                else:
-                    bonos_otros.append(symbol_entry)
-        
-        # Ordenar cada lista de bonos alfabéticamente por displayName
-        bonos_soberano.sort(key=lambda x: x['displayName'])
-        bonos_corporativo_ley_arg.sort(key=lambda x: x['displayName'])
-        bonos_corporativo_ley_argentina.sort(key=lambda x: x['displayName'])
-        bonos_otros.sort(key=lambda x: x['displayName'])
-        
-        # Construir JSON de símbolos con bonos segmentados
-        bonos_groups = []
-        
-        if bonos_soberano:
-            bonos_groups.append({
-                "name": "Bonos Soberanos",
-                "symbols": bonos_soberano
-            })
-        
-        if bonos_corporativo_ley_arg:
-            bonos_groups.append({
-                "name": "Corporativo Ley Arg",
-                "symbols": bonos_corporativo_ley_arg
-            })
-        
-        if bonos_corporativo_ley_argentina:
-            bonos_groups.append({
-                "name": "Corporativo Ley Argentina",
-                "symbols": bonos_corporativo_ley_argentina
-            })
-        
-        if bonos_otros:
-            bonos_groups.append({
-                "name": "Corporativos Ley NY",
-                "symbols": bonos_otros
-            })
-        
-        # Construir JSON de símbolos
-        symbols_groups = [
-                {
-                    "name": "Indices",
-                    "symbols": [
-                    {"name": "SPX500", "displayName": "S&P 500"},
-                    {"name": "NASDAQ:IXIC", "displayName": "NASDAQ"},
-                    {"name": "BMFBOVESPA:IBOV", "displayName": "Bovespa"},
-                    {"name": "IMV", "displayName": "Merval"}
-                ]
-            }
-        ]
-        
-        # Agregar grupos de bonos
-        symbols_groups.extend(bonos_groups)
-        
-        # Agregar Monedas y Commodities
-        symbols_groups.append({
-                    "name": "Monedas",
-                    "symbols": [
-                {"name": "FX_IDC:USDARS", "displayName": "USD/ARS"},
-                {"name": "FX_IDC:USDEUR", "displayName": "USD/EUR"},
-                {"name": "FX_IDC:USDGBP", "displayName": "USD/GBP"},
-                {"name": "FX_IDC:USDJPY", "displayName": "USD/JPY"}
-            ]
-        })
-        
-        symbols_groups.append({
-                    "name": "Commodities",
-                    "symbols": [
-                {"name": "TVC:USOIL", "displayName": "Petróleo WTI"},
-                {"name": "TVC:UKOIL", "displayName": "Petróleo Brent"},
-                {"name": "TVC:GOLD", "displayName": "Oro"},
-                {"name": "TVC:SILVER", "displayName": "Plata"}
-            ]
-        })
-        
-        # Widget Market Data - Ancho completo
-        market_data_html = f"""
-        <div class="tradingview-widget-container" style="height: 800px; width: 100%; font-size: 8px; margin-top: 0;">
-            <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%; font-size: 8px;"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
-            {{
-            "colorTheme": "light",
-            "locale": "es",
-            "largeChartUrl": "",
-            "isTransparent": true,
-            "showSymbolLogo": false,
-            "backgroundColor": "transparent",
-            "support_host": "https://www.tradingview.com",
-            "width": "100%",
-            "height": "800",
-            "symbolsGroups": {json.dumps(symbols_groups, ensure_ascii=False)}
-            }}
-            </script>
-        </div>
-        """
-        st.components.v1.html(market_data_html, height=800)
+
+        with st.spinner("Cargando precios y calculando métricas..."):
+            fecha_hoy = get_next_business_day()
+
+            precios_bonds = obtener_precios_data912('arg_bonds')
+            precios_corp = obtener_precios_data912('arg_corp')
+            precios_todos = {**precios_bonds, **precios_corp}
+
+            grupos = {}
+            for bono in bonos:
+                ticker = bono.get('ticker', '').strip()
+                if not ticker or ticker == 'SPX500':
+                    continue
+
+                ticker_api = ticker.upper()
+                if len(ticker_api) == 4:
+                    ticker_api = ticker_api + 'D'
+
+                precio = precios_todos.get(ticker_api)
+                if not precio or precio <= 0:
+                    continue
+
+                try:
+                    flujos = []
+                    fechas = []
+                    for flujo in bono['flujos']:
+                        if flujo['fecha'] > fecha_hoy:
+                            flujos.append(flujo['total'])
+                            fechas.append(flujo['fecha'])
+
+                    if not flujos:
+                        continue
+
+                    capital_residual = 100 - sum([
+                        f['capital'] for f in bono['flujos'] if f['fecha'] <= fecha_hoy
+                    ])
+
+                    todas_fechas = [f['fecha'] for f in bono['flujos']]
+                    fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_hoy, todas_fechas)
+                    intereses_corridos = 0
+                    if fecha_ultimo_cupon:
+                        intereses_corridos = calcular_intereses_corridos(
+                            fecha_hoy, fecha_ultimo_cupon,
+                            bono['tasa_cupon'], capital_residual, bono['base_calculo']
+                        )
+
+                    ytm_efectiva = calcular_ytm(
+                        precio, flujos, fechas, fecha_hoy,
+                        bono['base_calculo'], bono['periodicidad']
+                    )
+                    tir_semestral = 2 * ((1 + ytm_efectiva) ** (1/2) - 1)
+
+                    duracion_macaulay = calcular_duracion_macaulay(
+                        flujos, fechas, fecha_hoy, ytm_efectiva, bono['base_calculo']
+                    )
+                    ytm_anualizada = bono['periodicidad'] * ((1 + ytm_efectiva) ** (1 / bono['periodicidad']) - 1)
+                    duracion_modificada = calcular_duracion_modificada(
+                        duracion_macaulay,
+                        ytm_anualizada / bono['periodicidad'],
+                        bono['periodicidad']
+                    )
+
+                    cupon_vigente = encontrar_cupon_vigente(fecha_hoy, bono['flujos'])
+
+                    tipo = bono.get('tipo_bono', 'Otros')
+                    if tipo not in grupos:
+                        grupos[tipo] = []
+                    grupos[tipo].append({
+                        'Activo': bono['nombre'],
+                        'Ticker': ticker,
+                        'Precio': precio,
+                        'Int. Corridos': round(intereses_corridos, 4),
+                        'Cap. Residual': round(capital_residual, 2),
+                        'Cupón Vigente': round(cupon_vigente * 100, 4),
+                        'TIR Semestral': round(tir_semestral * 100, 2),
+                        'Dur. Modificada': round(duracion_modificada, 2),
+                    })
+
+                except Exception:
+                    continue
+
+        if grupos:
+            for tipo in sorted(grupos.keys()):
+                st.markdown(f"### {tipo}")
+                df_tabla = pd.DataFrame(grupos[tipo])
+                st.dataframe(
+                    df_tabla,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        'Precio':         st.column_config.NumberColumn(format="%.2f"),
+                        'Int. Corridos':  st.column_config.NumberColumn(format="%.4f"),
+                        'Cap. Residual':  st.column_config.NumberColumn(format="%.2f"),
+                        'Cupón Vigente':  st.column_config.NumberColumn("Cupón Vigente (%)", format="%.4f %%"),
+                        'TIR Semestral':  st.column_config.NumberColumn("TIR Semestral (%)", format="%.2f %%"),
+                        'Dur. Modificada':st.column_config.NumberColumn(format="%.2f"),
+                    }
+                )
+        else:
+            st.info("No hay precios disponibles en este momento.")
+
         
         
 except FileNotFoundError:
