@@ -3084,7 +3084,37 @@ try:
                 except Exception:
                     continue
 
+        TABLE_CSS = """
+        <style>
+        .bond-table { width:100%; border-collapse:collapse; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+        .bond-table th { background:#fafafa; color:#555; font-weight:600; padding:9px 12px; text-align:left; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
+        .bond-table td { padding:8px 12px; color:#333; white-space:nowrap; }
+        .bond-table tr:nth-child(even) td { background:#f7f7f7; }
+        .bond-table tr:nth-child(odd) td { background:#ffffff; }
+        .bond-table tr:hover td { background:#eef2ff; }
+        .var-pos { color:#2e7d32; font-weight:600; }
+        .var-neg { color:#c62828; font-weight:600; }
+        </style>
+        """
+
+        def render_tabla_html(df):
+            cols = list(df.columns)
+            headers = ''.join(f'<th>{c}</th>' for c in cols)
+            rows = ''
+            for _, row in df.iterrows():
+                cells = ''
+                for col in cols:
+                    val = row[col]
+                    if col == 'Var. Diaria %' and val != '-':
+                        css = 'var-pos' if val.startswith('+') else 'var-neg'
+                        cells += f'<td class="{css}">{val}</td>'
+                    else:
+                        cells += f'<td>{val}</td>'
+                rows += f'<tr>{cells}</tr>'
+            return f'<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>'
+
         if grupos:
+            st.markdown(TABLE_CSS, unsafe_allow_html=True)
             for tipo in sorted(grupos.keys()):
                 if not grupos[tipo]:
                     continue
@@ -3101,8 +3131,7 @@ try:
                 df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
-                df_tabla.index = [''] * len(df_tabla)
-                st.table(df_tabla)
+                st.markdown(render_tabla_html(df_tabla), unsafe_allow_html=True)
         else:
             st.info("No hay precios disponibles en este momento.")
 
