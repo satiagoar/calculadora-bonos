@@ -3147,7 +3147,7 @@ try:
                         fig = go.Figure()
                         for df_serie, color_pt, color_ln, nombre in [
                             (df_gd, '#1a237e', '#42a5f5', 'GD (Ley NY)'),
-                            (df_al, '#1b5e20', '#66bb6a', 'AL/otros (Ley ARG)'),
+                            (df_al, '#1565c0', '#90caf9', 'AL/otros (Ley ARG)'),
                         ]:
                             if len(df_serie) < 2:
                                 continue
