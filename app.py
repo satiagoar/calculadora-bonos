@@ -106,26 +106,11 @@ st.markdown("""
         background-color: white !important;
         color: black !important;
     }
-
+    
     .stApp > div {
         background-color: white !important;
     }
-
-    /* Reducir espacio en blanco superior */
-    .block-container {
-        padding-top: 1rem !important;
-    }
-
-    /* Sidebar fijo */
-    [data-testid="stSidebar"] {
-        position: fixed !important;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        overflow-y: auto;
-        z-index: 999;
-    }
-
+    
     /* Estilos generales */
     .main > div {
         padding-top: 0rem;
