@@ -3204,49 +3204,37 @@ try:
                         y_r = y.max() - y.min() if y.max() != y.min() else 1
                         nombres = df_curva['Activo'].values
 
-                        # Densidad local: nº de vecinos dentro de radio 0.12 (normalizado)
-                        densidad = []
-                        for i in range(len(x)):
-                            vecinos = sum(
-                                np.sqrt(((x[i]-x[j])/x_r)**2 + ((y[i]-y[j])/y_r)**2) < 0.12
-                                for j in range(len(x)) if j != i
-                            )
-                            densidad.append(vecinos)
-                        densidad = np.array(densidad)
-                        UMBRAL_DENSO = 1  # ≥1 vecino cercano = zona densa
+                        # Ordenar por |desviación de la curva| desc: los outliers tienen prioridad
+                        y_trend_pts = coeffs[0] * np.log(x) + coeffs[1]
+                        desviacion = np.abs(y - y_trend_pts)
+                        orden = np.argsort(desviacion)[::-1]
 
-                        # En zona densa: ordenar por |desviación de la tendencia| y quedarse con 1/3
-                        y_trend = coeffs[0] * np.log(x) + coeffs[1]
-                        desviacion = np.abs(y - y_trend)
-                        idx_densos = np.where(densidad >= UMBRAL_DENSO)[0]
-                        idx_densos_sorted = idx_densos[np.argsort(desviacion[idx_densos])[::-1]]
-                        keep = max(1, len(idx_densos_sorted) // 3)
-                        idx_densos_visibles = set(idx_densos_sorted[:keep])
-
-                        # Construir texto: vacío para puntos densos no seleccionados
-                        texto_visible = [
-                            nombres[i] if (densidad[i] < UMBRAL_DENSO or i in idx_densos_visibles) else ''
-                            for i in range(len(x))
-                        ]
-
-                        # Algoritmo greedy 8 direcciones solo para etiquetas visibles
+                        # Greedy global: mostrar etiqueta si no solapa con ninguna ya colocada
+                        MIN_DIST = 0.11  # distancia mínima normalizada entre etiquetas
                         dirs = ['top center','bottom center','middle right','middle left',
                                 'top right','top left','bottom right','bottom left']
                         offsets = {'top center':(0,.06),'bottom center':(0,-.06),
-                                   'middle right':(.06,0),'middle left':(-.06,0),
+                                   'middle right':(.07,0),'middle left':(-.07,0),
                                    'top right':(.05,.05),'top left':(-.05,.05),
                                    'bottom right':(.05,-.05),'bottom left':(-.05,-.05)}
-                        placed = []
-                        positions = []
-                        for i in range(len(x)):
-                            if texto_visible[i] == '':
-                                positions.append('top center')
-                                continue
+
+                        texto_visible = [''] * len(x)
+                        positions = ['top center'] * len(x)
+                        placed = []  # (lx, ly) de etiquetas colocadas
+
+                        for i in orden:
+                            # Verificar si el punto está demasiado cerca de alguna etiqueta ya colocada
+                            nx, ny = x[i]/x_r, y[i]/y_r
+                            dists_to_placed = [np.sqrt((nx-px)**2+(ny-py)**2) for px,py in placed]
+                            if dists_to_placed and min(dists_to_placed) < MIN_DIST:
+                                continue  # muy cerca de otra etiqueta ya colocada, omitir
+
+                            # Elegir la mejor dirección
                             best_pos, best_score = 'top center', -1
+                            best_lx, best_ly = nx, ny + 0.06
                             for d in dirs:
                                 ox, oy = offsets[d]
-                                lx = x[i]/x_r + ox
-                                ly = y[i]/y_r + oy
+                                lx, ly = nx + ox, ny + oy
                                 dists = [np.sqrt((lx-px)**2+(ly-py)**2) for px,py in placed]
                                 dists += [np.sqrt(((x[i]-x[j])/x_r)**2+((y[i]-y[j])/y_r)**2)
                                           for j in range(len(x)) if j != i]
@@ -3254,7 +3242,9 @@ try:
                                 if score > best_score:
                                     best_score, best_pos = score, d
                                     best_lx, best_ly = lx, ly
-                            positions.append(best_pos)
+
+                            texto_visible[i] = nombres[i]
+                            positions[i] = best_pos
                             placed.append((best_lx, best_ly))
 
                         fig_corp = go.Figure()
