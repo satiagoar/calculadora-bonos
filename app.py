@@ -511,6 +511,13 @@ st.markdown("""
         display: none !important;
     }
     
+    /* Columna izquierda de la calculadora como flex para que el card de info llene el espacio */
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child > [data-testid="stVerticalBlock"] {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+    }
+
     /* Card contenedor de grupo de métricas */
     .metrics-card {
         background: white;
@@ -587,6 +594,14 @@ st.markdown("""
         margin-bottom: 0.9rem;
         padding-bottom: 0.6rem;
         border-bottom: 1px solid #f0f2f7;
+    }
+    /* Card info bono crece para llenar el espacio restante de la columna */
+    .calc-card-fill {
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+        padding: 1.2rem 1.2rem 1rem;
+        flex: 1;
     }
     
     /* Info bullets */
@@ -2675,7 +2690,7 @@ try:
                     cupon_vigente_actual_info = encontrar_cupon_vigente(date.today(), bono_actual_main['flujos'])
 
                     st.markdown(f"""
-                    <div class="calc-card">
+                    <div class="calc-card-fill">
                         <div class="calc-card-title">Información del Bono</div>
                         <div style="font-size:0.83rem; color:#444; line-height:1.8;">
                             <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Nombre:</strong> {bono_actual_main['nombre']}</p>
@@ -3195,8 +3210,8 @@ try:
                             yaxis_title='TIR Semestral (%)',
                             xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
                             yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
-                            plot_bgcolor='white',
-                            paper_bgcolor='white',
+                            plot_bgcolor='#f4f6fb',
+                            paper_bgcolor='#f4f6fb',
                             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
                             height=420,
                             margin=dict(t=60, b=40, l=60, r=20),
@@ -3284,8 +3299,8 @@ try:
                             yaxis_title='TIR Semestral (%)',
                             xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
                             yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
-                            plot_bgcolor='white',
-                            paper_bgcolor='white',
+                            plot_bgcolor='#f4f6fb',
+                            paper_bgcolor='#f4f6fb',
                             legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
                             height=560,
                             margin=dict(t=60, b=40, l=60, r=40),
