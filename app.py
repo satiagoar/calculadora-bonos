@@ -3083,20 +3083,13 @@ try:
                     continue
                 st.markdown(f"### {tipo}")
                 df_tabla = pd.DataFrame(grupos[tipo])
-                st.dataframe(
-                    df_tabla,
-                    use_container_width=True,
-                    hide_index=True,
-                    height=min(400, 35 + len(df_tabla) * 35),
-                    column_config={
-                        'Precio':         st.column_config.NumberColumn(format="%.2f"),
-                        'Int. Corridos':  st.column_config.NumberColumn(format="%.4f"),
-                        'Cap. Residual':  st.column_config.NumberColumn(format="%.2f"),
-                        'Cupón Vigente':  st.column_config.NumberColumn("Cupón Vigente (%)", format="%.4f %%"),
-                        'TIR Semestral':  st.column_config.NumberColumn("TIR Semestral (%)", format="%.2f %%"),
-                        'Dur. Modificada':st.column_config.NumberColumn(format="%.2f"),
-                    }
-                )
+                df_tabla['Precio'] = df_tabla['Precio'].map('{:.2f}'.format)
+                df_tabla['Int. Corridos'] = df_tabla['Int. Corridos'].map('{:.4f}'.format)
+                df_tabla['Cap. Residual'] = df_tabla['Cap. Residual'].map('{:.2f}'.format)
+                df_tabla['Cupón Vigente'] = df_tabla['Cupón Vigente'].map('{:.4f}%'.format)
+                df_tabla['TIR Semestral'] = df_tabla['TIR Semestral'].map('{:.2f}%'.format)
+                df_tabla['Dur. Modificada'] = df_tabla['Dur. Modificada'].map('{:.2f}'.format)
+                st.table(df_tabla)
         else:
             st.info("No hay precios disponibles en este momento.")
 
