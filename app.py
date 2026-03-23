@@ -876,8 +876,33 @@ st.markdown("""
     }
     setTimeout(applyFix, 500);
     setTimeout(applyFix, 1500);
+
+    function alignMetricCards() {
+        var blocks = document.querySelectorAll('[data-testid="stHorizontalBlock"]');
+        blocks.forEach(function(block) {
+            var cols = block.querySelectorAll(':scope > [data-testid="stColumn"]');
+            if (cols.length < 2) return;
+            var leftH = cols[0].offsetHeight;
+            if (leftH < 100) return;
+            var rightCol = cols[cols.length - 1];
+            var cards = rightCol.querySelectorAll('.metrics-card');
+            if (cards.length === 0) return;
+            var cardH = Math.floor((leftH - (cards.length - 1) * 16) / cards.length);
+            if (cardH < 80) return;
+            cards.forEach(function(card) {
+                card.style.setProperty('min-height', cardH + 'px', 'important');
+            });
+        });
+    }
+
+    setTimeout(alignMetricCards, 600);
+    setTimeout(alignMetricCards, 1600);
+
     // Reaplica cada vez que Streamlit hace rerender
-    var observer = new MutationObserver(function() { setTimeout(applyFix, 100); });
+    var observer = new MutationObserver(function() {
+        setTimeout(applyFix, 100);
+        setTimeout(alignMetricCards, 300);
+    });
     observer.observe(document.body, { childList: true, subtree: true });
 })();
 </script>
