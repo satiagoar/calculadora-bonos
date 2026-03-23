@@ -2528,6 +2528,7 @@ try:
                     # Usar precio de data912 si está disponible, sino el campo mostrará 0.0
                     if precio_inicial and precio_inicial > 0:
                         st.session_state[precio_key_main] = precio_inicial
+                        st.session_state.calcular = True
                 
                 # Inputs con ancho reducido al 70%
                 col_input_left, col_input_center, col_input_right = st.columns([0.15, 0.7, 0.15])
