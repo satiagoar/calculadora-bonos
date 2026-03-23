@@ -3001,9 +3001,7 @@ try:
             precios_corp = obtener_precios_data912('arg_corp')
             precios_todos = {**precios_bonds, **precios_corp}
 
-            st.caption(f"DEBUG: arg_bonds={len(precios_bonds)} precios, arg_corp={len(precios_corp)} precios, total={len(precios_todos)}")
             grupos = {}
-            debug_skip = []
             for bono in bonos:
                 ticker = bono.get('ticker', '').strip()
                 if not ticker or ticker == 'SPX500':
@@ -3015,7 +3013,6 @@ try:
 
                 precio = precios_todos.get(ticker_api)
                 if not precio or precio <= 0:
-                    debug_skip.append(f"{ticker}→{ticker_api}=None")
                     continue
 
                 try:
@@ -3077,23 +3074,29 @@ try:
                         grupos[tipo] = []
                     grupos[tipo].append(fila)
 
-                except Exception as e:
-                    debug_skip.append(f"ERR {ticker}: {type(e).__name__}: {e}")
+                except Exception:
                     continue
 
-        errores = [x for x in debug_skip if x.startswith('ERR')]
-        sin_precio = [x for x in debug_skip if not x.startswith('ERR')]
-        grupos_info = {k: len(v) for k, v in grupos.items()}
-        st.caption(f"DEBUG grupos: {grupos_info}")
-        st.caption(f"DEBUG sin precio: {len(sin_precio)}, errores: {len(errores)}: {errores[:5]}")
         if grupos:
             for tipo in sorted(grupos.keys()):
                 if not grupos[tipo]:
                     continue
                 st.markdown(f"### {tipo}")
                 df_tabla = pd.DataFrame(grupos[tipo])
-                st.write(f"Filas: {len(df_tabla)}, Columnas: {list(df_tabla.columns)}")
-                st.table(df_tabla)
+                st.dataframe(
+                    df_tabla,
+                    use_container_width=True,
+                    hide_index=True,
+                    height=min(400, 35 + len(df_tabla) * 35),
+                    column_config={
+                        'Precio':         st.column_config.NumberColumn(format="%.2f"),
+                        'Int. Corridos':  st.column_config.NumberColumn(format="%.4f"),
+                        'Cap. Residual':  st.column_config.NumberColumn(format="%.2f"),
+                        'Cupón Vigente':  st.column_config.NumberColumn("Cupón Vigente (%)", format="%.4f %%"),
+                        'TIR Semestral':  st.column_config.NumberColumn("TIR Semestral (%)", format="%.2f %%"),
+                        'Dur. Modificada':st.column_config.NumberColumn(format="%.2f"),
+                    }
+                )
         else:
             st.info("No hay precios disponibles en este momento.")
 
