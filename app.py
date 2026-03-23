@@ -732,6 +732,37 @@ st.markdown("""
     div[data-testid="stIFrame"] iframe[src*="market-overview"] {
         font-size: 8px !important;
     }
+
+    /* Forzar modo claro en inputs de la sección principal */
+    .main input,
+    .main [data-testid="stDateInput"] input,
+    .main [data-testid="stNumberInput"] input,
+    .main [data-testid="stTextInput"] input {
+        background-color: white !important;
+        color: #1a1a1a !important;
+        border: 1px solid #ddd !important;
+        border-radius: 8px !important;
+    }
+    .main [data-testid="stDateInput"] > div,
+    .main [data-testid="stNumberInput"] > div,
+    .main [data-testid="stTextInput"] > div {
+        background-color: white !important;
+        border-radius: 8px !important;
+    }
+    /* Contenedor externo del input */
+    .main [data-baseweb="input"],
+    .main [data-baseweb="base-input"] {
+        background-color: white !important;
+    }
+    /* Botones Calcular y Volver en la sección principal */
+    .main [data-testid="stBaseButton-secondary"] {
+        background-color: #64748b !important;
+        color: white !important;
+        border: none !important;
+    }
+    .main [data-testid="stBaseButton-secondary"]:hover {
+        background-color: #475569 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
