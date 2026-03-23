@@ -962,7 +962,7 @@ def encontrar_fecha_vencimiento(flujos):
     
     return fecha_vencimiento
 
-@st.cache_data(ttl=300)  # Cache por 5 minutos
+@st.cache_data(ttl=60)  # Cache por 1 minuto
 def obtener_precios_data912(endpoint):
     """
     Obtiene todos los precios desde data912.com para un endpoint dado.
