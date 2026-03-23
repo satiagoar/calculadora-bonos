@@ -3063,7 +3063,9 @@ try:
 
         if grupos:
             st.markdown(TABLE_CSS, unsafe_allow_html=True)
-            for tipo in sorted(grupos.keys()):
+            orden_tipos = ['Soberano USD', 'Corporativo Ley NY', 'Corporativo Ley ARG']
+            tipos_ordenados = orden_tipos + [t for t in sorted(grupos.keys()) if t not in orden_tipos]
+            for tipo in tipos_ordenados:
                 if not grupos[tipo]:
                     continue
                 st.markdown(f"<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
