@@ -2939,60 +2939,7 @@ try:
     if not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False) and not st.session_state.get('bono_seleccionado'):
         # Mostrar los 4 gráficos de TradingView cuando no se ha calculado (solo si mercados e indices no están activos)
         # Crear 2 filas de 2 columnas cada una
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # S&P 500
-            sp500_html = """
-                <div class="tradingview-widget-container" style="height: 300px; width: 100%;">
-                    <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                    {
-                    "symbol": "SPX500",
-                    "width": "100%",
-                    "height": "300",
-                    "locale": "es",
-                    "dateRange": "12M",
-                    "colorTheme": "light",
-                    "isTransparent": true,
-                    "autosize": false,
-                    "largeChartUrl": "",
-                    "hideTopToolbar": true,
-                    "hideLegend": false,
-                    "saveImage": false
-                    }
-                    </script>
-                </div>
-            """
-            st.components.v1.html(sp500_html, height=300)
-            
-        with col2:
-            # IMV Merval
-            imv_html = """
-            <div class="tradingview-widget-container" style="height: 300px; width: 100%;">
-                <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
-                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                {
-                "symbol": "IMV",
-                "width": "100%",
-                "height": "300",
-                "locale": "es",
-                "dateRange": "12M",
-                "colorTheme": "light",
-                "isTransparent": true,
-                "autosize": false,
-                "largeChartUrl": "",
-                "hideTopToolbar": true,
-                "hideLegend": false,
-                "saveImage": false
-                }
-                </script>
-            </div>
-            """
-            st.components.v1.html(imv_html, height=300)
-        
         # Tabla de bonos con métricas en tiempo real
-        st.markdown("<br>", unsafe_allow_html=True)
 
         with st.spinner("Cargando precios y calculando métricas..."):
             fecha_hoy = get_next_business_day()
@@ -3126,16 +3073,6 @@ try:
                     df_tabla = df_tabla.sort_values(['Activo', 'Dur. Modificada']).reset_index(drop=True)
                 # Guardar datos numéricos antes de formatear (para el gráfico)
                 df_raw = df_tabla.copy()
-                df_tabla['Precio'] = df_tabla['Precio'].map('{:.2f}'.format)
-                df_tabla['Int. Corridos'] = df_tabla['Int. Corridos'].map('{:.4f}'.format)
-                df_tabla['Cap. Residual'] = df_tabla['Cap. Residual'].map('{:.2f}'.format)
-                df_tabla['Cupón Vigente'] = df_tabla['Cupón Vigente'].map('{:.4f}%'.format)
-                df_tabla['TIR Semestral'] = df_tabla['TIR Semestral'].map('{:.2f}%'.format)
-                df_tabla['Dur. Modificada'] = df_tabla['Dur. Modificada'].map('{:.2f}'.format)
-                df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
-                    lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
-                )
-                st.markdown(render_tabla_html(df_tabla), unsafe_allow_html=True)
 
                 # Cueva de rendimientos solo para Soberano USD
                 if 'soberano' in tipo.lower():
@@ -3276,6 +3213,18 @@ try:
                             margin=dict(t=60, b=40, l=60, r=40),
                         )
                         st.plotly_chart(fig_corp, use_container_width=True)
+
+                # Tabla — siempre al final de cada sección
+                df_tabla['Precio'] = df_tabla['Precio'].map('{:.2f}'.format)
+                df_tabla['Int. Corridos'] = df_tabla['Int. Corridos'].map('{:.4f}'.format)
+                df_tabla['Cap. Residual'] = df_tabla['Cap. Residual'].map('{:.2f}'.format)
+                df_tabla['Cupón Vigente'] = df_tabla['Cupón Vigente'].map('{:.4f}%'.format)
+                df_tabla['TIR Semestral'] = df_tabla['TIR Semestral'].map('{:.2f}%'.format)
+                df_tabla['Dur. Modificada'] = df_tabla['Dur. Modificada'].map('{:.2f}'.format)
+                df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
+                    lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
+                )
+                st.markdown(render_tabla_html(df_tabla), unsafe_allow_html=True)
         else:
             st.info("No hay precios disponibles en este momento.")
 
