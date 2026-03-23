@@ -3187,6 +3187,50 @@ try:
                             margin=dict(t=60, b=40, l=60, r=20),
                         )
                         st.plotly_chart(fig, use_container_width=True)
+
+                # Cueva de rendimientos para Corporativo Ley ARG
+                if 'corporativo ley arg' in tipo.lower():
+                    df_curva = df_raw[['Activo', 'Dur. Modificada', 'TIR Semestral']].dropna()
+                    df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
+                    df_curva = df_curva[(df_curva['TIR Semestral'] >= 3) & (df_curva['TIR Semestral'] <= 15)]
+                    if len(df_curva) >= 3:
+                        x = df_curva['Dur. Modificada'].values
+                        y = df_curva['TIR Semestral'].values
+                        coeffs = np.polyfit(np.log(x), y, 1)
+                        x_line = np.linspace(x.min(), x.max(), 200)
+                        y_line = coeffs[0] * np.log(x_line) + coeffs[1]
+                        fig_corp = go.Figure()
+                        fig_corp.add_trace(go.Scatter(
+                            x=x, y=y,
+                            mode='markers+text',
+                            text=df_curva['Activo'],
+                            textposition='top center',
+                            textfont=dict(size=10, color='#4a148c'),
+                            marker=dict(size=9, color='#4a148c'),
+                            name='Corp. Ley ARG',
+                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
+                        ))
+                        fig_corp.add_trace(go.Scatter(
+                            x=x_line, y=y_line,
+                            mode='lines',
+                            line=dict(color='#ab47bc', width=2, dash='dash'),
+                            name='Tendencia log.',
+                            hoverinfo='skip',
+                            showlegend=False,
+                        ))
+                        fig_corp.update_layout(
+                            title='Cueva de Rendimientos — Corporativo Ley ARG',
+                            xaxis_title='Duración Modificada (años)',
+                            yaxis_title='TIR Semestral (%)',
+                            xaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
+                            yaxis=dict(showgrid=True, gridcolor='#f0f0f0'),
+                            plot_bgcolor='white',
+                            paper_bgcolor='white',
+                            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                            height=420,
+                            margin=dict(t=60, b=40, l=60, r=20),
+                        )
+                        st.plotly_chart(fig_corp, use_container_width=True)
         else:
             st.info("No hay precios disponibles en este momento.")
 
