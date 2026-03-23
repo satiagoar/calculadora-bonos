@@ -3200,9 +3200,36 @@ try:
                         x_line = np.linspace(x.min(), x.max(), 200)
                         y_line = coeffs[0] * np.log(x_line) + coeffs[1]
 
-                        # Algoritmo greedy 8 direcciones para minimizar superposición
                         x_r = x.max() - x.min() if x.max() != x.min() else 1
                         y_r = y.max() - y.min() if y.max() != y.min() else 1
+                        nombres = df_curva['Activo'].values
+
+                        # Densidad local: nº de vecinos dentro de radio 0.12 (normalizado)
+                        densidad = []
+                        for i in range(len(x)):
+                            vecinos = sum(
+                                np.sqrt(((x[i]-x[j])/x_r)**2 + ((y[i]-y[j])/y_r)**2) < 0.12
+                                for j in range(len(x)) if j != i
+                            )
+                            densidad.append(vecinos)
+                        densidad = np.array(densidad)
+                        UMBRAL_DENSO = 2  # ≥2 vecinos cercanos = zona densa
+
+                        # En zona densa: ordenar por |desviación de la tendencia| y quedarse con 1/3
+                        y_trend = coeffs[0] * np.log(x) + coeffs[1]
+                        desviacion = np.abs(y - y_trend)
+                        idx_densos = np.where(densidad >= UMBRAL_DENSO)[0]
+                        idx_densos_sorted = idx_densos[np.argsort(desviacion[idx_densos])[::-1]]
+                        keep = max(1, len(idx_densos_sorted) // 3)
+                        idx_densos_visibles = set(idx_densos_sorted[:keep])
+
+                        # Construir texto: vacío para puntos densos no seleccionados
+                        texto_visible = [
+                            nombres[i] if (densidad[i] < UMBRAL_DENSO or i in idx_densos_visibles) else ''
+                            for i in range(len(x))
+                        ]
+
+                        # Algoritmo greedy 8 direcciones solo para etiquetas visibles
                         dirs = ['top center','bottom center','middle right','middle left',
                                 'top right','top left','bottom right','bottom left']
                         offsets = {'top center':(0,.06),'bottom center':(0,-.06),
@@ -3212,13 +3239,16 @@ try:
                         placed = []
                         positions = []
                         for i in range(len(x)):
+                            if texto_visible[i] == '':
+                                positions.append('top center')
+                                continue
                             best_pos, best_score = 'top center', -1
                             for d in dirs:
                                 ox, oy = offsets[d]
                                 lx = x[i]/x_r + ox
                                 ly = y[i]/y_r + oy
-                                dists = [np.sqrt((lx - px)**2 + (ly - py)**2) for px, py in placed]
-                                dists += [np.sqrt(((x[i]-x[j])/x_r)**2 + ((y[i]-y[j])/y_r)**2)
+                                dists = [np.sqrt((lx-px)**2+(ly-py)**2) for px,py in placed]
+                                dists += [np.sqrt(((x[i]-x[j])/x_r)**2+((y[i]-y[j])/y_r)**2)
                                           for j in range(len(x)) if j != i]
                                 score = min(dists) if dists else 1
                                 if score > best_score:
@@ -3231,12 +3261,13 @@ try:
                         fig_corp.add_trace(go.Scatter(
                             x=x, y=y,
                             mode='markers+text',
-                            text=df_curva['Activo'],
+                            text=texto_visible,
+                            customdata=nombres,
                             textposition=positions,
                             textfont=dict(size=9, color='#1a237e'),
                             marker=dict(size=9, color='#1a237e'),
                             name='Corp. Ley ARG',
-                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
+                            hovertemplate='<b>%{customdata}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
                         ))
                         fig_corp.add_trace(go.Scatter(
                             x=x_line, y=y_line,
