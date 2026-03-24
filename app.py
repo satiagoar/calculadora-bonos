@@ -730,6 +730,12 @@ st.markdown("""
         font-size: 1.25em !important;
         font-weight: 700 !important;
     }
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"] p,
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"] div,
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"] span {
+        font-weight: 700 !important;
+        font-size: 1.25em !important;
+    }
     [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"][aria-selected="true"] {
         color: #1a56db !important;
         background-color: #d1d5db !important;
