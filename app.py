@@ -723,6 +723,7 @@ st.markdown("""
     /* Color azul en las tabs */
     [data-testid="stTabs"] button[role="tab"] {
         color: #1a56db !important;
+        background-color: #e4e6ea !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"] {
         padding: 8px 20px !important;
