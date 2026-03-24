@@ -857,15 +857,20 @@ st.markdown("""
             el.style.setProperty('color', '#374151', 'important');
             el.style.setProperty('font-weight', '600', 'important');
         });
-        // Forzar ancho completo en el contenedor de la card de info del bono
+        // Forzar ancho completo en toda la cadena sobre .calc-card-fill
         document.querySelectorAll('.calc-card-fill').forEach(function(el) {
-            var parent = el.parentElement;
-            while (parent && !parent.matches('[data-testid="stMarkdownContainer"]')) {
-                parent = parent.parentElement;
-            }
-            if (parent) {
-                parent.style.setProperty('padding', '0', 'important');
-                parent.style.setProperty('width', '100%', 'important');
+            el.style.setProperty('width', '100%', 'important');
+            el.style.setProperty('box-sizing', 'border-box', 'important');
+            var node = el.parentElement;
+            var steps = 0;
+            while (node && steps < 8) {
+                if (node.matches('[data-testid="stColumn"]')) break;
+                node.style.setProperty('padding-left', '0', 'important');
+                node.style.setProperty('padding-right', '0', 'important');
+                node.style.setProperty('width', '100%', 'important');
+                node.style.setProperty('max-width', '100%', 'important');
+                node = node.parentElement;
+                steps++;
             }
         });
     }
