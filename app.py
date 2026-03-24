@@ -714,6 +714,12 @@ st.markdown("""
     [data-baseweb="input"], [data-baseweb="base-input"] {
         border-radius: 8px !important;
     }
+    /* Ocultar "Press Enter to apply" en number inputs */
+    [data-testid="stNumberInput"] ~ small,
+    [data-testid="stNumberInput"] small,
+    [data-testid="stNumberInput"] + div small {
+        display: none !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
