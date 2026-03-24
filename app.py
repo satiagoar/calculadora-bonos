@@ -2542,7 +2542,6 @@ try:
 
                 tipo_cambio_valor = obtener_tipo_cambio_implicito_data912(tipo_cambio_tipo)
                 tipo_cambio_valor_str = formatear_numero(tipo_cambio_valor, 2) if tipo_cambio_valor is not None else ""
-                st.session_state['tipo_cambio_mep_main'] = tipo_cambio_valor_str
 
                 col_fecha, col_mep = st.columns(2)
                 with col_fecha:
@@ -2556,10 +2555,11 @@ try:
                 with col_mep:
                     st.text_input(
                         "",
-                        value=tipo_cambio_valor_str,
                         key="tipo_cambio_mep_main",
+                        value=tipo_cambio_valor_str,
                         placeholder="",
-                        label_visibility="collapsed"
+                        label_visibility="collapsed",
+                        disabled=True
                     )
 
                 col_label_precio, col_label_precio_pesos = st.columns(2)
