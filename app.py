@@ -1091,6 +1091,27 @@ def obtener_precio_data912(ticker):
     return None
 
 
+def obtener_tipo_cambio_implicito_data912(tipo_cambio='Tipo de Cambio MEP'):
+    """
+    Calcula el tipo de cambio implícito usando AL30 contra su especie en USD/CCL.
+    - MEP: AL30 / AL30D
+    - CCL: AL30 / AL30C
+    Retorna el valor (float) o None si no se puede calcular.
+    """
+    try:
+        precios = obtener_precios_data912('arg_bonds')
+        precio_al30 = precios.get('AL30', {}).get('c')
+        ticker_ref = 'AL30D' if tipo_cambio == 'Tipo de Cambio MEP' else 'AL30C'
+        precio_ref = precios.get(ticker_ref, {}).get('c')
+
+        if precio_al30 and precio_ref and precio_ref > 0:
+            return round(float(precio_al30) / float(precio_ref), 2)
+    except Exception:
+        pass
+
+    return None
+
+
 # Cargar datos del Excel
 try:
     df = pd.read_excel('bonos_flujos.xlsx', engine='openpyxl')
@@ -2519,6 +2540,10 @@ try:
                         label_visibility="collapsed"
                     )
 
+                tipo_cambio_valor = obtener_tipo_cambio_implicito_data912(tipo_cambio_tipo)
+                tipo_cambio_valor_str = formatear_numero(tipo_cambio_valor, 2) if tipo_cambio_valor is not None else ""
+                st.session_state['tipo_cambio_mep_main'] = tipo_cambio_valor_str
+
                 col_fecha, col_mep = st.columns(2)
                 with col_fecha:
                     fecha_liquidacion = st.date_input(
@@ -2531,7 +2556,7 @@ try:
                 with col_mep:
                     st.text_input(
                         "",
-                        value="",
+                        value=tipo_cambio_valor_str,
                         key="tipo_cambio_mep_main",
                         placeholder="",
                         label_visibility="collapsed"
