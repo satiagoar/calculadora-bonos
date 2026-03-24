@@ -448,7 +448,7 @@ st.markdown("""
         border-radius: 14px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.07);
         padding: 1.2rem 1.2rem 1rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.6rem;
     }
     .metrics-card-title {
         font-size: 0.68rem;
@@ -2518,6 +2518,12 @@ try:
                 }
                 div[data-testid="stSelectbox"] div[role="combobox"] {
                     font-size: 0.85rem !important;
+                }
+                div[data-testid="stDateInput"] input,
+                div[data-testid="stNumberInput"] input,
+                div[data-testid="stTextInput"] input {
+                    font-size: 0.95rem !important;
+                    font-weight: 500 !important;
                 }
                 div[data-testid="stTextInput"] {
                     margin-top: 0 !important;
