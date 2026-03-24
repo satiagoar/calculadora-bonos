@@ -1107,11 +1107,25 @@ try:
     
     if current_bono:
         bonos.append(current_bono)
-    
+
     if not bonos:
         st.error("❌ No se encontraron bonos en el archivo")
         st.stop()
-    
+
+    # Filtrar bonos vencidos: excluir aquellos cuyo último flujo ya pasó
+    _hoy = datetime.now().date()
+    bonos = [
+        b for b in bonos
+        if b['flujos'] and max(
+            f['fecha'].date() if hasattr(f['fecha'], 'date') else f['fecha']
+            for f in b['flujos']
+        ) >= _hoy
+    ]
+
+    if not bonos:
+        st.error("❌ No hay bonos vigentes disponibles")
+        st.stop()
+
     # Generar tipos de bonos automáticamente a partir de los bonos procesados
     tipos_bono = list(set([bono['tipo_bono'] for bono in bonos]))
     tipos_bono.sort()  # Ordenar alfabéticamente
