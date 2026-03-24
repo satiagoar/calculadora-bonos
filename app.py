@@ -451,7 +451,7 @@ st.markdown("""
         margin-bottom: 2.2rem;
     }
     .metrics-card-title {
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         font-weight: 700;
         color: #94a3b8;
         text-transform: uppercase;
@@ -473,7 +473,7 @@ st.markdown("""
         align-items: center !important;
     }
     .metric-label {
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         font-weight: 600;
         color: #64748b;
         margin-bottom: 0.35rem;
@@ -482,7 +482,7 @@ st.markdown("""
         text-align: center;
     }
     .metric-value {
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         font-weight: 700;
         color: #1a237e;
         line-height: 1.2;
