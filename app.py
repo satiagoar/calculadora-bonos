@@ -510,7 +510,7 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     .calc-card-title {
-        font-size: 0.90rem;
+        font-size: 0.93rem;
         font-weight: 700;
         color: #94a3b8;
         text-transform: uppercase;
@@ -2686,7 +2686,7 @@ try:
                 st.markdown(f"""
                 <div class="calc-card-fill">
                     <div class="calc-card-title">Información del Bono</div>
-                    <div style="font-size:0.89rem; color:#444; line-height:1.98;">
+                    <div style="font-size:0.92rem; color:#444; line-height:1.98;">
                         <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Nombre:</strong> {bono_actual_main['nombre']}</p>
                         <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
                         <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
