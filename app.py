@@ -2531,11 +2531,13 @@ try:
                         label_visibility="collapsed"
                     )
 
-                col_label_precio, _ = st.columns(2)
+                col_label_precio, col_label_precio_pesos = st.columns(2)
                 with col_label_precio:
                     st.markdown("<div class='inline-field-label'>Precio Dirty</div>", unsafe_allow_html=True)
+                with col_label_precio_pesos:
+                    st.markdown("<div class='inline-field-label'>Precio Dirty en Pesos</div>", unsafe_allow_html=True)
 
-                col_inputs, _ = st.columns(2)
+                col_inputs, col_input_precio_pesos = st.columns(2)
                 with col_inputs:
                     precio_dirty = st.number_input(
                         "",
@@ -2545,6 +2547,14 @@ try:
                         format="%.2f",
                         key=precio_key_main,
                         help="El precio se obtiene automáticamente desde data912.com. Podés modificarlo manualmente.",
+                        label_visibility="collapsed"
+                    )
+                with col_input_precio_pesos:
+                    st.text_input(
+                        "",
+                        value="",
+                        key="precio_dirty_pesos_main",
+                        placeholder="",
                         label_visibility="collapsed"
                     )
 
