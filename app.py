@@ -1586,8 +1586,12 @@ try:
                 st.session_state.flujos_calcular = False
                 if 'flujos_bonos_seleccionados' in st.session_state:
                     del st.session_state['flujos_bonos_seleccionados']
+                for k in ('bono_selectbox', 'tipo_selectbox'):
+                    if k in st.session_state:
+                        del st.session_state[k]
+                st.session_state.tipo_selectbox_key = st.session_state.get('tipo_selectbox_key', 0) + 1
                 st.rerun()
-        
+
         with col_mercados_right:
             # Buscar el ticker de AL30 en la lista de bonos original (el que aparece en la tabla)
             # Buscar en bonos soberanos para encontrar el ticker en USD
@@ -2915,11 +2919,23 @@ try:
             btn_usd_type = "primary" if st.session_state.vista_titulos == 'usd' else "secondary"
             if st.button("Títulos en USD", type=btn_usd_type, use_container_width=True, key="btn_vista_usd"):
                 st.session_state.vista_titulos = 'usd'
+                st.session_state.bono_seleccionado = None
+                st.session_state.calcular = False
+                for k in ('bono_selectbox', 'tipo_selectbox'):
+                    if k in st.session_state:
+                        del st.session_state[k]
+                st.session_state.tipo_selectbox_key = st.session_state.get('tipo_selectbox_key', 0) + 1
                 st.rerun()
         with col_btn_pesos:
             btn_pesos_type = "primary" if st.session_state.vista_titulos == 'pesos' else "secondary"
             if st.button("Títulos en Pesos", type=btn_pesos_type, use_container_width=True, key="btn_vista_pesos"):
                 st.session_state.vista_titulos = 'pesos'
+                st.session_state.bono_seleccionado = None
+                st.session_state.calcular = False
+                for k in ('bono_selectbox', 'tipo_selectbox'):
+                    if k in st.session_state:
+                        del st.session_state[k]
+                st.session_state.tipo_selectbox_key = st.session_state.get('tipo_selectbox_key', 0) + 1
                 st.rerun()
 
         # Tabla de bonos con métricas en tiempo real
