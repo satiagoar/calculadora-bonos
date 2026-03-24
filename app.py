@@ -448,10 +448,10 @@ st.markdown("""
         border-radius: 14px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.07);
         padding: 1.2rem 1.2rem 1rem;
-        margin-bottom: 1.6rem;
+        margin-bottom: 2.2rem;
     }
     .metrics-card-title {
-        font-size: 0.68rem;
+        font-size: 0.95rem;
         font-weight: 700;
         color: #94a3b8;
         text-transform: uppercase;
@@ -473,7 +473,7 @@ st.markdown("""
         align-items: center !important;
     }
     .metric-label {
-        font-size: 1.0rem;
+        font-size: 0.95rem;
         font-weight: 600;
         color: #64748b;
         margin-bottom: 0.35rem;
@@ -482,7 +482,7 @@ st.markdown("""
         text-align: center;
     }
     .metric-value {
-        font-size: 1.1rem;
+        font-size: 0.95rem;
         font-weight: 700;
         color: #1a237e;
         line-height: 1.2;
