@@ -2480,22 +2480,31 @@ try:
                     st.session_state.bono_seleccionado = None
                     st.rerun()
                 
-                # Crear una key única basada en el bono para que el input se resetee al cambiar de bono
-                precio_key_main = f"precio_dirty_{st.session_state.bono_seleccionado}"
-                
-                # Inicializar el precio en session_state si no existe
-                if precio_key_main not in st.session_state:
-                    # Intentar obtener último precio desde data912.com
+                # Keys únicas por bono para sincronizar precios en USD/ARS
+                precio_key_main = f"precio_dirty_usd_{st.session_state.bono_seleccionado}"
+                precio_pesos_key_main = f"precio_dirty_pesos_{st.session_state.bono_seleccionado}"
+                precio_prev_usd_key = f"precio_dirty_prev_usd_{st.session_state.bono_seleccionado}"
+                precio_prev_pesos_key = f"precio_dirty_prev_pesos_{st.session_state.bono_seleccionado}"
+                precio_fx_prev_key = f"precio_dirty_prev_fx_{st.session_state.bono_seleccionado}"
+                precio_last_edited_key = f"precio_dirty_last_edited_{st.session_state.bono_seleccionado}"
+                precio_init_key = f"precio_dirty_init_{st.session_state.bono_seleccionado}"
+
+                # Inicializar el precio base en USD desde data912 una sola vez por bono
+                if precio_init_key not in st.session_state:
                     ticker = bono_actual_main.get('ticker', '').strip()
                     precio_inicial = None
 
                     if ticker and ticker != '' and ticker != 'SPX500':
                         precio_inicial = obtener_precio_data912(ticker)
 
-                    # Usar precio de data912 si está disponible, sino el campo mostrará 0.0
-                    if precio_inicial and precio_inicial > 0:
-                        st.session_state[precio_key_main] = precio_inicial
-                        st.session_state.calcular = True
+                    st.session_state[precio_key_main] = float(precio_inicial) if precio_inicial and precio_inicial > 0 else 0.0
+                    st.session_state[precio_pesos_key_main] = 0.0
+                    st.session_state[precio_prev_usd_key] = st.session_state[precio_key_main]
+                    st.session_state[precio_prev_pesos_key] = st.session_state[precio_pesos_key_main]
+                    st.session_state[precio_fx_prev_key] = None
+                    st.session_state[precio_last_edited_key] = 'usd'
+                    st.session_state[precio_init_key] = True
+                    st.session_state.calcular = True
                 
                 st.markdown("""
                 <style>
@@ -2543,6 +2552,42 @@ try:
                 tipo_cambio_valor = obtener_tipo_cambio_implicito_data912(tipo_cambio_tipo)
                 tipo_cambio_valor_str = formatear_numero(tipo_cambio_valor, 2) if tipo_cambio_valor is not None else ""
 
+                # Sincronización bidireccional USD <-> Pesos
+                fx_actual = float(tipo_cambio_valor) if tipo_cambio_valor is not None else None
+                usd_actual = float(st.session_state.get(precio_key_main, 0.0) or 0.0)
+                pesos_actual = float(st.session_state.get(precio_pesos_key_main, 0.0) or 0.0)
+                usd_prev = float(st.session_state.get(precio_prev_usd_key, usd_actual) or 0.0)
+                pesos_prev = float(st.session_state.get(precio_prev_pesos_key, pesos_actual) or 0.0)
+                fx_prev = st.session_state.get(precio_fx_prev_key)
+                last_edited = st.session_state.get(precio_last_edited_key, 'usd')
+
+                if fx_actual and fx_actual > 0:
+                    if fx_prev is None:
+                        pesos_actual = usd_actual * fx_actual
+                    else:
+                        usd_changed = abs(usd_actual - usd_prev) > 1e-9
+                        pesos_changed = abs(pesos_actual - pesos_prev) > 1e-9
+                        fx_changed = abs(float(fx_prev) - fx_actual) > 1e-9
+
+                        if fx_changed:
+                            if last_edited == 'pesos':
+                                usd_actual = pesos_actual / fx_actual if fx_actual else 0.0
+                            else:
+                                pesos_actual = usd_actual * fx_actual
+                        elif usd_changed and not pesos_changed:
+                            pesos_actual = usd_actual * fx_actual
+                            last_edited = 'usd'
+                        elif pesos_changed and not usd_changed:
+                            usd_actual = pesos_actual / fx_actual if fx_actual else 0.0
+                            last_edited = 'pesos'
+
+                    st.session_state[precio_key_main] = round(usd_actual, 2)
+                    st.session_state[precio_pesos_key_main] = round(pesos_actual, 2)
+                    st.session_state[precio_prev_usd_key] = st.session_state[precio_key_main]
+                    st.session_state[precio_prev_pesos_key] = st.session_state[precio_pesos_key_main]
+                    st.session_state[precio_fx_prev_key] = fx_actual
+                    st.session_state[precio_last_edited_key] = last_edited
+
                 col_fecha, col_mep = st.columns(2)
                 with col_fecha:
                     fecha_liquidacion = st.date_input(
@@ -2581,22 +2626,14 @@ try:
                         label_visibility="collapsed"
                     )
 
-                precio_dirty_pesos = None
-                if tipo_cambio_valor is not None and precio_dirty is not None:
-                    try:
-                        precio_dirty_pesos = float(precio_dirty) * float(tipo_cambio_valor)
-                    except Exception:
-                        precio_dirty_pesos = None
-                precio_dirty_pesos_str = formatear_numero(precio_dirty_pesos, 2) if precio_dirty_pesos is not None else ""
-
                 with col_input_precio_pesos:
-                    st.text_input(
+                    st.number_input(
                         "",
-                        value=precio_dirty_pesos_str,
-                        key=f"precio_dirty_pesos_main_{tipo_cambio_tipo}",
-                        placeholder="",
-                        label_visibility="collapsed",
-                        disabled=True
+                        min_value=0.0,
+                        step=0.01,
+                        format="%.2f",
+                        key=precio_pesos_key_main,
+                        label_visibility="collapsed"
                     )
 
                 col_calc, col_volver = st.columns(2)
