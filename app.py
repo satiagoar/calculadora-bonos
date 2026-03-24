@@ -2493,13 +2493,29 @@ try:
                         margin: 0 !important;
                         padding: 0 !important;
                     }
+                    div[data-testid="stSelectbox"] {
+                        margin-bottom: 0.25rem !important;
+                    }
                     div[data-testid="stSelectbox"] > div[data-baseweb="select"] > div {
-                        min-height: 3.05rem !important;
-                        border-radius: 0.75rem !important;
+                        min-height: auto !important;
+                        background: transparent !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        padding-left: 0 !important;
+                        padding-right: 0 !important;
+                    }
+                    div[data-testid="stSelectbox"] div[role="combobox"] {
+                        background: transparent !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        min-height: auto !important;
+                        padding: 0 !important;
+                        font-size: 0.95rem !important;
+                        font-weight: 400 !important;
+                        color: rgb(49, 51, 63) !important;
                     }
                     </style>
                     """, unsafe_allow_html=True)
-                    st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
                     tipo_cambio_tipo = st.selectbox(
                         "",
                         options=["Tipo de Cambio MEP", "Tipo de Cambio CCL"],
