@@ -2478,50 +2478,29 @@ try:
                 
                 st.markdown("""
                 <style>
-                div[data-testid="stSelectbox"] label[data-testid="stWidgetLabel"] {
+                .inline-field-label {
+                    font-size: 0.95rem;
+                    font-weight: 400;
+                    color: rgb(49, 51, 63);
+                    margin-bottom: 0.25rem;
+                    line-height: 1.4;
+                }
+                div[data-testid="stSelectbox"] label[data-testid="stWidgetLabel"],
+                div[data-testid="stDateInput"] label[data-testid="stWidgetLabel"],
+                div[data-testid="stNumberInput"] label[data-testid="stWidgetLabel"],
+                div[data-testid="stTextInput"] label[data-testid="stWidgetLabel"] {
                     display: none !important;
                     height: 0 !important;
                     margin: 0 !important;
                     padding: 0 !important;
                 }
-                div[data-testid="stSelectbox"] {
-                    margin-top: 0 !important;
-                    margin-bottom: 0.35rem !important;
-                }
-                div[data-testid="stSelectbox"] > div[data-baseweb="select"] > div {
-                    min-height: auto !important;
-                    background: transparent !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                    padding: 0 !important;
-                }
-                div[data-testid="stSelectbox"] div[role="combobox"] {
-                    background: transparent !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                    min-height: auto !important;
-                    padding: 0 !important;
-                    font-size: 0.95rem !important;
-                    font-weight: 400 !important;
-                    color: rgb(49, 51, 63) !important;
-                    line-height: 1.4 !important;
-                }
-                div[data-testid="stSelectbox"] svg {
-                    margin-top: 0 !important;
-                }
                 </style>
                 """, unsafe_allow_html=True)
 
-                col_fecha, col_mep = st.columns(2)
-                with col_fecha:
-                    fecha_liquidacion = st.date_input(
-                        "Fecha de Liquidación",
-                        value=get_next_business_day(),
-                        format="DD/MM/YYYY",
-                        key="fecha_liquidacion_main"
-                    )
-                with col_mep:
-                    st.markdown("<div style='height:0.15rem;'></div>", unsafe_allow_html=True)
+                col_label_fecha, col_label_mep = st.columns(2)
+                with col_label_fecha:
+                    st.markdown("<div class='inline-field-label'>Fecha de Liquidación</div>", unsafe_allow_html=True)
+                with col_label_mep:
                     tipo_cambio_tipo = st.selectbox(
                         "",
                         options=["Tipo de Cambio MEP", "Tipo de Cambio CCL"],
@@ -2529,6 +2508,17 @@ try:
                         key="tipo_cambio_tipo_main",
                         label_visibility="collapsed"
                     )
+
+                col_fecha, col_mep = st.columns(2)
+                with col_fecha:
+                    fecha_liquidacion = st.date_input(
+                        "",
+                        value=get_next_business_day(),
+                        format="DD/MM/YYYY",
+                        key="fecha_liquidacion_main",
+                        label_visibility="collapsed"
+                    )
+                with col_mep:
                     st.text_input(
                         "",
                         value="",
@@ -2537,16 +2527,21 @@ try:
                         label_visibility="collapsed"
                     )
 
+                col_label_precio, _ = st.columns(2)
+                with col_label_precio:
+                    st.markdown("<div class='inline-field-label'>Precio Dirty</div>", unsafe_allow_html=True)
+
                 col_inputs, _ = st.columns(2)
                 with col_inputs:
                     precio_dirty = st.number_input(
-                        "Precio Dirty",
+                        "",
                         min_value=0.0,
                         max_value=200.0,
                         step=0.01,
                         format="%.2f",
                         key=precio_key_main,
-                        help="El precio se obtiene automáticamente desde data912.com. Podés modificarlo manualmente."
+                        help="El precio se obtiene automáticamente desde data912.com. Podés modificarlo manualmente.",
+                        label_visibility="collapsed"
                     )
 
                 col_calc, col_volver = st.columns(2)
