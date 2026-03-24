@@ -1365,25 +1365,10 @@ try:
             st.session_state.flujos_bono_seleccionado = None
             st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
             st.session_state.flujos_calcular = False
-            st.session_state.indices_activo = False
             if 'flujos_bonos_seleccionados' in st.session_state:
                 del st.session_state['flujos_bonos_seleccionados']
             st.rerun()
         
-        # Botón Indices
-        if st.button("Indices", type="secondary", use_container_width=True, key="indices_button"):
-            st.session_state.indices_activo = True
-            # Limpiar otras selecciones
-            st.session_state.calcular = False
-            st.session_state.bono_seleccionado = None
-            st.session_state.tipo_seleccionado = "Seleccione un Tipo"
-            st.session_state.flujos_bono_seleccionado = None
-            st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
-            st.session_state.flujos_calcular = False
-            st.session_state.mercados_activo = False
-            if 'flujos_bonos_seleccionados' in st.session_state:
-                del st.session_state['flujos_bonos_seleccionados']
-            st.rerun()
     
     # LÓGICA SIMPLIFICADA: S1, S2 y S3 son independientes
     
@@ -1616,16 +1601,16 @@ try:
                     elif ticker_al30 == "AL30":  # Si no encontramos uno en USD, usar el primero que encontremos
                         ticker_al30 = ticker
             
-            # Buscar el ticker de T30J6 en la lista de bonos (el que aparece en la tabla)
-            ticker_t30j6 = "BCBA:T30J6"  # Default
+            # Buscar el ticker de TZXD7 en la lista de bonos (el que aparece en la tabla)
+            ticker_tzxd7 = "BCBA:TZXD7"  # Default
             for bono in bonos:
                 ticker = bono.get('ticker', '').strip()
                 nombre = bono.get('nombre', '').upper()
                 tipo_bono = bono.get('tipo_bono', '').strip().lower()
-                
-                # Buscar T30J6 que sea soberano
-                if ticker and 'soberano' in tipo_bono and ('T30J6' in ticker.upper() or 'T30J6' in nombre):
-                    ticker_t30j6 = ticker
+
+                # Buscar TZXD7 que sea soberano
+                if ticker and 'soberano' in tipo_bono and ('TZXD7' in ticker.upper() or 'TZXD7' in nombre):
+                    ticker_tzxd7 = ticker
                     break
             
             # Mostrar los gráficos de TradingView
@@ -1659,13 +1644,13 @@ try:
                 st.components.v1.html(al30_html, height=300)
                 
             with col2:
-                # T30J6
-                t30j6_html = f"""
+                # TZXD7
+                tzxd7_html = f"""
                 <div class="tradingview-widget-container" style="height: 300px; width: 100%;">
                     <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;"></div>
                     <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
                     {{
-                    "symbol": "{ticker_t30j6}",
+                    "symbol": "{ticker_tzxd7}",
                     "width": "100%",
                     "height": "300",
                     "locale": "es",
@@ -1681,7 +1666,7 @@ try:
                     </script>
                 </div>
                 """
-                st.components.v1.html(t30j6_html, height=300)
+                st.components.v1.html(tzxd7_html, height=300)
             
             # Espaciado reducido antes de la tabla de datos de mercado
             st.markdown("<br>", unsafe_allow_html=True)
@@ -1905,53 +1890,8 @@ try:
             """
             st.components.v1.html(market_data_html, height=800)
     
-    # S4 (Indices) - Prioridad más alta (después de S3)
-    elif st.session_state.get('indices_activo', False):
-        # Ocultar sidebar cuando Indices está activo
-        st.markdown("""
-        <style>
-            [data-testid="stSidebar"] { display: none !important; }
-            .main { margin-left: 0 !important; }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # Widget Ticket Tape de TradingView con acciones del Merval
-        # Acciones principales del índice Merval de Argentina
-        symbols_merval = [
-            "BCBA:GGAL",  # Grupo Financiero Galicia
-            "BCBA:PAMP",  # Pampa Energía
-            "BCBA:YPF",   # YPF
-            "BCBA:BBAR",  # Banco BBVA Argentina
-            "BCBA:BMA",   # Banco Macro
-            "BCBA:CRESY", # Cresud
-            "BCBA:LOMA",  # Loma Negra
-            "BCBA:MIRG",  # Mirgor
-            "BCBA:PGR",   # Phoenix Global Resources
-            "BCBA:TX",    # Ternium Argentina
-            "BCBA:TGSU2", # Transportadora de Gas del Sur
-            "BCBA:VALO"   # Valores
-        ]
-        
-        ticket_tape_html = f"""
-        <div class="tradingview-widget-container" style="width: 100%; height: 100px;">
-            <div class="tradingview-widget-container__widget" style="width: 100%; height: 100px;"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-            {{
-            "symbols": {json.dumps([{{"proName": symbol, "title": symbol.split(':')[1] if ':' in symbol else symbol}} for symbol in symbols_merval], ensure_ascii=False)},
-            "showSymbolLogo": true,
-            "colorTheme": "light",
-            "isTransparent": true,
-            "displayMode": "adaptive",
-            "locale": "es",
-            "backgroundColor": "transparent"
-            }}
-            </script>
-        </div>
-        """
-        st.components.v1.html(ticket_tape_html, height=100)
-    
     # S2 (Calculadora de Flujos) - activo cuando hay bonos en la lista
-    elif st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False):
+    elif st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('mercados_activo', False):
         
         # Mostrar lista de bonos seleccionados con recuadro transparente
         st.markdown("""
@@ -2465,7 +2405,7 @@ try:
             st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
     
     # S1 (Calculadora de Rendimientos) - Mostrar cuando hay bono seleccionado (sin necesidad de calcular)
-    elif st.session_state.bono_seleccionado and not st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False):
+    elif st.session_state.bono_seleccionado and not st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('mercados_activo', False):
         # Obtener el bono actual del session_state
         bono_actual = next((bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado), None)
         if not bono_actual:
@@ -2952,7 +2892,7 @@ try:
         # No mostrar nada cuando hay bono seleccionado pero no se ha calculado
         pass
     
-    if not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False) and not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bonos_seleccionados'):
+    if not st.session_state.get('mercados_activo', False) and not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bonos_seleccionados'):
         # Auto-refresh cada 10 minutos (con guard para evitar timers acumulados)
         st.components.v1.html("""<script>
         if (!window._autoRefreshSet) {
