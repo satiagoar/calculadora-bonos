@@ -2555,7 +2555,7 @@ try:
                 with col_mep:
                     st.text_input(
                         "",
-                        key="tipo_cambio_mep_main",
+                        key=f"tipo_cambio_mep_main_{tipo_cambio_tipo}",
                         value=tipo_cambio_valor_str,
                         placeholder="",
                         label_visibility="collapsed",
