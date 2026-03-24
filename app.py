@@ -48,6 +48,58 @@ def formatear_numero(numero, decimales=2, usar_separador_miles=True):
         return str(numero)
 
 
+def _esc_html(v):
+    """Escape special HTML characters in a string value."""
+    return str(v).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+
+
+TABLA_BONOS_CSS = """
+<style>
+.bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
+.bond-title { background:#fafafa; color:#333; font-weight:700; font-size:14px; padding:11px 14px; border-bottom:2px solid #e0e0e0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; letter-spacing:0.02em; }
+.bond-table { width:100%; border-collapse:collapse; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+.bond-table th { background:#fafafa; color:#555; font-weight:600; padding:9px 12px; text-align:center; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
+.bond-table th:first-child { text-align:left; }
+.bond-table td { padding:8px 12px; color:#333; white-space:nowrap; text-align:center; }
+.bond-table td:first-child { text-align:left; }
+.bond-table tr:nth-child(even) td { background:#f7f7f7; }
+.bond-table tr:nth-child(odd) td { background:#ffffff; }
+.bond-table tr:hover td { background:#eef2ff; }
+</style>
+"""
+
+
+def render_tabla_bonos_html(df, titulo='', columnas_derecha=None, columnas_color_signo=None):
+    columnas_derecha = columnas_derecha or []
+    columnas_color_signo = columnas_color_signo or []
+
+    cols = list(df.columns)
+    headers = ''.join(
+        f'<th style="text-align:{"right" if c in columnas_derecha else "left" if i == 0 else "center"}">{_esc_html(c)}</th>'
+        for i, c in enumerate(cols)
+    )
+
+    rows = ''
+    for _, row in df.iterrows():
+        cells = ''
+        for i, col in enumerate(cols):
+            val = row[col]
+            val_str = _esc_html(val)
+            align = 'right' if col in columnas_derecha else 'left' if i == 0 else 'center'
+            extra_style = ''
+            if col in columnas_color_signo and val != '-':
+                val_text = str(val).strip()
+                if val_text.startswith('+'):
+                    extra_style = 'color:#2e7d32;font-weight:600;'
+                elif val_text.startswith('-'):
+                    extra_style = 'color:#c62828;font-weight:600;'
+            cells += f'<td style="text-align:{align};{extra_style}">{val_str}</td>'
+        rows += f'<tr>{cells}</tr>'
+
+    title_html = f'<div class="bond-title">{_esc_html(titulo)}</div>' if titulo else ''
+    return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
+
+
 # Configuración de la página
 st.set_page_config(
     page_title="Calculadora de Bonos",
@@ -2236,42 +2288,23 @@ try:
                     # Formatear cupón como porcentaje con 2 decimales
                     df_flujos['cupon'] = df_flujos['cupon'].apply(lambda x: f"{x*100:.2f}%")
                     
-                    # Mostrar tabla de flujos con alineación a la derecha
-                    st.markdown("""
-                    <style>
-                    /* Ocultar columna de numeración */
-                    .stTable td:first-child, .stTable th:first-child {
-                        display: none !important;
-                    }
-                    /* Alinear columnas numéricas a la derecha */
-                    .stTable td:nth-child(4), .stTable td:nth-child(5), .stTable td:nth-child(6), .stTable td:nth-child(7) {
-                        text-align: right !important;
-                    }
-                    .stTable th:nth-child(4), .stTable th:nth-child(5), .stTable th:nth-child(6), .stTable th:nth-child(7) {
-                        text-align: right !important;
-                    }
-                    /* Forzar alineación específica para columna Total */
-                    .stTable td:last-child {
-                        text-align: right !important;
-                    }
-                    .stTable th:last-child {
-                        text-align: right !important;
-                    }
-                    .stTable th {
-                        text-transform: capitalize !important;
-                    }
-                    /* Forzar alineación a la izquierda para columna Activo (columna 3) */
-                    .stTable td:nth-child(3), .stTable th:nth-child(3) {
-                        text-align: left !important;
-                    }
-                    /* Asegurar que todas las columnas no numéricas estén a la izquierda */
-                    .stTable td:nth-child(2), .stTable th:nth-child(2) {
-                        text-align: left !important;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
-                    
-                    st.table(df_flujos)
+                    # Mostrar tabla de flujos con el mismo estilo que la tabla inicial
+                    df_flujos = df_flujos.rename(columns={
+                        'fecha': 'Fecha',
+                        'activo': 'Activo',
+                        'cupon': 'Cupón',
+                        'intereses': 'Intereses',
+                        'amortizaciones': 'Amortizaciones',
+                        'total': 'Total'
+                    })
+                    st.markdown(TABLA_BONOS_CSS, unsafe_allow_html=True)
+                    st.markdown(
+                        render_tabla_bonos_html(
+                            df_flujos,
+                            columnas_derecha=['Intereses', 'Amortizaciones', 'Total']
+                        ),
+                        unsafe_allow_html=True
+                    )
 
                     # Gráfico de flujos por trimestre
                     st.markdown("---")
@@ -2561,66 +2594,15 @@ try:
                     'Total': total_con_liquidacion
                 })
                 
-                # CSS para mejorar la visualización de la tabla
-                st.markdown("""
-                <style>
-                .stTable {
-                    border: none !important;
-                    border-radius: 8px !important;
-                    background-color: #f8f9fa !important;
-                }
-                .stTable table {
-                    width: 100% !important;
-                    border-collapse: collapse !important;
-                    font-size: 12px !important;
-                }
-                .stTable th {
-                    background-color: #64748b !important;
-                    color: white !important;
-                    font-weight: bold !important;
-                    padding: 5px 3px !important;
-                    text-align: center !important;
-                    border: 1px solid #64748b !important;
-                    height: 22px !important;
-                }
-                .stTable td {
-                    padding: 3px 3px !important;
-                    text-align: center !important;
-                    border: 1px solid #ddd !important;
-                    background-color: white !important;
-                    color: black !important;
-                    height: 18px !important;
-                }
-                .stTable tbody tr {
-                    height: 18px !important;
-                }
-                /* Ocultar la primera columna (índice) */
-                .stTable table tr th:first-child,
-                .stTable table tr td:first-child {
-                    display: none !important;
-                }
-                
-                /* Prevenir scroll automático al hacer clic en Calcular */
-                .main {
-                    scroll-behavior: auto !important;
-                }
-                
-                /* Mantener la sección de resultados visible */
-                .main .stColumn:first-child {
-                    position: sticky !important;
-                    top: 0 !important;
-                    z-index: 10 !important;
-                }
-                
-                .metrics-grid {
-                    position: relative !important;
-                    z-index: 5 !important;
-                }
-                </style>
-                """, unsafe_allow_html=True)
-                
-                # Mostrar tabla con formato mejorado
-                st.table(df_simple)
+                # Mostrar tabla con el mismo estilo que la tabla inicial
+                st.markdown(TABLA_BONOS_CSS, unsafe_allow_html=True)
+                st.markdown(
+                    render_tabla_bonos_html(
+                        df_simple,
+                        columnas_derecha=['Capital', 'Cupón', 'Total']
+                    ),
+                    unsafe_allow_html=True
+                )
                 
                 # Gráfico del bono seleccionado - Solo si el ticker está disponible y es válido
                 ticker_bono = bono_actual.get('ticker', '').strip()
