@@ -2485,17 +2485,29 @@ try:
                         key="fecha_liquidacion_main"
                     )
                 with col_mep:
+                    st.markdown("""
+                    <style>
+                    div[data-testid="stSelectbox"] label[data-testid="stWidgetLabel"] {
+                        display: none !important;
+                        height: 0 !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
                     tipo_cambio_tipo = st.selectbox(
-                        "Tipo de Cambio",
+                        "",
                         options=["Tipo de Cambio MEP", "Tipo de Cambio CCL"],
                         index=0,
-                        key="tipo_cambio_tipo_main"
+                        key="tipo_cambio_tipo_main",
+                        label_visibility="collapsed"
                     )
                     st.text_input(
-                        tipo_cambio_tipo,
+                        "",
                         value="",
                         key="tipo_cambio_mep_main",
-                        placeholder=""
+                        placeholder="",
+                        label_visibility="collapsed"
                     )
 
                 col_inputs, _ = st.columns(2)
