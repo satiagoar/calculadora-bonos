@@ -439,10 +439,6 @@ st.markdown("""
         display: flex !important;
         flex-direction: column !important;
         height: 100% !important;
-        background: white;
-        border-radius: 14px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-        padding: 1.2rem 1.2rem 1rem;
     }
 
 
@@ -525,10 +521,10 @@ st.markdown("""
     }
     /* Card info bono: ancho completo de la columna */
     .calc-card-fill {
-        background: transparent;
-        border-radius: 0;
-        box-shadow: none;
-        padding: 0.9rem 0 0.2rem;
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+        padding: 0.9rem 1.2rem 0.7rem;
         flex: 1;
         width: 100%;
         box-sizing: border-box;
