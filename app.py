@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime, timedelta
 import warnings
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import json
 import requests
 import re
@@ -2289,52 +2290,69 @@ try:
                         df_trimestral = df_trimestral.sort_values(['año', 'trimestre'])
                         
                         if not df_trimestral.empty:
-                            # Crear gráfico de barras apiladas
-                            fig = go.Figure()
-                            
-                            # Agregar barras de intereses
-                            fig.add_trace(go.Bar(
-                                name='Intereses',
-                                x=df_trimestral['periodo'],
-                                y=df_trimestral['intereses'],
-                                marker_color='#87CEEB',  # Celeste claro
-                                hovertemplate='<b>%{x}</b><br>Intereses: $%{y:,.2f}<extra></extra>'
-                            ))
-                            
-                            # Agregar barras de amortizaciones
-                            fig.add_trace(go.Bar(
-                                name='Amortizaciones',
-                                x=df_trimestral['periodo'],
-                                y=df_trimestral['amortizaciones'],
-                                marker_color='#708090',  # Gris azulado
-                                hovertemplate='<b>%{x}</b><br>Amortizaciones: $%{y:,.2f}<extra></extra>'
-                            ))
-                            
-                            # Configurar layout
-                            fig.update_layout(
-                                xaxis_title='Trimestre',
-                                yaxis_title='Monto ($)',
-                                barmode='stack',
-                                height=500,
-                                showlegend=True,
-                                legend=dict(
-                                    orientation="h",
-                                    yanchor="bottom",
-                                    y=1.02,
-                                    xanchor="right",
-                                    x=1
-                                ),
-                                hovermode='closest'
-                            )
-                            
-                            # Formatear eje Y como moneda
-                            fig.update_layout(
-                                yaxis=dict(
-                                    tickformat='$,.0f'
+                            tiene_amort = df_trimestral['amortizaciones'].sum() > 0
+                            tiene_int   = df_trimestral['intereses'].sum() > 0
+
+                            if tiene_amort and tiene_int:
+                                # Dos paneles: amortizaciones arriba, intereses abajo
+                                fig = make_subplots(
+                                    rows=2, cols=1,
+                                    shared_xaxes=True,
+                                    row_heights=[0.6, 0.4],
+                                    vertical_spacing=0.08,
+                                    subplot_titles=('Amortizaciones', 'Intereses')
                                 )
-                            )
-                            
-                            # Mostrar gráfico
+                                fig.add_trace(go.Bar(
+                                    name='Amortizaciones',
+                                    x=df_trimestral['periodo'],
+                                    y=df_trimestral['amortizaciones'],
+                                    marker_color='#4a6fa5',
+                                    hovertemplate='<b>%{x}</b><br>Amortizaciones: $%{y:,.2f}<extra></extra>'
+                                ), row=1, col=1)
+                                fig.add_trace(go.Bar(
+                                    name='Intereses',
+                                    x=df_trimestral['periodo'],
+                                    y=df_trimestral['intereses'],
+                                    marker_color='#87CEEB',
+                                    hovertemplate='<b>%{x}</b><br>Intereses: $%{y:,.2f}<extra></extra>'
+                                ), row=2, col=1)
+                                fig.update_yaxes(tickformat='$,.0f', row=1, col=1)
+                                fig.update_yaxes(tickformat='$,.0f', row=2, col=1)
+                                fig.update_xaxes(title_text='Trimestre', row=2, col=1)
+                                fig.update_layout(
+                                    height=550,
+                                    showlegend=True,
+                                    legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                                    hovermode='x unified',
+                                    bargap=0.15
+                                )
+                            else:
+                                # Solo un tipo de flujo: gráfico simple
+                                fig = go.Figure()
+                                if tiene_amort:
+                                    fig.add_trace(go.Bar(
+                                        name='Amortizaciones',
+                                        x=df_trimestral['periodo'],
+                                        y=df_trimestral['amortizaciones'],
+                                        marker_color='#4a6fa5',
+                                        hovertemplate='<b>%{x}</b><br>Amortizaciones: $%{y:,.2f}<extra></extra>'
+                                    ))
+                                else:
+                                    fig.add_trace(go.Bar(
+                                        name='Intereses',
+                                        x=df_trimestral['periodo'],
+                                        y=df_trimestral['intereses'],
+                                        marker_color='#87CEEB',
+                                        hovertemplate='<b>%{x}</b><br>Intereses: $%{y:,.2f}<extra></extra>'
+                                    ))
+                                fig.update_layout(
+                                    xaxis_title='Trimestre',
+                                    yaxis=dict(tickformat='$,.0f'),
+                                    height=400,
+                                    hovermode='x unified',
+                                    bargap=0.15
+                                )
+
                             st.plotly_chart(fig, use_container_width=True)
                         else:
                             st.info("No hay flujos futuros en los próximos 5 años")
