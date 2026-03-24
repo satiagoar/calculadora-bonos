@@ -1207,28 +1207,25 @@ try:
     # Generar tipos de bonos automáticamente a partir de los bonos procesados
     tipos_bono = list(set([bono['tipo_bono'] for bono in bonos]))
     tipos_bono.sort()  # Ordenar alfabéticamente
-    tipos_bono = ["Todos"] + tipos_bono
-    
+
     # Sidebar
     with st.sidebar:
         st.markdown("# CALCULADORA DE RENDIMIENTOS")
-        
+
         # Filtro por tipo de bono
         if 'tipo_seleccionado' not in st.session_state:
             st.session_state.tipo_seleccionado = "Seleccione un Tipo"  # Valor inicial
-        
+
         tipos_bono_con_seleccion = ["Seleccione un Tipo"] + tipos_bono
-        
+
         # Usar una clave única que cambie cuando se presiona Volver
         if 'tipo_selectbox_key' not in st.session_state:
             st.session_state.tipo_selectbox_key = 0
         tipo_seleccionado = st.selectbox("Tipo de Bono", tipos_bono_con_seleccion, key=f"tipo_selectbox_{st.session_state.tipo_selectbox_key}")
-        
+
         # Filtrar bonos por tipo
         if tipo_seleccionado == "Seleccione un Tipo":
             bonos_filtrados = bonos  # Mostrar todos los bonos cuando está en "Seleccione un Tipo"
-        elif tipo_seleccionado == "Todos":
-            bonos_filtrados = bonos
         else:
             bonos_filtrados = [bono for bono in bonos if bono['tipo_bono'] == tipo_seleccionado]
         
@@ -1291,7 +1288,7 @@ try:
         )
 
         # Filtrar bonos por tipo para flujos
-        if flujos_tipo_seleccionado in ("Seleccione un Tipo", "Todos"):
+        if flujos_tipo_seleccionado == "Seleccione un Tipo":
             flujos_bonos_filtrados = bonos
         else:
             flujos_bonos_filtrados = [b for b in bonos if b['tipo_bono'] == flujos_tipo_seleccionado]
@@ -2908,7 +2905,34 @@ try:
             setTimeout(function(){ window.location.reload(); }, 600000);
         }
         </script>""", height=0)
+
+        # Botones de navegación entre vistas
+        if 'vista_titulos' not in st.session_state:
+            st.session_state.vista_titulos = 'usd'
+
+        col_btn_usd, col_btn_pesos = st.columns(2)
+        with col_btn_usd:
+            btn_usd_type = "primary" if st.session_state.vista_titulos == 'usd' else "secondary"
+            if st.button("Títulos en USD", type=btn_usd_type, use_container_width=True, key="btn_vista_usd"):
+                st.session_state.vista_titulos = 'usd'
+                st.rerun()
+        with col_btn_pesos:
+            btn_pesos_type = "primary" if st.session_state.vista_titulos == 'pesos' else "secondary"
+            if st.button("Títulos en Pesos", type=btn_pesos_type, use_container_width=True, key="btn_vista_pesos"):
+                st.session_state.vista_titulos = 'pesos'
+                st.rerun()
+
         # Tabla de bonos con métricas en tiempo real
+        if st.session_state.get('vista_titulos', 'usd') == 'pesos':
+            PESOS_CSS = """
+            <style>
+            .bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
+            .bond-title { background:#fafafa; color:#333; font-weight:700; font-size:14px; padding:11px 14px; border-bottom:2px solid #e0e0e0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; letter-spacing:0.02em; }
+            </style>
+            """
+            st.markdown(PESOS_CSS, unsafe_allow_html=True)
+            st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
+            st.markdown('<div class="bond-wrap"><div class="bond-title">Lecaps &amp; Boncaps</div></div>', unsafe_allow_html=True)
 
         with st.spinner("Cargando precios y calculando métricas..."):
             fecha_hoy = get_next_business_day()
@@ -3037,7 +3061,7 @@ try:
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
-        if grupos:
+        if grupos and st.session_state.get('vista_titulos', 'usd') == 'usd':
             st.markdown(TABLE_CSS, unsafe_allow_html=True)
             orden_tipos = ['Soberano USD', 'Corporativo Ley NY', 'Corporativo Ley ARG']
             tipos_ordenados = orden_tipos + [t for t in sorted(grupos.keys()) if t not in orden_tipos]
@@ -3203,7 +3227,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown(render_tabla_html(df_tabla), unsafe_allow_html=True)
-        else:
+        elif st.session_state.get('vista_titulos', 'usd') == 'usd':
             st.info("No hay precios disponibles en este momento.")
 
         
