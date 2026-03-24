@@ -720,6 +720,13 @@ st.markdown("""
     [data-testid="stNumberInput"] + div small {
         display: none !important;
     }
+    /* Color azul en las tabs */
+    [data-testid="stTabs"] button[role="tab"] {
+        color: #1a56db !important;
+    }
+    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: #1a56db !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
