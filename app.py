@@ -728,6 +728,7 @@ st.markdown("""
         padding: 8px 20px !important;
         border-radius: 6px 6px 0 0 !important;
         font-size: 1.25em !important;
+        font-weight: 700 !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"][aria-selected="true"] {
         color: #1a56db !important;
