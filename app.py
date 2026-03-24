@@ -734,6 +734,7 @@ st.markdown("""
     }
     [data-testid="stTabs"] [data-baseweb="tab-list"] {
         gap: 0 !important;
+        border-bottom: 2px solid #e4e6ea !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"] p,
     [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"] div,
