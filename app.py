@@ -2628,7 +2628,8 @@ try:
                         format="%.2f",
                         key=precio_key_main,
                         help="El precio se obtiene automáticamente desde data912.com. Podés modificarlo manualmente.",
-                        label_visibility="collapsed"
+                        label_visibility="collapsed",
+                        on_change=lambda: st.session_state.update({"calcular": True})
                     )
 
                 with col_input_precio_pesos:
