@@ -2482,6 +2482,7 @@ try:
                     font-size: 0.95rem;
                     font-weight: 400;
                     color: rgb(49, 51, 63);
+                    margin-top: 0.35rem;
                     margin-bottom: 0.25rem;
                     line-height: 1.4;
                 }
