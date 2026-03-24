@@ -727,6 +727,13 @@ st.markdown("""
     [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
         color: #1a56db !important;
     }
+    /* Línea de selección azul */
+    [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
+        background-color: #1a56db !important;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab-border"] {
+        background-color: #1a56db !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
