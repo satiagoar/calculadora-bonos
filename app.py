@@ -1878,12 +1878,21 @@ try:
                 precio_api = None
                 if ticker_flujo and ticker_flujo != 'SPX500':
                     precio_api = obtener_precio_data912(ticker_flujo)
+                # Guardar precio en session_state con key basada en nombre (no índice)
+                key_nombre = re.sub(r'[^a-zA-Z0-9]', '_', bono_actual)
+                precio_key_nombre = f"precio_flujo_{key_nombre}"
+                if precio_api and precio_api > 0:
+                    st.session_state[precio_key_nombre] = float(precio_api)
+                elif precio_key_nombre not in st.session_state:
+                    st.session_state[precio_key_nombre] = 0.0
                 st.session_state.flujos_bonos_seleccionados.append({
                     'nombre': bono_actual,
                     'nominales': '',
                     'precio': precio_api if precio_api and precio_api > 0 else '',
                     'info': bono_info
                 })
+                # Resetear cálculo al agregar nuevo bono
+                st.session_state.flujos_calcular = False
         
         # Mostrar lista de bonos seleccionados con recuadro transparente
         st.markdown("""
@@ -1903,46 +1912,45 @@ try:
         
         if st.session_state.flujos_bonos_seleccionados:
             for i, bono in enumerate(st.session_state.flujos_bonos_seleccionados):
+                # Keys basadas en nombre del bono (no índice) para evitar colisiones al borrar/reordenar
+                key_nombre = re.sub(r'[^a-zA-Z0-9]', '_', bono['nombre'])
+                precio_key = f"precio_flujo_{key_nombre}"
+                nominales_key = f"nominales_{key_nombre}"
+
                 # Layout con 6 columnas para incluir precio
                 col1, col2, col3, col4, col5, col6 = st.columns([3, 1, 2, 1, 1, 1])
-                
+
                 with col1:
                     st.write(f"**{bono['nombre']}**")
-                
+
                 with col2:
                     st.write("Nominales:")
-                
+
                 with col3:
-                    # Usar text_input para permitir campo vacío
                     nominales_text = st.text_input(
                         "",
                         value=str(bono['nominales']) if bono['nominales'] != '' else "",
-                        key=f"nominales_{i}",
+                        key=nominales_key,
                         label_visibility="collapsed"
                     )
-                    # Convertir a número y actualizar session_state
                     try:
                         nominales = int(nominales_text) if nominales_text else 0
                     except ValueError:
                         nominales = 0
                     st.session_state.flujos_bonos_seleccionados[i]['nominales'] = nominales
-                
+
                 with col4:
                     st.write("Precio:")
-                
+
                 with col5:
-                    # Input para precio del bono en base 100
-                    precio_key = f"precio_flujo_{i}"
-                    
-                    # Inicializar precio en session_state si no existe
+                    # Inicializar precio en session_state si no existe aún
                     if precio_key not in st.session_state:
                         precio_actual = bono.get('precio', '')
                         if precio_actual and float(precio_actual) > 0:
                             st.session_state[precio_key] = float(precio_actual)
                         else:
                             st.session_state[precio_key] = 0.0
-                    
-                    # Usar number_input para validación automática
+
                     precio = st.number_input(
                         "",
                         min_value=0.0,
@@ -1952,13 +1960,16 @@ try:
                         key=precio_key,
                         label_visibility="collapsed"
                     )
-                    
-                    # Actualizar session_state
                     st.session_state.flujos_bonos_seleccionados[i]['precio'] = precio
-                
+
                 with col6:
-                    if st.button("🗑️", key=f"remove_{i}", help="Eliminar bono"):
+                    if st.button("🗑️", key=f"remove_{i}_{key_nombre}", help="Eliminar bono"):
+                        # Limpiar keys del bono eliminado
+                        for k in [precio_key, nominales_key]:
+                            if k in st.session_state:
+                                del st.session_state[k]
                         st.session_state.flujos_bonos_seleccionados.pop(i)
+                        st.session_state.flujos_calcular = False
                         st.rerun()
             
             # Botón para agregar más bonos
