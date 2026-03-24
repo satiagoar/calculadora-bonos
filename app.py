@@ -2580,13 +2580,23 @@ try:
                         help="El precio se obtiene automáticamente desde data912.com. Podés modificarlo manualmente.",
                         label_visibility="collapsed"
                     )
+
+                precio_dirty_pesos = None
+                if tipo_cambio_valor is not None and precio_dirty is not None:
+                    try:
+                        precio_dirty_pesos = float(precio_dirty) * float(tipo_cambio_valor)
+                    except Exception:
+                        precio_dirty_pesos = None
+                precio_dirty_pesos_str = formatear_numero(precio_dirty_pesos, 2) if precio_dirty_pesos is not None else ""
+
                 with col_input_precio_pesos:
                     st.text_input(
                         "",
-                        value="",
-                        key="precio_dirty_pesos_main",
+                        value=precio_dirty_pesos_str,
+                        key=f"precio_dirty_pesos_main_{tipo_cambio_tipo}",
                         placeholder="",
-                        label_visibility="collapsed"
+                        label_visibility="collapsed",
+                        disabled=True
                     )
 
                 col_calc, col_volver = st.columns(2)
