@@ -2489,6 +2489,12 @@ try:
                 div[data-testid="stSelectbox"] div[role="combobox"] {
                     font-size: 0.85rem !important;
                 }
+                div[data-testid="stTextInput"] {
+                    margin-top: 0 !important;
+                }
+                div[data-testid="stTextInput"] > div {
+                    margin-top: 0 !important;
+                }
                 div[data-testid="stSelectbox"] label[data-testid="stWidgetLabel"],
                 div[data-testid="stDateInput"] label[data-testid="stWidgetLabel"],
                 div[data-testid="stNumberInput"] label[data-testid="stWidgetLabel"],
@@ -2533,7 +2539,7 @@ try:
 
                 col_label_precio, col_label_precio_pesos = st.columns(2)
                 with col_label_precio:
-                    st.markdown("<div class='inline-field-label'>Precio Dirty</div>", unsafe_allow_html=True)
+                    st.markdown("<div class='inline-field-label'>Precio Dirty en USD</div>", unsafe_allow_html=True)
                 with col_label_precio_pesos:
                     st.markdown("<div class='inline-field-label'>Precio Dirty en Pesos</div>", unsafe_allow_html=True)
 
