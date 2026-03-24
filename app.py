@@ -619,13 +619,22 @@ st.markdown("""
         padding-bottom: 0.6rem;
         border-bottom: 1px solid #f0f2f7;
     }
-    /* Card info bono crece para llenar el espacio restante de la columna */
+    /* Card info bono: ancho completo de la columna */
     .calc-card-fill {
         background: white;
         border-radius: 14px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-        padding: 1.2rem 1.2rem 1rem;
+        padding: 0.9rem 1.2rem 0.7rem;
         flex: 1;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    /* Forzar que el contenedor de Streamlit no agregue padding extra */
+    [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlockBorderWrapper"],
+    [data-testid="stVerticalBlock"] > div > [data-testid="stMarkdownContainer"]:has(.calc-card-fill) {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
     }
     
     /* Info bullets */
@@ -847,6 +856,17 @@ st.markdown("""
         document.querySelectorAll('[data-testid="stDateInput"] label, [data-testid="stNumberInput"] label, [data-testid="stWidgetLabel"]').forEach(function(el) {
             el.style.setProperty('color', '#374151', 'important');
             el.style.setProperty('font-weight', '600', 'important');
+        });
+        // Forzar ancho completo en el contenedor de la card de info del bono
+        document.querySelectorAll('.calc-card-fill').forEach(function(el) {
+            var parent = el.parentElement;
+            while (parent && !parent.matches('[data-testid="stMarkdownContainer"]')) {
+                parent = parent.parentElement;
+            }
+            if (parent) {
+                parent.style.setProperty('padding', '0', 'important');
+                parent.style.setProperty('width', '100%', 'important');
+            }
         });
     }
     if (document.readyState === 'loading') {
