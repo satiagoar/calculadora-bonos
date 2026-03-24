@@ -2476,22 +2476,24 @@ try:
                         st.session_state[precio_key_main] = precio_inicial
                         st.session_state.calcular = True
                 
-                fecha_liquidacion = st.date_input(
-                    "Fecha de Liquidación",
-                    value=get_next_business_day(),
-                    format="DD/MM/YYYY",
-                    key="fecha_liquidacion_main"
-                )
+                col_inputs, _ = st.columns(2)
+                with col_inputs:
+                    fecha_liquidacion = st.date_input(
+                        "Fecha de Liquidación",
+                        value=get_next_business_day(),
+                        format="DD/MM/YYYY",
+                        key="fecha_liquidacion_main"
+                    )
 
-                precio_dirty = st.number_input(
-                    "Precio Dirty",
-                    min_value=0.0,
-                    max_value=200.0,
-                    step=0.01,
-                    format="%.2f",
-                    key=precio_key_main,
-                    help="El precio se obtiene automáticamente desde data912.com. Podés modificarlo manualmente."
-                )
+                    precio_dirty = st.number_input(
+                        "Precio Dirty",
+                        min_value=0.0,
+                        max_value=200.0,
+                        step=0.01,
+                        format="%.2f",
+                        key=precio_key_main,
+                        help="El precio se obtiene automáticamente desde data912.com. Podés modificarlo manualmente."
+                    )
 
                 col_calc, col_volver = st.columns(2)
                 with col_calc:
