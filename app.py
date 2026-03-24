@@ -2293,64 +2293,88 @@ try:
                             tiene_amort = df_trimestral['amortizaciones'].sum() > 0
                             tiene_int   = df_trimestral['intereses'].sum() > 0
 
+                            # Estilo compartido con los gráficos de la sección principal
+                            _axis_style = dict(
+                                showgrid=True, gridcolor='#cccccc',
+                                linecolor='#999999', linewidth=1, showline=True,
+                                tickfont=dict(color='#444444', size=11),
+                                title_font=dict(color='#444444')
+                            )
+                            _BG = '#f4f6fb'
+                            _COLOR_AMORT = '#4a6fa5'
+                            _COLOR_INT   = '#7ab3d4'
+
                             if tiene_amort and tiene_int:
-                                # Dos paneles: amortizaciones arriba, intereses abajo
                                 fig = make_subplots(
                                     rows=2, cols=1,
                                     shared_xaxes=True,
                                     row_heights=[0.6, 0.4],
-                                    vertical_spacing=0.08,
+                                    vertical_spacing=0.10,
                                     subplot_titles=('Amortizaciones', 'Intereses')
                                 )
                                 fig.add_trace(go.Bar(
                                     name='Amortizaciones',
                                     x=df_trimestral['periodo'],
                                     y=df_trimestral['amortizaciones'],
-                                    marker_color='#4a6fa5',
-                                    hovertemplate='<b>%{x}</b><br>Amortizaciones: $%{y:,.2f}<extra></extra>'
+                                    marker_color=_COLOR_AMORT,
+                                    marker_line_width=0,
+                                    hovertemplate='<b>%{x}</b><br>Amortizaciones: $%{y:,.0f}<extra></extra>'
                                 ), row=1, col=1)
                                 fig.add_trace(go.Bar(
                                     name='Intereses',
                                     x=df_trimestral['periodo'],
                                     y=df_trimestral['intereses'],
-                                    marker_color='#87CEEB',
-                                    hovertemplate='<b>%{x}</b><br>Intereses: $%{y:,.2f}<extra></extra>'
+                                    marker_color=_COLOR_INT,
+                                    marker_line_width=0,
+                                    hovertemplate='<b>%{x}</b><br>Intereses: $%{y:,.0f}<extra></extra>'
                                 ), row=2, col=1)
-                                fig.update_yaxes(tickformat='$,.0f', row=1, col=1)
-                                fig.update_yaxes(tickformat='$,.0f', row=2, col=1)
-                                fig.update_xaxes(title_text='Trimestre', row=2, col=1)
+                                fig.update_yaxes(tickformat='$,.0f', **_axis_style, row=1, col=1)
+                                fig.update_yaxes(tickformat='$,.0f', **_axis_style, row=2, col=1)
+                                fig.update_xaxes(**_axis_style, row=1, col=1)
+                                fig.update_xaxes(title_text='Trimestre', **_axis_style, row=2, col=1)
                                 fig.update_layout(
-                                    height=550,
+                                    height=560,
+                                    plot_bgcolor=_BG,
+                                    paper_bgcolor=_BG,
                                     showlegend=True,
-                                    legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                                    legend=dict(
+                                        orientation='h', yanchor='bottom', y=1.02,
+                                        xanchor='right', x=1,
+                                        font=dict(color='#444444', size=12)
+                                    ),
                                     hovermode='x unified',
-                                    bargap=0.15
+                                    bargap=0.2,
+                                    margin=dict(t=60, b=40, l=60, r=20),
+                                    font=dict(color='#444444')
                                 )
+                                # Títulos de subplots en gris oscuro
+                                for ann in fig.layout.annotations:
+                                    ann.font.color = '#444444'
+                                    ann.font.size  = 12
                             else:
                                 # Solo un tipo de flujo: gráfico simple
-                                fig = go.Figure()
-                                if tiene_amort:
-                                    fig.add_trace(go.Bar(
-                                        name='Amortizaciones',
-                                        x=df_trimestral['periodo'],
-                                        y=df_trimestral['amortizaciones'],
-                                        marker_color='#4a6fa5',
-                                        hovertemplate='<b>%{x}</b><br>Amortizaciones: $%{y:,.2f}<extra></extra>'
-                                    ))
-                                else:
-                                    fig.add_trace(go.Bar(
-                                        name='Intereses',
-                                        x=df_trimestral['periodo'],
-                                        y=df_trimestral['intereses'],
-                                        marker_color='#87CEEB',
-                                        hovertemplate='<b>%{x}</b><br>Intereses: $%{y:,.2f}<extra></extra>'
-                                    ))
+                                color  = _COLOR_AMORT if tiene_amort else _COLOR_INT
+                                nombre = 'Amortizaciones' if tiene_amort else 'Intereses'
+                                y_vals = df_trimestral['amortizaciones'] if tiene_amort else df_trimestral['intereses']
+                                fig = go.Figure(go.Bar(
+                                    name=nombre,
+                                    x=df_trimestral['periodo'],
+                                    y=y_vals,
+                                    marker_color=color,
+                                    marker_line_width=0,
+                                    hovertemplate=f'<b>%{{x}}</b><br>{nombre}: $%{{y:,.0f}}<extra></extra>'
+                                ))
                                 fig.update_layout(
                                     xaxis_title='Trimestre',
-                                    yaxis=dict(tickformat='$,.0f'),
-                                    height=400,
+                                    xaxis=_axis_style,
+                                    yaxis=dict(tickformat='$,.0f', **_axis_style),
+                                    plot_bgcolor=_BG,
+                                    paper_bgcolor=_BG,
+                                    height=420,
                                     hovermode='x unified',
-                                    bargap=0.15
+                                    bargap=0.2,
+                                    margin=dict(t=40, b=40, l=60, r=20),
+                                    font=dict(color='#444444')
                                 )
 
                             st.plotly_chart(fig, use_container_width=True)
