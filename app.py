@@ -2713,40 +2713,33 @@ try:
                             
                             st.rerun()
                 
-                # Mostrar información del bono seleccionado con el mismo centrado que los inputs
-                col_info_left, col_info_center, col_info_right = st.columns([0.15, 0.7, 0.15])
-                
-                with col_info_center:
-                    # Mapear periodicidad a texto
-                    periodicidad_texto_info = {
-                        1: "anual",
-                        2: "semestral",
-                        3: "trimestral",
-                        4: "trimestral",
-                        6: "bimestral",
-                        12: "mensual"
-                    }.get(bono_actual_main['periodicidad'], f"{bono_actual_main['periodicidad']} veces al año")
+                # Mapear periodicidad a texto
+                periodicidad_texto_info = {
+                    1: "anual",
+                    2: "semestral",
+                    3: "trimestral",
+                    4: "trimestral",
+                    6: "bimestral",
+                    12: "mensual"
+                }.get(bono_actual_main['periodicidad'], f"{bono_actual_main['periodicidad']} veces al año")
 
-                    # Calcular fecha de vencimiento
-                    fecha_vencimiento_info = encontrar_fecha_vencimiento(bono_actual_main['flujos'])
+                fecha_vencimiento_info = encontrar_fecha_vencimiento(bono_actual_main['flujos'])
+                from datetime import date
+                cupon_vigente_actual_info = encontrar_cupon_vigente(date.today(), bono_actual_main['flujos'])
 
-                    # Calcular cupón vigente basado en la fecha actual
-                    from datetime import date
-                    cupon_vigente_actual_info = encontrar_cupon_vigente(date.today(), bono_actual_main['flujos'])
-
-                    st.markdown(f"""
-                    <div class="calc-card-fill">
-                        <div class="calc-card-title">Información del Bono</div>
-                        <div style="font-size:0.83rem; color:#444; line-height:1.8;">
-                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Nombre:</strong> {bono_actual_main['nombre']}</p>
-                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
-                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
-                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Periodicidad:</strong> {periodicidad_texto_info}</p>
-                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
-                            <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Ticker:</strong> {bono_actual_main['ticker']}</p>
-                        </div>
+                st.markdown(f"""
+                <div class="calc-card-fill">
+                    <div class="calc-card-title">Información del Bono</div>
+                    <div style="font-size:0.83rem; color:#444; line-height:1.8;">
+                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Nombre:</strong> {bono_actual_main['nombre']}</p>
+                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
+                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
+                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Periodicidad:</strong> {periodicidad_texto_info}</p>
+                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
+                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Ticker:</strong> {bono_actual_main['ticker']}</p>
                     </div>
-                    """, unsafe_allow_html=True)
+                </div>
+                """, unsafe_allow_html=True)
         
         # Espaciado adicional antes de Flujo de Fondos
         if st.session_state.calcular:
