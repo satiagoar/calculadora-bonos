@@ -2280,44 +2280,36 @@ try:
                     """, unsafe_allow_html=True)
                     
                     st.table(df_flujos)
-                    
+
                     # Gráfico de flujos por trimestre
                     st.markdown("---")
                     st.markdown("### Flujos por Trimestre (Próximos 5 Años)")
-                    
-                    # Preparar datos para el gráfico
-                    df_flujos_copy = df_flujos.copy()
-                    df_flujos_copy['fecha'] = pd.to_datetime(df_flujos_copy['fecha'])
-                    
-                    # Filtrar solo flujos futuros (excluir fila inicial)
-                    df_futuros = df_flujos_copy[df_flujos_copy['activo'] != 'Valor Actual'].copy()
-                    
-                    if not df_futuros.empty:
+
+                    # Usar datos numéricos crudos (todos_flujos) antes del formateo de strings
+                    df_futuros_raw = pd.DataFrame([
+                        f for f in todos_flujos if f.get('activo') != 'Valor Actual'
+                    ])
+
+                    if not df_futuros_raw.empty:
+                        df_futuros_raw['fecha'] = pd.to_datetime(df_futuros_raw['fecha'])
                         # Crear columna de trimestre
-                        df_futuros['año'] = df_futuros['fecha'].dt.year
-                        df_futuros['trimestre'] = df_futuros['fecha'].dt.quarter
-                        df_futuros['trimestre_label'] = df_futuros['trimestre'].astype(str) + 'Q' + df_futuros['año'].astype(str).str[2:]
-                        
-                        # Asegurar que las columnas sean numéricas
-                        df_futuros['intereses'] = pd.to_numeric(df_futuros['intereses'], errors='coerce').fillna(0)
-                        df_futuros['amortizaciones'] = pd.to_numeric(df_futuros['amortizaciones'], errors='coerce').fillna(0)
-                        
-                        # Agrupar por trimestre
-                        df_trimestral = df_futuros.groupby(['año', 'trimestre', 'trimestre_label']).agg({
+                        df_futuros_raw['año'] = df_futuros_raw['fecha'].dt.year
+                        df_futuros_raw['trimestre'] = df_futuros_raw['fecha'].dt.quarter
+                        df_futuros_raw['trimestre_label'] = df_futuros_raw['trimestre'].astype(str) + 'Q' + df_futuros_raw['año'].astype(str).str[2:]
+
+                        # Filtrar solo los próximos 5 años
+                        año_actual = pd.Timestamp.now().year
+                        df_futuros_raw = df_futuros_raw[df_futuros_raw['año'] <= año_actual + 5]
+
+                        # Agrupar por trimestre con valores ya numéricos
+                        df_trimestral = df_futuros_raw.groupby(['año', 'trimestre', 'trimestre_label']).agg({
                             'intereses': 'sum',
                             'amortizaciones': 'sum'
                         }).reset_index()
-                        
+
                         # Crear etiqueta completa para el eje X
                         df_trimestral['periodo'] = df_trimestral['trimestre'].astype(str) + 'Q' + df_trimestral['año'].astype(str).str[2:]
-                        
-                        # Filtrar solo los próximos 5 años
-                        año_actual = pd.Timestamp.now().year
-                        df_trimestral = df_trimestral[df_trimestral['año'] <= año_actual + 5]
-                        
-                        # Asegurar que los valores sean numéricos
-                        df_trimestral['intereses'] = pd.to_numeric(df_trimestral['intereses'], errors='coerce').fillna(0)
-                        df_trimestral['amortizaciones'] = pd.to_numeric(df_trimestral['amortizaciones'], errors='coerce').fillna(0)
+                        df_trimestral = df_trimestral.sort_values(['año', 'trimestre'])
                         
                         if not df_trimestral.empty:
                             # Crear gráfico de barras apiladas
@@ -2370,7 +2362,7 @@ try:
                         else:
                             st.info("No hay flujos futuros en los próximos 5 años")
                     else:
-                        st.info("No hay flujos futuros para mostrar")
+                        st.info("No hay flujos futuros para mostrar (ingresá nominales para ver el gráfico)")
                 else:
                     st.warning("⚠️ No se encontraron flujos futuros para los bonos seleccionados")
         else:
