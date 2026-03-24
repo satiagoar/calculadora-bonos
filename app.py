@@ -796,35 +796,27 @@ st.markdown("""
         font-size: 8px !important;
     }
 
-    /* Forzar modo claro en inputs de la sección principal */
-    .main input,
-    .main [data-testid="stDateInput"] input,
-    .main [data-testid="stNumberInput"] input,
-    .main [data-testid="stTextInput"] input {
+    /* Labels de inputs visibles */
+    [data-testid="stDateInput"] label,
+    [data-testid="stNumberInput"] label,
+    [data-testid="stWidgetLabel"],
+    .stDateInput label,
+    .stNumberInput label {
+        color: #374151 !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+    }
+    /* Inputs: fondo blanco, borde suave */
+    [data-testid="stDateInput"] input,
+    [data-testid="stNumberInput"] input {
         background-color: white !important;
         color: #1a1a1a !important;
-        border: 1px solid #ddd !important;
+        border: 1px solid #dee2e6 !important;
         border-radius: 8px !important;
     }
-    .main [data-testid="stDateInput"] > div,
-    .main [data-testid="stNumberInput"] > div,
-    .main [data-testid="stTextInput"] > div {
+    [data-baseweb="input"], [data-baseweb="base-input"] {
         background-color: white !important;
         border-radius: 8px !important;
-    }
-    /* Contenedor externo del input */
-    .main [data-baseweb="input"],
-    .main [data-baseweb="base-input"] {
-        background-color: white !important;
-    }
-    /* Botones Calcular y Volver en la sección principal */
-    .main [data-testid="stBaseButton-secondary"] {
-        background-color: #64748b !important;
-        color: white !important;
-        border: none !important;
-    }
-    .main [data-testid="stBaseButton-secondary"]:hover {
-        background-color: #475569 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -846,15 +838,15 @@ st.markdown("""
         // Inputs: fondo blanco, texto oscuro
         document.querySelectorAll('[data-baseweb="input"], [data-baseweb="base-input"]').forEach(function(el) {
             el.style.setProperty('background-color', 'white', 'important');
-            el.style.setProperty('color', '#1a1a1a', 'important');
         });
-        document.querySelectorAll('input[type="number"], input[type="text"], input[type="date"]').forEach(function(el) {
+        document.querySelectorAll('[data-testid="stDateInput"] input, [data-testid="stNumberInput"] input').forEach(function(el) {
             el.style.setProperty('background-color', 'white', 'important');
             el.style.setProperty('color', '#1a1a1a', 'important');
         });
-        // Contenedor de inputs (div que envuelve el input nativo)
-        document.querySelectorAll('[data-testid="stNumberInput"] > div, [data-testid="stDateInput"] > div').forEach(function(el) {
-            el.style.setProperty('background-color', 'white', 'important');
+        // Labels visibles
+        document.querySelectorAll('[data-testid="stDateInput"] label, [data-testid="stNumberInput"] label, [data-testid="stWidgetLabel"]').forEach(function(el) {
+            el.style.setProperty('color', '#374151', 'important');
+            el.style.setProperty('font-weight', '600', 'important');
         });
     }
     if (document.readyState === 'loading') {
@@ -2644,44 +2636,29 @@ try:
                         st.session_state[precio_key_main] = precio_inicial
                         st.session_state.calcular = True
                 
-                st.markdown('<p style="font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;padding-left:15%;">Parámetros de cálculo</p>', unsafe_allow_html=True)
+                fecha_liquidacion = st.date_input(
+                    "Fecha de Liquidación",
+                    value=get_next_business_day(),
+                    format="DD/MM/YYYY",
+                    key="fecha_liquidacion_main"
+                )
 
-                # Inputs con ancho reducido al 70%
-                col_input_left, col_input_center, col_input_right = st.columns([0.15, 0.7, 0.15])
+                precio_dirty = st.number_input(
+                    "Precio Dirty",
+                    min_value=0.0,
+                    max_value=200.0,
+                    step=0.01,
+                    format="%.2f",
+                    key=precio_key_main,
+                    help="El precio se obtiene automáticamente desde data912.com. Podés modificarlo manualmente."
+                )
 
-                with col_input_center:
-                    fecha_liquidacion = st.date_input(
-                        "Fecha de Liquidación",
-                        value=get_next_business_day(),
-                        format="DD/MM/YYYY",
-                        key="fecha_liquidacion_main"
-                    )
-                    
-                    # Input de precio
-                    # Si no hay precio de BYMA, el campo quedará con 0.0 (que el usuario puede cambiar)
-                    # Nota: st.number_input no puede estar realmente "vacío", pero 0.0 actúa como placeholder
-                    precio_dirty = st.number_input(
-                        "Precio Dirty (base 100)",
-                        min_value=0.0,
-                        max_value=200.0,
-                        step=0.01,
-                        format="%.2f",
-                        key=precio_key_main,
-                        help="💡 El precio se obtiene automáticamente desde data912.com (último operado). Puedes modificarlo manualmente si lo deseas."
-                    )
-        
-                # Botones de cálculo y volver con ancho reducido al 70%
-                col_btn_left, col_btn_center, col_btn_right = st.columns([0.15, 0.7, 0.15])
-                
-                with col_btn_center:
-                    col_calc, col_volver = st.columns(2)
-                    
-                    with col_calc:
-                        if st.button("Calcular", type="primary", use_container_width=True, key="calcular_main"):
-                            st.session_state.calcular = True
-                    
-                    with col_volver:
-                        if st.button("Volver", type="secondary", use_container_width=True, key="volver_main"):
+                col_calc, col_volver = st.columns(2)
+                with col_calc:
+                    if st.button("Calcular", type="primary", use_container_width=True, key="calcular_main"):
+                        st.session_state.calcular = True
+                with col_volver:
+                    if st.button("Volver", type="secondary", use_container_width=True, key="volver_main"):
                             # Resetear TODAS las selecciones - estado inicial completo
                             st.session_state.calcular = False
                             st.session_state.bono_seleccionado = None
