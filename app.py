@@ -1581,6 +1581,14 @@ try:
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Volver", type="secondary", use_container_width=True, key="mercados_volver_left"):
                 st.session_state.mercados_activo = False
+                st.session_state.bono_seleccionado = None
+                st.session_state.calcular = False
+                st.session_state.tipo_seleccionado = "Seleccione un Tipo"
+                st.session_state.flujos_bono_seleccionado = None
+                st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
+                st.session_state.flujos_calcular = False
+                if 'flujos_bonos_seleccionados' in st.session_state:
+                    del st.session_state['flujos_bonos_seleccionados']
                 st.rerun()
         
         with col_mercados_right:
