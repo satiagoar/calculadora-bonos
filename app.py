@@ -712,7 +712,6 @@ st.markdown("""
         border-radius: 8px !important;
     }
     [data-baseweb="input"], [data-baseweb="base-input"] {
-        background-color: white !important;
         border-radius: 8px !important;
     }
 </style>
