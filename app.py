@@ -727,11 +727,8 @@ st.markdown("""
     [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
         color: #1a56db !important;
     }
-    /* Línea de selección azul */
+    /* Línea de selección azul (solo el indicador activo, no la línea base) */
     [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
-        background-color: #1a56db !important;
-    }
-    [data-testid="stTabs"] [data-baseweb="tab-border"] {
         background-color: #1a56db !important;
     }
 </style>
