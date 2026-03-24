@@ -2485,8 +2485,14 @@ try:
                         key="fecha_liquidacion_main"
                     )
                 with col_mep:
+                    tipo_cambio_tipo = st.selectbox(
+                        "Tipo de Cambio",
+                        options=["Tipo de Cambio MEP", "Tipo de Cambio CCL"],
+                        index=0,
+                        key="tipo_cambio_tipo_main"
+                    )
                     st.text_input(
-                        "Tipo de Cambio MEP",
+                        tipo_cambio_tipo,
                         value="",
                         key="tipo_cambio_mep_main",
                         placeholder=""
