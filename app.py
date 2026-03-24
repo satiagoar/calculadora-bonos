@@ -2493,8 +2493,13 @@ try:
                         margin: 0 !important;
                         padding: 0 !important;
                     }
+                    div[data-testid="stSelectbox"] > div[data-baseweb="select"] > div {
+                        min-height: 3.05rem !important;
+                        border-radius: 0.75rem !important;
+                    }
                     </style>
                     """, unsafe_allow_html=True)
+                    st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
                     tipo_cambio_tipo = st.selectbox(
                         "",
                         options=["Tipo de Cambio MEP", "Tipo de Cambio CCL"],
