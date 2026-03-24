@@ -2699,7 +2699,7 @@ try:
         if st.session_state.calcular:
             # Obtener fecha_liquidacion y precio_dirty desde session_state
             # Usar la misma key que se usó para guardar el precio
-            precio_key_main = f"precio_dirty_{st.session_state.bono_seleccionado}"
+            precio_key_main = f"precio_dirty_usd_{st.session_state.bono_seleccionado}"
             fecha_liquidacion = st.session_state.get('fecha_liquidacion_main', get_next_business_day())
             precio_dirty = st.session_state.get(precio_key_main, 100.0)
             
