@@ -3,54 +3,11 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import warnings
-import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import json
 import requests
 import re
-import locale
 warnings.filterwarnings('ignore')
-
-# Configurar locale para formato de números (Argentina: punto para miles, coma para decimales)
-try:
-    locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')
-except:
-    try:
-        locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
-    except:
-        pass  # Usar formato por defecto si no se puede configurar
-
-def validar_formato_decimal(texto):
-    """
-    Valida que el formato de decimal sea correcto.
-    Acepta: números enteros, números con punto decimal (45.20) o coma decimal (45,20)
-    No acepta: formatos mixtos incorrectos (45.20,50 o 45,20.50)
-    """
-    if not texto or texto.strip() == '':
-        return True, None  # Campo vacío es válido
-    
-    texto = texto.strip()
-    
-    # Permitir solo números, punto, coma y signo negativo
-    if not re.match(r'^-?\d+([.,]\d+)?$', texto):
-        return False, None
-    
-    # Verificar que no tenga ambos separadores
-    tiene_punto = '.' in texto
-    tiene_coma = ',' in texto
-    
-    if tiene_punto and tiene_coma:
-        return False, None
-    
-    # Convertir a float
-    try:
-        # Reemplazar coma por punto para conversión
-        texto_convertido = texto.replace(',', '.')
-        valor = float(texto_convertido)
-        return True, valor
-    except:
-        return False, None
 
 def formatear_numero(numero, decimales=2, usar_separador_miles=True):
     """
@@ -222,105 +179,9 @@ st.markdown("""
         margin-top: -1.5rem !important;
     }
     
-    /* Reducir espaciado en el sidebar */
-    .sidebar .element-container {
-        margin-bottom: 0.2rem !important;
-    }
-    
-    .sidebar .stMarkdown {
-        margin-bottom: 0.1rem !important;
-    }
-    
-    .sidebar .stMarkdown p {
-        margin: 0.1rem 0 !important;
-        line-height: 1.2 !important;
-    }
-    
-    /* Reducir espaciado del separador en sidebar */
-    .sidebar hr {
-        margin: 0.2rem 0 !important;
-    }
-    
-    /* Eliminar espaciado extra después del botón calcular */
-    .sidebar .stButton {
-        margin-bottom: 0.1rem !important;
-    }
-    
-    /* Reducir espaciado del título "Información del Bono" */
-    .sidebar h3 {
-        margin-top: 0.1rem !important;
-        margin-bottom: 0.1rem !important;
-    }
-    
-    /* Reducir espaciado después del título h3 en sidebar */
-    .sidebar h3 + .stMarkdown {
-        margin-top: 0.1rem !important;
-    }
-    
-    /* Reducir espaciado del contenedor de información del bono */
-    .sidebar .stMarkdown div {
-        margin-top: 0.1rem !important;
-        margin-bottom: 0.1rem !important;
-    }
-    
-    /* Eliminar bordes de widgets de TradingView */
-    .tradingview-widget-container {
-        border: none !important;
-        border-radius: 8px !important;
-        overflow: hidden !important;
-        box-shadow: none !important;
-        outline: none !important;
-    }
-    
-    .tradingview-widget-container__widget {
-        border: none !important;
-        box-shadow: none !important;
-        outline: none !important;
-    }
-    
-    /* Eliminar bordes de iframes de TradingView */
-    iframe[src*="tradingview"] {
-        border: none !important;
-        border-radius: 8px !important;
-        box-shadow: none !important;
-        outline: none !important;
-    }
-    
-    /* Eliminar bordes de contenedores de Streamlit para TradingView */
+    /* Eliminar bordes de iframes de Streamlit */
     div[data-testid="stIFrame"] {
         border: none !important;
-        box-shadow: none !important;
-        outline: none !important;
-    }
-    
-    /* Eliminar bordes de componentes HTML */
-    .stComponents iframe {
-        border: none !important;
-        box-shadow: none !important;
-        outline: none !important;
-    }
-    
-    /* Intentar ocultar bordes internos de TradingView */
-    .tradingview-widget-container * {
-        border: none !important;
-        box-shadow: none !important;
-        outline: none !important;
-    }
-    
-    /* Ocultar bordes de elementos específicos de TradingView */
-    .tradingview-widget-container table,
-    .tradingview-widget-container tr,
-    .tradingview-widget-container td,
-    .tradingview-widget-container th {
-        border: none !important;
-        border-collapse: separate !important;
-        border-spacing: 0 !important;
-    }
-    
-    /* Aplicar estilos a todos los elementos dentro de TradingView */
-    .tradingview-widget-container iframe {
-        border: none !important;
-        border-radius: 8px !important;
         box-shadow: none !important;
         outline: none !important;
     }
@@ -378,20 +239,6 @@ st.markdown("""
         line-height: 1.2 !important;
     }
     
-    /* Reducir espaciado en sidebar */
-    .css-1d391kg {
-        padding-top: 0.5rem !important;
-    }
-    
-    .css-1d391kg .element-container {
-        margin-top: 0.2rem !important;
-        margin-bottom: 0.2rem !important;
-    }
-    
-    .css-1d391kg .stMarkdown {
-        margin-top: 0.2rem !important;
-        margin-bottom: 0.2rem !important;
-    }
     
     .main .element-container {
         margin-top: 0.2rem !important;
@@ -743,18 +590,6 @@ st.markdown("""
     }
     
     /* Ocultar elementos de la barra superior */
-    .stApp > div > div > div:first-child {
-        display: none !important;
-    }
-    
-    /* Ocultar elementos específicos de GitHub */
-    [data-testid="stHeader"],
-    [data-testid="stToolbar"],
-    .stApp > div > div > div:first-child > div {
-        display: none !important;
-    }
-    
-    /* Ocultar cualquier elemento con texto "Deploy" o "GitHub" */
     a[href*="github"],
     a[href*="deploy"],
     button[title*="Deploy"],
@@ -884,9 +719,10 @@ st.markdown("""
 
 
     // Reaplica cada vez que Streamlit hace rerender
+    var _fixTimer = null;
     var observer = new MutationObserver(function() {
-        setTimeout(applyFix, 100);
-        setTimeout(alignMetricCards, 300);
+        if (_fixTimer) clearTimeout(_fixTimer);
+        _fixTimer = setTimeout(applyFix, 150);
     });
     observer.observe(document.body, { childList: true, subtree: true });
 })();
@@ -1048,13 +884,14 @@ def calcular_duracion_macaulay(flujos, fechas, fecha_liquidacion, ytm, base_calc
         else:
             factor_descuento = (1 + ytm) ** (dias / 365)
         
+        divisor_tiempo = 360 if base_calculo in ("30/360", "ACT/360") else 365
         pv = flujo / factor_descuento
         pv_total += pv
-        pv_weighted += pv * (dias / 365)
-    
+        pv_weighted += pv * (dias / divisor_tiempo)
+
     if pv_total == 0:
         return 0
-    
+
     return pv_weighted / pv_total
 
 # Función para calcular duración modificada
@@ -1201,100 +1038,6 @@ def obtener_precio_data912(ticker):
     return None
 
 
-@st.cache_data(ttl=300)  # Cache por 5 minutos
-def obtener_precio_byma(ticker):
-    """
-    Obtiene el precio actual de un símbolo desde PyOBD (Open BYMA Data)
-    Retorna el precio o None si no se puede obtener
-    """
-    if not ticker or ticker.strip() == '' or ticker == 'SPX500':
-        return None
-    
-    try:
-        from PyOBD import openBYMAdata
-        
-        # Inicializar PyOBD
-        PyOBD = openBYMAdata()
-        
-        # Limpiar el ticker
-        ticker_clean = ticker.strip().upper()
-        
-        # Intentar diferentes métodos para obtener el precio
-        # Método 1: Buscar directamente por ticker
-        methods = [
-            lambda: PyOBD.get_ticker(ticker_clean),
-            lambda: PyOBD.get_instrument(ticker_clean),
-            lambda: PyOBD.get_symbol(ticker_clean),
-            lambda: PyOBD.buscar(ticker_clean),
-            lambda: PyOBD.search(ticker_clean),
-        ]
-        
-        for method in methods:
-            try:
-                datos = method()
-                if datos:
-                    # Buscar precio en diferentes formatos
-                    precio = None
-                    if isinstance(datos, dict):
-                        precio = (datos.get('precio') or datos.get('price') or 
-                                 datos.get('last_price') or datos.get('ultimo_precio') or
-                                 datos.get('precio_cierre') or datos.get('close') or
-                                 datos.get('precio_ultimo') or datos.get('p') or
-                                 datos.get('valor'))
-                    elif isinstance(datos, list) and len(datos) > 0:
-                        item = datos[0]
-                        if isinstance(item, dict):
-                            precio = (item.get('precio') or item.get('price') or 
-                                     item.get('last_price') or item.get('ultimo_precio') or
-                                     item.get('precio_cierre') or item.get('close'))
-                    
-                    if precio and precio > 0:
-                        return round(float(precio), 2)
-            except (AttributeError, TypeError, KeyError, IndexError):
-                continue
-        
-        # Método 2: Obtener todos los datos y buscar nuestro ticker
-        try:
-            todos_methods = [
-                lambda: PyOBD.get_all(),
-                lambda: PyOBD.get_instruments(),
-                lambda: PyOBD.get_symbols(),
-                lambda: PyOBD.list(),
-            ]
-            
-            for method in todos_methods:
-                try:
-                    todos_datos = method()
-                    if todos_datos:
-                        for item in todos_datos:
-                            if isinstance(item, dict):
-                                item_ticker = (item.get('ticker') or item.get('symbol') or 
-                                             item.get('nombre') or item.get('name') or
-                                             item.get('codigo') or item.get('code'))
-                                if item_ticker:
-                                    item_ticker_clean = str(item_ticker).strip().upper()
-                                    # Buscar coincidencia exacta o parcial
-                                    if ticker_clean == item_ticker_clean or ticker_clean in item_ticker_clean:
-                                        precio = (item.get('precio') or item.get('price') or 
-                                                 item.get('last_price') or item.get('ultimo_precio') or
-                                                 item.get('precio_cierre') or item.get('close') or
-                                                 item.get('p'))
-                                        if precio and precio > 0:
-                                            return round(float(precio), 2)
-                except (AttributeError, TypeError):
-                    continue
-        except:
-            pass
-        
-        return None
-        
-    except ImportError:
-        # PyOBD no está instalado
-        return None
-    except Exception as e:
-        # Cualquier otro error
-        return None
-
 # Cargar datos del Excel
 try:
     df = pd.read_excel('bonos_flujos.xlsx', engine='openpyxl')
@@ -1427,7 +1170,7 @@ try:
         
         # Variables para uso en la sección principal
         if bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado'):
-            bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == bono_seleccionado)
+            bono_actual = next((bono for bono in bonos_filtrados if bono['nombre'] == bono_seleccionado), None)
         else:
             st.session_state.calcular = False
             bono_actual = None
@@ -2078,9 +1821,8 @@ try:
         # Ocultar sidebar cuando Indices está activo
         st.markdown("""
         <style>
-            .stSidebar {
-                display: none !important;
-            }
+            [data-testid="stSidebar"] { display: none !important; }
+            .main { margin-left: 0 !important; }
         </style>
         """, unsafe_allow_html=True)
         
@@ -2632,8 +2374,11 @@ try:
     # S1 (Calculadora de Rendimientos) - Mostrar cuando hay bono seleccionado (sin necesidad de calcular)
     elif st.session_state.bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado') and not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False):
         # Obtener el bono actual del session_state
-        bono_actual = next(bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado)
-        
+        bono_actual = next((bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado), None)
+        if not bono_actual:
+            st.session_state.bono_seleccionado = None
+            st.rerun()
+
         # Layout principal
         col1, col2 = st.columns([1, 2])
         
@@ -2642,7 +2387,10 @@ try:
             # Solo mostrar inputs si hay bono seleccionado Y NO hay bono en S2
             if st.session_state.bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado'):
                 # Encontrar el bono seleccionado
-                bono_actual_main = next(bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado)
+                bono_actual_main = next((bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado), None)
+                if not bono_actual_main:
+                    st.session_state.bono_seleccionado = None
+                    st.rerun()
                 
                 # Crear una key única basada en el bono para que el input se resetee al cambiar de bono
                 precio_key_main = f"precio_dirty_{st.session_state.bono_seleccionado}"
@@ -2878,39 +2626,17 @@ try:
                 # JavaScript para prevenir scroll automático al hacer clic en Calcular
                 st.markdown("""
                 <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    // Interceptar clics en el botón Calcular
+                (function() {
+                    // Scroll hacia arriba al hacer clic en Calcular (sin prevenir el comportamiento por defecto)
                     document.addEventListener('click', function(e) {
-                        // Verificar si es el botón Calcular
-                        if (e.target.matches('button[data-testid="baseButton-primary"]') || 
-                            e.target.textContent.includes('Calcular')) {
-                            
-                            // Prevenir el comportamiento por defecto
-                            e.preventDefault();
-                            
-                            // Forzar scroll hacia arriba después de un pequeño delay
+                        if (e.target.matches('button[data-testid="baseButton-primary"]') ||
+                            e.target.textContent.trim() === 'Calcular') {
                             setTimeout(function() {
-                                window.scrollTo({
-                                    top: 0,
-                                    left: 0,
-                                    behavior: 'auto'
-                                });
-                            }, 100);
+                                window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+                            }, 200);
                         }
                     });
-                    
-                    // También interceptar el evento de submit del formulario
-                    document.addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        setTimeout(function() {
-                            window.scrollTo({
-                                top: 0,
-                                left: 0,
-                                behavior: 'auto'
-                            });
-                        }, 100);
-                    });
-                });
+                })();
                 </script>
                 """, unsafe_allow_html=True)
                 
@@ -3064,8 +2790,13 @@ try:
         pass
     
     if not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False) and not st.session_state.get('bono_seleccionado'):
-        # Auto-refresh cada 10 minutos
-        st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 600000);</script>", height=0)
+        # Auto-refresh cada 10 minutos (con guard para evitar timers acumulados)
+        st.components.v1.html("""<script>
+        if (!window._autoRefreshSet) {
+            window._autoRefreshSet = true;
+            setTimeout(function(){ window.location.reload(); }, 600000);
+        }
+        </script>""", height=0)
         # Tabla de bonos con métricas en tiempo real
 
         with st.spinner("Cargando precios y calculando métricas..."):
@@ -3173,21 +2904,26 @@ try:
         </style>
         """
 
+        def _esc(v):
+            """Escape special HTML characters in a string value."""
+            return str(v).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+
         def render_tabla_html(df, titulo=''):
             cols = list(df.columns)
-            headers = ''.join(f'<th>{c}</th>' for c in cols)
+            headers = ''.join(f'<th>{_esc(c)}</th>' for c in cols)
             rows = ''
             for _, row in df.iterrows():
                 cells = ''
                 for col in cols:
                     val = row[col]
+                    val_str = _esc(val)
                     if col == 'Var. Diaria %' and val != '-':
-                        color = '#2e7d32' if val.startswith('+') else '#c62828'
-                        cells += f'<td style="color:{color};font-weight:600">{val}</td>'
+                        color = '#2e7d32' if str(val).startswith('+') else '#c62828'
+                        cells += f'<td style="color:{color};font-weight:600">{val_str}</td>'
                     else:
-                        cells += f'<td>{val}</td>'
+                        cells += f'<td>{val_str}</td>'
                 rows += f'<tr>{cells}</tr>'
-            title_html = f'<div class="bond-title">{titulo}</div>' if titulo else ''
+            title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
         if grupos:
@@ -3195,7 +2931,7 @@ try:
             orden_tipos = ['Soberano USD', 'Corporativo Ley NY', 'Corporativo Ley ARG']
             tipos_ordenados = orden_tipos + [t for t in sorted(grupos.keys()) if t not in orden_tipos]
             for tipo in tipos_ordenados:
-                if not grupos[tipo]:
+                if not grupos.get(tipo):
                     continue
                 st.markdown(f"<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
                 st.markdown(f'<div class="bond-wrap"><div class="bond-title">{tipo}</div></div>', unsafe_allow_html=True)
