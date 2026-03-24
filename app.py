@@ -1873,10 +1873,15 @@ try:
             # Encontrar el bono en la lista completa de bonos (no solo los filtrados)
             bono_info = next((bono for bono in bonos if bono['nombre'] == bono_actual), None)
             if bono_info:
+                # Intentar obtener precio desde data912.com
+                ticker_flujo = bono_info.get('ticker', '').strip()
+                precio_api = None
+                if ticker_flujo and ticker_flujo != 'SPX500':
+                    precio_api = obtener_precio_data912(ticker_flujo)
                 st.session_state.flujos_bonos_seleccionados.append({
                     'nombre': bono_actual,
                     'nominales': '',
-                    'precio': '',
+                    'precio': precio_api if precio_api and precio_api > 0 else '',
                     'info': bono_info
                 })
         
@@ -1931,11 +1936,11 @@ try:
                     
                     # Inicializar precio en session_state si no existe
                     if precio_key not in st.session_state:
-                        precio_actual = bono.get('precio', 0.0)
-                        if precio_actual and precio_actual > 0:
+                        precio_actual = bono.get('precio', '')
+                        if precio_actual and float(precio_actual) > 0:
                             st.session_state[precio_key] = float(precio_actual)
                         else:
-                            st.session_state[precio_key] = 100.0  # Valor por defecto en base 100
+                            st.session_state[precio_key] = 0.0
                     
                     # Usar number_input para validación automática
                     precio = st.number_input(
@@ -2789,7 +2794,7 @@ try:
         # No mostrar nada cuando hay bono seleccionado pero no se ha calculado
         pass
     
-    if not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False) and not st.session_state.get('bono_seleccionado'):
+    if not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False) and not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bono_seleccionado'):
         # Auto-refresh cada 10 minutos (con guard para evitar timers acumulados)
         st.components.v1.html("""<script>
         if (!window._autoRefreshSet) {
