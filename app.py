@@ -2476,6 +2476,42 @@ try:
                         st.session_state[precio_key_main] = precio_inicial
                         st.session_state.calcular = True
                 
+                st.markdown("""
+                <style>
+                div[data-testid="stSelectbox"] label[data-testid="stWidgetLabel"] {
+                    display: none !important;
+                    height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+                div[data-testid="stSelectbox"] {
+                    margin-top: 0 !important;
+                    margin-bottom: 0.35rem !important;
+                }
+                div[data-testid="stSelectbox"] > div[data-baseweb="select"] > div {
+                    min-height: auto !important;
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    padding: 0 !important;
+                }
+                div[data-testid="stSelectbox"] div[role="combobox"] {
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    min-height: auto !important;
+                    padding: 0 !important;
+                    font-size: 0.95rem !important;
+                    font-weight: 400 !important;
+                    color: rgb(49, 51, 63) !important;
+                    line-height: 1.4 !important;
+                }
+                div[data-testid="stSelectbox"] svg {
+                    margin-top: 0 !important;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+
                 col_fecha, col_mep = st.columns(2)
                 with col_fecha:
                     fecha_liquidacion = st.date_input(
@@ -2485,37 +2521,7 @@ try:
                         key="fecha_liquidacion_main"
                     )
                 with col_mep:
-                    st.markdown("""
-                    <style>
-                    div[data-testid="stSelectbox"] label[data-testid="stWidgetLabel"] {
-                        display: none !important;
-                        height: 0 !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                    }
-                    div[data-testid="stSelectbox"] {
-                        margin-bottom: 0.25rem !important;
-                    }
-                    div[data-testid="stSelectbox"] > div[data-baseweb="select"] > div {
-                        min-height: auto !important;
-                        background: transparent !important;
-                        border: none !important;
-                        box-shadow: none !important;
-                        padding-left: 0 !important;
-                        padding-right: 0 !important;
-                    }
-                    div[data-testid="stSelectbox"] div[role="combobox"] {
-                        background: transparent !important;
-                        border: none !important;
-                        box-shadow: none !important;
-                        min-height: auto !important;
-                        padding: 0 !important;
-                        font-size: 0.95rem !important;
-                        font-weight: 400 !important;
-                        color: rgb(49, 51, 63) !important;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
+                    st.markdown("<div style='height:0.15rem;'></div>", unsafe_allow_html=True)
                     tipo_cambio_tipo = st.selectbox(
                         "",
                         options=["Tipo de Cambio MEP", "Tipo de Cambio CCL"],
