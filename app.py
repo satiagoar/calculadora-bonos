@@ -2293,18 +2293,27 @@ try:
                             tiene_amort = df_trimestral['amortizaciones'].sum() > 0
                             tiene_int   = df_trimestral['intereses'].sum() > 0
 
-                            # Estilo compartido con los gráficos de la sección principal
+                            _BG = '#f4f6fb'
                             _axis_style = dict(
                                 showgrid=True, gridcolor='#cccccc',
                                 linecolor='#999999', linewidth=1, showline=True,
                                 tickfont=dict(color='#444444', size=11),
                                 title_font=dict(color='#444444')
                             )
-                            _BG = '#f4f6fb'
-                            _COLOR_AMORT = '#4a6fa5'
-                            _COLOR_INT   = '#7ab3d4'
+
+                            def _gradient_colors(values, base_rgb):
+                                """Genera lista de colores con opacidad proporcional al valor."""
+                                max_v = max(values) if max(values) > 0 else 1
+                                r, g, b = base_rgb
+                                return [
+                                    f'rgba({r},{g},{b},{0.35 + 0.65 * v / max_v:.2f})'
+                                    for v in values
+                                ]
 
                             if tiene_amort and tiene_int:
+                                colors_amort = _gradient_colors(df_trimestral['amortizaciones'], (74, 111, 165))
+                                colors_int   = _gradient_colors(df_trimestral['intereses'],      (122, 179, 212))
+
                                 fig = make_subplots(
                                     rows=2, cols=1,
                                     shared_xaxes=True,
@@ -2316,16 +2325,14 @@ try:
                                     name='Amortizaciones',
                                     x=df_trimestral['periodo'],
                                     y=df_trimestral['amortizaciones'],
-                                    marker_color=_COLOR_AMORT,
-                                    marker_line_width=0,
+                                    marker=dict(color=colors_amort, line_width=0),
                                     hovertemplate='<b>%{x}</b><br>Amortizaciones: $%{y:,.0f}<extra></extra>'
                                 ), row=1, col=1)
                                 fig.add_trace(go.Bar(
                                     name='Intereses',
                                     x=df_trimestral['periodo'],
                                     y=df_trimestral['intereses'],
-                                    marker_color=_COLOR_INT,
-                                    marker_line_width=0,
+                                    marker=dict(color=colors_int, line_width=0),
                                     hovertemplate='<b>%{x}</b><br>Intereses: $%{y:,.0f}<extra></extra>'
                                 ), row=2, col=1)
                                 fig.update_yaxes(tickformat='$,.0f', **_axis_style, row=1, col=1)
@@ -2334,44 +2341,41 @@ try:
                                 fig.update_xaxes(title_text='Trimestre', **_axis_style, row=2, col=1)
                                 fig.update_layout(
                                     height=560,
-                                    plot_bgcolor=_BG,
-                                    paper_bgcolor=_BG,
+                                    plot_bgcolor=_BG, paper_bgcolor=_BG,
                                     showlegend=True,
-                                    legend=dict(
-                                        orientation='h', yanchor='bottom', y=1.02,
-                                        xanchor='right', x=1,
-                                        font=dict(color='#444444', size=12)
-                                    ),
+                                    legend=dict(orientation='h', yanchor='bottom', y=1.02,
+                                                xanchor='right', x=1,
+                                                font=dict(color='#444444', size=12)),
                                     hovermode='x unified',
                                     bargap=0.2,
                                     margin=dict(t=60, b=40, l=60, r=20),
                                     font=dict(color='#444444')
                                 )
-                                # Títulos de subplots en gris oscuro
                                 for ann in fig.layout.annotations:
                                     ann.font.color = '#444444'
                                     ann.font.size  = 12
                             else:
-                                # Solo un tipo de flujo: gráfico simple
-                                color  = _COLOR_AMORT if tiene_amort else _COLOR_INT
-                                nombre = 'Amortizaciones' if tiene_amort else 'Intereses'
-                                y_vals = df_trimestral['amortizaciones'] if tiene_amort else df_trimestral['intereses']
+                                # Solo un tipo de flujo
+                                if tiene_amort:
+                                    y_vals = df_trimestral['amortizaciones']
+                                    colors = _gradient_colors(y_vals, (74, 111, 165))
+                                    nombre = 'Amortizaciones'
+                                else:
+                                    y_vals = df_trimestral['intereses']
+                                    colors = _gradient_colors(y_vals, (122, 179, 212))
+                                    nombre = 'Intereses'
                                 fig = go.Figure(go.Bar(
                                     name=nombre,
                                     x=df_trimestral['periodo'],
                                     y=y_vals,
-                                    marker_color=color,
-                                    marker_line_width=0,
+                                    marker=dict(color=colors, line_width=0),
                                     hovertemplate=f'<b>%{{x}}</b><br>{nombre}: $%{{y:,.0f}}<extra></extra>'
                                 ))
                                 fig.update_layout(
-                                    xaxis_title='Trimestre',
-                                    xaxis=_axis_style,
+                                    xaxis=dict(**_axis_style, title='Trimestre'),
                                     yaxis=dict(tickformat='$,.0f', **_axis_style),
-                                    plot_bgcolor=_BG,
-                                    paper_bgcolor=_BG,
-                                    height=420,
-                                    hovermode='x unified',
+                                    plot_bgcolor=_BG, paper_bgcolor=_BG,
+                                    height=420, hovermode='x unified',
                                     bargap=0.2,
                                     margin=dict(t=40, b=40, l=60, r=20),
                                     font=dict(color='#444444')
