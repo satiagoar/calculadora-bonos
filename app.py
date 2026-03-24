@@ -421,12 +421,12 @@ st.markdown("""
         align-items: center !important;
     }
     .metric-label {
-        font-size: 0.63rem;
-        font-weight: 700;
+        font-size: 1.0rem;
+        font-weight: 600;
         color: #64748b;
-        margin-bottom: 0.45rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
+        margin-bottom: 0.35rem;
+        text-transform: none;
+        letter-spacing: 0;
         text-align: center;
     }
     .metric-value {
@@ -2132,14 +2132,14 @@ try:
                     if tir_calculada is not None:
                         st.markdown(f'''
                         <div class="metric-card">
-                            <div class="metric-label">TIR Semestral</div>
+                            <div class="metric-label">TIR consolidada</div>
                             <div class="metric-value">{tir_calculada:.2%}</div>
                         </div>
                         ''', unsafe_allow_html=True)
                     else:
                         st.markdown(f'''
                         <div class="metric-card">
-                            <div class="metric-label">TIR Semestral</div>
+                            <div class="metric-label">TIR consolidada</div>
                             <div class="metric-value">-</div>
                         </div>
                         ''', unsafe_allow_html=True)
