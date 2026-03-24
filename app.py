@@ -724,9 +724,13 @@ st.markdown("""
     [data-testid="stTabs"] button[role="tab"] {
         color: #1a56db !important;
     }
-    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"][aria-selected="true"] {
         color: #1a56db !important;
         background-color: #d1d5db !important;
+    }
+    /* Asegurar que el panel de contenido no herede el gris */
+    [data-testid="stTabs"] [data-baseweb="tab-panel"] {
+        background-color: transparent !important;
     }
     /* Línea de selección azul (solo el indicador activo, no la línea base) */
     [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
