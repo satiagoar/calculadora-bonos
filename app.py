@@ -2910,36 +2910,306 @@ try:
         }
         </script>""", height=0)
 
-        # Botones de navegación entre vistas
-        if 'vista_titulos' not in st.session_state:
-            st.session_state.vista_titulos = 'usd'
+        tab_usd, tab_pesos = st.tabs(["Títulos en USD", "Títulos en Pesos"])
 
-        col_btn_usd, col_btn_pesos = st.columns(2)
-        with col_btn_usd:
-            btn_usd_type = "primary" if st.session_state.vista_titulos == 'usd' else "secondary"
-            if st.button("Títulos en USD", type=btn_usd_type, use_container_width=True, key="btn_vista_usd"):
-                st.session_state.vista_titulos = 'usd'
-                st.session_state.bono_seleccionado = None
-                st.session_state.calcular = False
-                for k in ('bono_selectbox', 'tipo_selectbox'):
-                    if k in st.session_state:
-                        del st.session_state[k]
-                st.session_state.tipo_selectbox_key = st.session_state.get('tipo_selectbox_key', 0) + 1
-                st.rerun()
-        with col_btn_pesos:
-            btn_pesos_type = "primary" if st.session_state.vista_titulos == 'pesos' else "secondary"
-            if st.button("Títulos en Pesos", type=btn_pesos_type, use_container_width=True, key="btn_vista_pesos"):
-                st.session_state.vista_titulos = 'pesos'
-                st.session_state.bono_seleccionado = None
-                st.session_state.calcular = False
-                for k in ('bono_selectbox', 'tipo_selectbox'):
-                    if k in st.session_state:
-                        del st.session_state[k]
-                st.session_state.tipo_selectbox_key = st.session_state.get('tipo_selectbox_key', 0) + 1
-                st.rerun()
+        with tab_usd:
+            with st.spinner("Cargando precios y calculando métricas..."):
+                fecha_hoy = get_next_business_day()
 
-        # Tabla de bonos con métricas en tiempo real
-        if st.session_state.get('vista_titulos', 'usd') == 'pesos':
+                precios_bonds = obtener_precios_data912('arg_bonds')
+                precios_corp = obtener_precios_data912('arg_corp')
+                precios_todos = {**precios_bonds, **precios_corp}
+
+                grupos = {}
+                for bono in bonos:
+                    ticker = bono.get('ticker', '').strip()
+                    if not ticker or ticker == 'SPX500':
+                        continue
+
+                    ticker_api = ticker.upper()
+                    if len(ticker_api) == 4:
+                        ticker_api = ticker_api + 'D'
+
+                    precio_data = precios_todos.get(ticker_api)
+                    if not precio_data:
+                        continue
+                    precio = precio_data['c']
+                    pct_change = precio_data.get('pct_change')
+                    if not precio or precio <= 0:
+                        continue
+
+                    try:
+                        flujos = []
+                        fechas = []
+                        for flujo in bono['flujos']:
+                            if flujo['fecha'] > fecha_hoy:
+                                flujos.append(flujo['total'])
+                                fechas.append(flujo['fecha'])
+
+                        if not flujos:
+                            continue
+
+                        capital_residual = 100 - sum([
+                            f['capital'] for f in bono['flujos'] if f['fecha'] <= fecha_hoy
+                        ])
+
+                        todas_fechas = [f['fecha'] for f in bono['flujos']]
+                        fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_hoy, todas_fechas)
+                        intereses_corridos = 0
+                        if fecha_ultimo_cupon:
+                            intereses_corridos = calcular_intereses_corridos(
+                                fecha_hoy, fecha_ultimo_cupon,
+                                bono['tasa_cupon'], capital_residual, bono['base_calculo']
+                            )
+
+                        ytm_efectiva = calcular_ytm(
+                            precio, flujos, fechas, fecha_hoy,
+                            bono['base_calculo'], bono['periodicidad']
+                        )
+                        if (1 + ytm_efectiva) <= 0:
+                            continue
+                        tir_semestral = 2 * ((1 + ytm_efectiva) ** (1/2) - 1)
+
+                        duracion_macaulay = calcular_duracion_macaulay(
+                            flujos, fechas, fecha_hoy, ytm_efectiva, bono['base_calculo']
+                        )
+                        ytm_anualizada = bono['periodicidad'] * ((1 + ytm_efectiva) ** (1 / bono['periodicidad']) - 1)
+                        duracion_modificada = calcular_duracion_modificada(
+                            duracion_macaulay,
+                            ytm_anualizada / bono['periodicidad'],
+                            bono['periodicidad']
+                        )
+
+                        cupon_vigente = encontrar_cupon_vigente(fecha_hoy, bono['flujos'])
+
+                        tipo = bono.get('tipo_bono', 'Otros')
+                        fecha_vcto = encontrar_fecha_vencimiento(bono['flujos'])
+                        fila = {
+                            'Activo': bono['nombre'],
+                            'Ticker': ticker,
+                            'Vencimiento': fecha_vcto.strftime('%d/%m/%Y') if fecha_vcto else '-',
+                            'Precio': precio,
+                            'Int. Corridos': round(intereses_corridos, 4),
+                            'Cap. Residual': round(capital_residual, 2),
+                            'Cupón Vigente': round(cupon_vigente * 100, 4),
+                            'TIR Semestral': round(tir_semestral * 100, 2),
+                            'Dur. Modificada': round(duracion_modificada, 2),
+                            'Var. Diaria %': pct_change,
+                        }
+                        if tipo not in grupos:
+                            grupos[tipo] = []
+                        grupos[tipo].append(fila)
+
+                    except Exception:
+                        continue
+
+            TABLE_CSS = """
+            <style>
+            .bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
+            .bond-title { background:#fafafa; color:#333; font-weight:700; font-size:14px; padding:11px 14px; border-bottom:2px solid #e0e0e0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; letter-spacing:0.02em; }
+            .bond-table { width:100%; border-collapse:collapse; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+            .bond-table th { background:#fafafa; color:#555; font-weight:600; padding:9px 12px; text-align:center; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
+            .bond-table th:first-child { text-align:left; }
+            .bond-table td { padding:8px 12px; color:#333; white-space:nowrap; text-align:center; }
+            .bond-table td:first-child { text-align:left; }
+            .bond-table tr:nth-child(even) td { background:#f7f7f7; }
+            .bond-table tr:nth-child(odd) td { background:#ffffff; }
+            .bond-table tr:hover td { background:#eef2ff; }
+            </style>
+            """
+
+            def _esc(v):
+                """Escape special HTML characters in a string value."""
+                return str(v).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+
+            def render_tabla_html(df, titulo=''):
+                cols = list(df.columns)
+                headers = ''.join(f'<th>{_esc(c)}</th>' for c in cols)
+                rows = ''
+                for _, row in df.iterrows():
+                    cells = ''
+                    for col in cols:
+                        val = row[col]
+                        val_str = _esc(val)
+                        if col == 'Var. Diaria %' and val != '-':
+                            color = '#2e7d32' if str(val).startswith('+') else '#c62828'
+                            cells += f'<td style="color:{color};font-weight:600">{val_str}</td>'
+                        else:
+                            cells += f'<td>{val_str}</td>'
+                    rows += f'<tr>{cells}</tr>'
+                title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
+                return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
+
+            if grupos:
+                st.markdown(TABLE_CSS, unsafe_allow_html=True)
+                orden_tipos = ['Soberano USD', 'Corporativo Ley NY', 'Corporativo Ley ARG']
+                tipos_ordenados = orden_tipos + [t for t in sorted(grupos.keys()) if t not in orden_tipos]
+                for tipo in tipos_ordenados:
+                    if not grupos.get(tipo):
+                        continue
+                    st.markdown(f"<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
+                    st.markdown(f'<div class="bond-wrap"><div class="bond-title">{tipo}</div></div>', unsafe_allow_html=True)
+                    df_tabla = pd.DataFrame(grupos[tipo])
+                    if 'corporativo' in tipo.lower():
+                        df_tabla = df_tabla.sort_values(['Activo', 'Dur. Modificada']).reset_index(drop=True)
+                    # Guardar datos numéricos antes de formatear (para el gráfico)
+                    df_raw = df_tabla.copy()
+
+                    # Cueva de rendimientos solo para Soberano USD
+                    if 'soberano' in tipo.lower():
+                        df_curva = df_raw[['Activo', 'Ticker', 'Dur. Modificada', 'TIR Semestral']].dropna()
+                        df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
+                        df_gd = df_curva[df_curva['Ticker'].str.upper().str.startswith('GD')]
+                        df_al = df_curva[~df_curva['Ticker'].str.upper().str.startswith('GD')]
+                        if len(df_curva) >= 3:
+                            fig = go.Figure()
+                            for df_serie, color_pt, color_ln, nombre in [
+                                (df_gd, '#1a237e', '#42a5f5', 'GD (Ley NY)'),
+                                (df_al, '#1565c0', '#90caf9', 'AL/otros (Ley ARG)'),
+                            ]:
+                                if len(df_serie) < 2:
+                                    continue
+                                x = df_serie['Dur. Modificada'].values
+                                y = df_serie['TIR Semestral'].values
+                                coeffs = np.polyfit(np.log(x), y, 1)
+                                x_line = np.linspace(x.min(), x.max(), 200)
+                                y_line = coeffs[0] * np.log(x_line) + coeffs[1]
+                                fig.add_trace(go.Scatter(
+                                    x=x, y=y,
+                                    mode='markers+text',
+                                    text=df_serie['Activo'],
+                                    textposition='top center',
+                                    textfont=dict(size=10, color=color_pt),
+                                    marker=dict(size=9, color=color_pt),
+                                    name=nombre,
+                                    hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
+                                ))
+                                fig.add_trace(go.Scatter(
+                                    x=x_line, y=y_line,
+                                    mode='lines',
+                                    line=dict(color=color_ln, width=2, dash='dash'),
+                                    name=f'Tend. {nombre}',
+                                    hoverinfo='skip',
+                                    showlegend=False,
+                                ))
+                            fig.update_layout(
+                                title='Cueva de Rendimientos — Soberano USD',
+                                xaxis_title='Duración Modificada (años)',
+                                yaxis_title='TIR Semestral (%)',
+                                xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
+                                yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
+                                plot_bgcolor='#f4f6fb',
+                                paper_bgcolor='#f4f6fb',
+                                legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                                height=420,
+                                margin=dict(t=60, b=40, l=60, r=20),
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+
+                    # Cueva de rendimientos para Corporativos
+                    if 'corporativo' in tipo.lower():
+                        titulo_cueva = f'Cueva de Rendimientos — {tipo}'
+                        nombre_serie = tipo
+                        df_curva = df_raw[['Activo', 'Dur. Modificada', 'TIR Semestral']].dropna()
+                        df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
+                        df_curva = df_curva[(df_curva['TIR Semestral'] >= 3) & (df_curva['TIR Semestral'] <= 15)]
+                        if len(df_curva) >= 3:
+                            x = df_curva['Dur. Modificada'].values
+                            y = df_curva['TIR Semestral'].values
+                            coeffs = np.polyfit(np.log(x), y, 1)
+                            x_line = np.linspace(x.min(), x.max(), 200)
+                            y_line = coeffs[0] * np.log(x_line) + coeffs[1]
+
+                            x_r = x.max() - x.min() if x.max() != x.min() else 1
+                            y_r = y.max() - y.min() if y.max() != y.min() else 1
+                            nombres = df_curva['Activo'].values
+
+                            y_trend_pts = coeffs[0] * np.log(x) + coeffs[1]
+                            desviacion = np.abs(y - y_trend_pts)
+                            orden = np.argsort(desviacion)[::-1]
+
+                            MIN_DIST = 0.11
+                            dirs = ['top center','bottom center','middle right','middle left',
+                                    'top right','top left','bottom right','bottom left']
+                            offsets = {'top center':(0,.06),'bottom center':(0,-.06),
+                                       'middle right':(.07,0),'middle left':(-.07,0),
+                                       'top right':(.05,.05),'top left':(-.05,.05),
+                                       'bottom right':(.05,-.05),'bottom left':(-.05,-.05)}
+
+                            texto_visible = [''] * len(x)
+                            positions = ['top center'] * len(x)
+                            placed = []
+
+                            for i in orden:
+                                nx, ny = x[i]/x_r, y[i]/y_r
+                                dists_to_placed = [np.sqrt((nx-px)**2+(ny-py)**2) for px,py in placed]
+                                if dists_to_placed and min(dists_to_placed) < MIN_DIST:
+                                    continue
+                                best_pos, best_score = 'top center', -1
+                                best_lx, best_ly = nx, ny + 0.06
+                                for d in dirs:
+                                    ox, oy = offsets[d]
+                                    lx, ly = nx + ox, ny + oy
+                                    dists = [np.sqrt((lx-px)**2+(ly-py)**2) for px,py in placed]
+                                    dists += [np.sqrt(((x[i]-x[j])/x_r)**2+((y[i]-y[j])/y_r)**2)
+                                              for j in range(len(x)) if j != i]
+                                    score = min(dists) if dists else 1
+                                    if score > best_score:
+                                        best_score, best_pos = score, d
+                                        best_lx, best_ly = lx, ly
+                                texto_visible[i] = nombres[i]
+                                positions[i] = best_pos
+                                placed.append((best_lx, best_ly))
+
+                            fig_corp = go.Figure()
+                            fig_corp.add_trace(go.Scatter(
+                                x=x, y=y,
+                                mode='markers+text',
+                                text=texto_visible,
+                                customdata=nombres,
+                                textposition=positions,
+                                textfont=dict(size=9, color='#1a237e'),
+                                marker=dict(size=9, color='#1a237e'),
+                                name=nombre_serie,
+                                hovertemplate='<b>%{customdata}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
+                            ))
+                            fig_corp.add_trace(go.Scatter(
+                                x=x_line, y=y_line,
+                                mode='lines',
+                                line=dict(color='#42a5f5', width=2, dash='dash'),
+                                name='Tendencia log.',
+                                hoverinfo='skip',
+                                showlegend=False,
+                            ))
+                            fig_corp.update_layout(
+                                title=titulo_cueva,
+                                xaxis_title='Duración Modificada (años)',
+                                yaxis_title='TIR Semestral (%)',
+                                xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
+                                yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
+                                plot_bgcolor='#f4f6fb',
+                                paper_bgcolor='#f4f6fb',
+                                legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                                height=560,
+                                margin=dict(t=60, b=40, l=60, r=40),
+                            )
+                            st.plotly_chart(fig_corp, use_container_width=True)
+
+                    # Tabla — siempre al final de cada sección
+                    df_tabla['Precio'] = df_tabla['Precio'].map('{:.2f}'.format)
+                    df_tabla['Int. Corridos'] = df_tabla['Int. Corridos'].map('{:.4f}'.format)
+                    df_tabla['Cap. Residual'] = df_tabla['Cap. Residual'].map('{:.2f}'.format)
+                    df_tabla['Cupón Vigente'] = df_tabla['Cupón Vigente'].map('{:.4f}%'.format)
+                    df_tabla['TIR Semestral'] = df_tabla['TIR Semestral'].map('{:.2f}%'.format)
+                    df_tabla['Dur. Modificada'] = df_tabla['Dur. Modificada'].map('{:.2f}'.format)
+                    df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
+                        lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
+                    )
+                    st.markdown(render_tabla_html(df_tabla), unsafe_allow_html=True)
+            else:
+                st.info("No hay precios disponibles en este momento.")
+
+        with tab_pesos:
             PESOS_CSS = """
             <style>
             .bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
@@ -2950,304 +3220,7 @@ try:
             st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
             st.markdown('<div class="bond-wrap"><div class="bond-title">Lecaps &amp; Boncaps</div></div>', unsafe_allow_html=True)
 
-        with st.spinner("Cargando precios y calculando métricas..."):
-            fecha_hoy = get_next_business_day()
 
-            precios_bonds = obtener_precios_data912('arg_bonds')
-            precios_corp = obtener_precios_data912('arg_corp')
-            precios_todos = {**precios_bonds, **precios_corp}
-
-            grupos = {}
-            for bono in bonos:
-                ticker = bono.get('ticker', '').strip()
-                if not ticker or ticker == 'SPX500':
-                    continue
-
-                ticker_api = ticker.upper()
-                if len(ticker_api) == 4:
-                    ticker_api = ticker_api + 'D'
-
-                precio_data = precios_todos.get(ticker_api)
-                if not precio_data:
-                    continue
-                precio = precio_data['c']
-                pct_change = precio_data.get('pct_change')
-                if not precio or precio <= 0:
-                    continue
-
-                try:
-                    flujos = []
-                    fechas = []
-                    for flujo in bono['flujos']:
-                        if flujo['fecha'] > fecha_hoy:
-                            flujos.append(flujo['total'])
-                            fechas.append(flujo['fecha'])
-
-                    if not flujos:
-                        continue
-
-                    capital_residual = 100 - sum([
-                        f['capital'] for f in bono['flujos'] if f['fecha'] <= fecha_hoy
-                    ])
-
-                    todas_fechas = [f['fecha'] for f in bono['flujos']]
-                    fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_hoy, todas_fechas)
-                    intereses_corridos = 0
-                    if fecha_ultimo_cupon:
-                        intereses_corridos = calcular_intereses_corridos(
-                            fecha_hoy, fecha_ultimo_cupon,
-                            bono['tasa_cupon'], capital_residual, bono['base_calculo']
-                        )
-
-                    ytm_efectiva = calcular_ytm(
-                        precio, flujos, fechas, fecha_hoy,
-                        bono['base_calculo'], bono['periodicidad']
-                    )
-                    if (1 + ytm_efectiva) <= 0:
-                        continue
-                    tir_semestral = 2 * ((1 + ytm_efectiva) ** (1/2) - 1)
-
-                    duracion_macaulay = calcular_duracion_macaulay(
-                        flujos, fechas, fecha_hoy, ytm_efectiva, bono['base_calculo']
-                    )
-                    ytm_anualizada = bono['periodicidad'] * ((1 + ytm_efectiva) ** (1 / bono['periodicidad']) - 1)
-                    duracion_modificada = calcular_duracion_modificada(
-                        duracion_macaulay,
-                        ytm_anualizada / bono['periodicidad'],
-                        bono['periodicidad']
-                    )
-
-                    cupon_vigente = encontrar_cupon_vigente(fecha_hoy, bono['flujos'])
-
-                    tipo = bono.get('tipo_bono', 'Otros')
-                    fecha_vcto = encontrar_fecha_vencimiento(bono['flujos'])
-                    fila = {
-                        'Activo': bono['nombre'],
-                        'Ticker': ticker,
-                        'Vencimiento': fecha_vcto.strftime('%d/%m/%Y') if fecha_vcto else '-',
-                        'Precio': precio,
-                        'Int. Corridos': round(intereses_corridos, 4),
-                        'Cap. Residual': round(capital_residual, 2),
-                        'Cupón Vigente': round(cupon_vigente * 100, 4),
-                        'TIR Semestral': round(tir_semestral * 100, 2),
-                        'Dur. Modificada': round(duracion_modificada, 2),
-                        'Var. Diaria %': pct_change,
-                    }
-                    if tipo not in grupos:
-                        grupos[tipo] = []
-                    grupos[tipo].append(fila)
-
-                except Exception:
-                    continue
-
-        TABLE_CSS = """
-        <style>
-        .bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
-        .bond-title { background:#fafafa; color:#333; font-weight:700; font-size:14px; padding:11px 14px; border-bottom:2px solid #e0e0e0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; letter-spacing:0.02em; }
-        .bond-table { width:100%; border-collapse:collapse; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
-        .bond-table th { background:#fafafa; color:#555; font-weight:600; padding:9px 12px; text-align:center; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
-        .bond-table th:first-child { text-align:left; }
-        .bond-table td { padding:8px 12px; color:#333; white-space:nowrap; text-align:center; }
-        .bond-table td:first-child { text-align:left; }
-        .bond-table tr:nth-child(even) td { background:#f7f7f7; }
-        .bond-table tr:nth-child(odd) td { background:#ffffff; }
-        .bond-table tr:hover td { background:#eef2ff; }
-        </style>
-        """
-
-        def _esc(v):
-            """Escape special HTML characters in a string value."""
-            return str(v).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
-
-        def render_tabla_html(df, titulo=''):
-            cols = list(df.columns)
-            headers = ''.join(f'<th>{_esc(c)}</th>' for c in cols)
-            rows = ''
-            for _, row in df.iterrows():
-                cells = ''
-                for col in cols:
-                    val = row[col]
-                    val_str = _esc(val)
-                    if col == 'Var. Diaria %' and val != '-':
-                        color = '#2e7d32' if str(val).startswith('+') else '#c62828'
-                        cells += f'<td style="color:{color};font-weight:600">{val_str}</td>'
-                    else:
-                        cells += f'<td>{val_str}</td>'
-                rows += f'<tr>{cells}</tr>'
-            title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
-            return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
-
-        if grupos and st.session_state.get('vista_titulos', 'usd') == 'usd':
-            st.markdown(TABLE_CSS, unsafe_allow_html=True)
-            orden_tipos = ['Soberano USD', 'Corporativo Ley NY', 'Corporativo Ley ARG']
-            tipos_ordenados = orden_tipos + [t for t in sorted(grupos.keys()) if t not in orden_tipos]
-            for tipo in tipos_ordenados:
-                if not grupos.get(tipo):
-                    continue
-                st.markdown(f"<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(f'<div class="bond-wrap"><div class="bond-title">{tipo}</div></div>', unsafe_allow_html=True)
-                df_tabla = pd.DataFrame(grupos[tipo])
-                if 'corporativo' in tipo.lower():
-                    df_tabla = df_tabla.sort_values(['Activo', 'Dur. Modificada']).reset_index(drop=True)
-                # Guardar datos numéricos antes de formatear (para el gráfico)
-                df_raw = df_tabla.copy()
-
-                # Cueva de rendimientos solo para Soberano USD
-                if 'soberano' in tipo.lower():
-                    df_curva = df_raw[['Activo', 'Ticker', 'Dur. Modificada', 'TIR Semestral']].dropna()
-                    df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
-                    df_gd = df_curva[df_curva['Ticker'].str.upper().str.startswith('GD')]
-                    df_al = df_curva[~df_curva['Ticker'].str.upper().str.startswith('GD')]
-                    if len(df_curva) >= 3:
-                        fig = go.Figure()
-                        for df_serie, color_pt, color_ln, nombre in [
-                            (df_gd, '#1a237e', '#42a5f5', 'GD (Ley NY)'),
-                            (df_al, '#1565c0', '#90caf9', 'AL/otros (Ley ARG)'),
-                        ]:
-                            if len(df_serie) < 2:
-                                continue
-                            x = df_serie['Dur. Modificada'].values
-                            y = df_serie['TIR Semestral'].values
-                            coeffs = np.polyfit(np.log(x), y, 1)
-                            x_line = np.linspace(x.min(), x.max(), 200)
-                            y_line = coeffs[0] * np.log(x_line) + coeffs[1]
-                            fig.add_trace(go.Scatter(
-                                x=x, y=y,
-                                mode='markers+text',
-                                text=df_serie['Activo'],
-                                textposition='top center',
-                                textfont=dict(size=10, color=color_pt),
-                                marker=dict(size=9, color=color_pt),
-                                name=nombre,
-                                hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
-                            ))
-                            fig.add_trace(go.Scatter(
-                                x=x_line, y=y_line,
-                                mode='lines',
-                                line=dict(color=color_ln, width=2, dash='dash'),
-                                name=f'Tend. {nombre}',
-                                hoverinfo='skip',
-                                showlegend=False,
-                            ))
-                        fig.update_layout(
-                            title='Cueva de Rendimientos — Soberano USD',
-                            xaxis_title='Duración Modificada (años)',
-                            yaxis_title='TIR Semestral (%)',
-                            xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
-                            yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
-                            plot_bgcolor='#f4f6fb',
-                            paper_bgcolor='#f4f6fb',
-                            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
-                            height=420,
-                            margin=dict(t=60, b=40, l=60, r=20),
-                        )
-                        st.plotly_chart(fig, use_container_width=True)
-
-                # Cueva de rendimientos para Corporativos
-                if 'corporativo' in tipo.lower():
-                    titulo_cueva = f'Cueva de Rendimientos — {tipo}'
-                    nombre_serie = tipo
-                    df_curva = df_raw[['Activo', 'Dur. Modificada', 'TIR Semestral']].dropna()
-                    df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
-                    df_curva = df_curva[(df_curva['TIR Semestral'] >= 3) & (df_curva['TIR Semestral'] <= 15)]
-                    if len(df_curva) >= 3:
-                        x = df_curva['Dur. Modificada'].values
-                        y = df_curva['TIR Semestral'].values
-                        coeffs = np.polyfit(np.log(x), y, 1)
-                        x_line = np.linspace(x.min(), x.max(), 200)
-                        y_line = coeffs[0] * np.log(x_line) + coeffs[1]
-
-                        x_r = x.max() - x.min() if x.max() != x.min() else 1
-                        y_r = y.max() - y.min() if y.max() != y.min() else 1
-                        nombres = df_curva['Activo'].values
-
-                        y_trend_pts = coeffs[0] * np.log(x) + coeffs[1]
-                        desviacion = np.abs(y - y_trend_pts)
-                        orden = np.argsort(desviacion)[::-1]
-
-                        MIN_DIST = 0.11
-                        dirs = ['top center','bottom center','middle right','middle left',
-                                'top right','top left','bottom right','bottom left']
-                        offsets = {'top center':(0,.06),'bottom center':(0,-.06),
-                                   'middle right':(.07,0),'middle left':(-.07,0),
-                                   'top right':(.05,.05),'top left':(-.05,.05),
-                                   'bottom right':(.05,-.05),'bottom left':(-.05,-.05)}
-
-                        texto_visible = [''] * len(x)
-                        positions = ['top center'] * len(x)
-                        placed = []
-
-                        for i in orden:
-                            nx, ny = x[i]/x_r, y[i]/y_r
-                            dists_to_placed = [np.sqrt((nx-px)**2+(ny-py)**2) for px,py in placed]
-                            if dists_to_placed and min(dists_to_placed) < MIN_DIST:
-                                continue
-                            best_pos, best_score = 'top center', -1
-                            best_lx, best_ly = nx, ny + 0.06
-                            for d in dirs:
-                                ox, oy = offsets[d]
-                                lx, ly = nx + ox, ny + oy
-                                dists = [np.sqrt((lx-px)**2+(ly-py)**2) for px,py in placed]
-                                dists += [np.sqrt(((x[i]-x[j])/x_r)**2+((y[i]-y[j])/y_r)**2)
-                                          for j in range(len(x)) if j != i]
-                                score = min(dists) if dists else 1
-                                if score > best_score:
-                                    best_score, best_pos = score, d
-                                    best_lx, best_ly = lx, ly
-                            texto_visible[i] = nombres[i]
-                            positions[i] = best_pos
-                            placed.append((best_lx, best_ly))
-
-                        fig_corp = go.Figure()
-                        fig_corp.add_trace(go.Scatter(
-                            x=x, y=y,
-                            mode='markers+text',
-                            text=texto_visible,
-                            customdata=nombres,
-                            textposition=positions,
-                            textfont=dict(size=9, color='#1a237e'),
-                            marker=dict(size=9, color='#1a237e'),
-                            name=nombre_serie,
-                            hovertemplate='<b>%{customdata}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
-                        ))
-                        fig_corp.add_trace(go.Scatter(
-                            x=x_line, y=y_line,
-                            mode='lines',
-                            line=dict(color='#42a5f5', width=2, dash='dash'),
-                            name='Tendencia log.',
-                            hoverinfo='skip',
-                            showlegend=False,
-                        ))
-                        fig_corp.update_layout(
-                            title=titulo_cueva,
-                            xaxis_title='Duración Modificada (años)',
-                            yaxis_title='TIR Semestral (%)',
-                            xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
-                            yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
-                            plot_bgcolor='#f4f6fb',
-                            paper_bgcolor='#f4f6fb',
-                            legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
-                            height=560,
-                            margin=dict(t=60, b=40, l=60, r=40),
-                        )
-                        st.plotly_chart(fig_corp, use_container_width=True)
-
-                # Tabla — siempre al final de cada sección
-                df_tabla['Precio'] = df_tabla['Precio'].map('{:.2f}'.format)
-                df_tabla['Int. Corridos'] = df_tabla['Int. Corridos'].map('{:.4f}'.format)
-                df_tabla['Cap. Residual'] = df_tabla['Cap. Residual'].map('{:.2f}'.format)
-                df_tabla['Cupón Vigente'] = df_tabla['Cupón Vigente'].map('{:.4f}%'.format)
-                df_tabla['TIR Semestral'] = df_tabla['TIR Semestral'].map('{:.2f}%'.format)
-                df_tabla['Dur. Modificada'] = df_tabla['Dur. Modificada'].map('{:.2f}'.format)
-                df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
-                    lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
-                )
-                st.markdown(render_tabla_html(df_tabla), unsafe_allow_html=True)
-        elif st.session_state.get('vista_titulos', 'usd') == 'usd':
-            st.info("No hay precios disponibles en este momento.")
-
-        
-        
 except FileNotFoundError:
     st.error("❌ No se pudo cargar el archivo de datos")
     st.info("Asegúrese de que el archivo 'bonos_flujos.xlsx' esté en el directorio correcto")
