@@ -1169,7 +1169,7 @@ try:
             st.session_state.calcular = False
         
         # Variables para uso en la sección principal
-        if bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado'):
+        if bono_seleccionado and not st.session_state.get('flujos_bonos_seleccionados'):
             bono_actual = next((bono for bono in bonos_filtrados if bono['nombre'] == bono_seleccionado), None)
         else:
             st.session_state.calcular = False
@@ -1180,89 +1180,85 @@ try:
         st.markdown("## CALCULADORA DE FLUJOS")
         
         # Inicializar session_state para flujos
-        if 'flujos_tipo_seleccionado' not in st.session_state:
-            st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"  # Valor inicial
-        if 'flujos_bono_seleccionado' not in st.session_state:
-            st.session_state.flujos_bono_seleccionado = None
         if 'flujos_calcular' not in st.session_state:
             st.session_state.flujos_calcular = False
-        
-        # Filtro por tipo de bono para flujos
-        flujos_tipos_bono_con_seleccion = ["Seleccione un Tipo"] + tipos_bono
-        
-        # Usar una clave única que cambie cuando se presiona Volver
+        if 'flujos_bonos_seleccionados' not in st.session_state:
+            st.session_state.flujos_bonos_seleccionados = []
         if 'flujos_tipo_selectbox_key' not in st.session_state:
             st.session_state.flujos_tipo_selectbox_key = 0
-        flujos_tipo_seleccionado = st.selectbox("Tipo de Bono", flujos_tipos_bono_con_seleccion, key=f"flujos_tipo_selectbox_{st.session_state.flujos_tipo_selectbox_key}")
-        
+        if 'flujos_bono_selectbox_key' not in st.session_state:
+            st.session_state.flujos_bono_selectbox_key = 0
+
+        # Filtro por tipo de bono para flujos
+        flujos_tipos_bono_con_seleccion = ["Seleccione un Tipo"] + tipos_bono
+        flujos_tipo_seleccionado = st.selectbox(
+            "Tipo de Bono",
+            flujos_tipos_bono_con_seleccion,
+            key=f"flujos_tipo_selectbox_{st.session_state.flujos_tipo_selectbox_key}"
+        )
+
         # Filtrar bonos por tipo para flujos
-        if flujos_tipo_seleccionado == "Seleccione un Tipo":
-            flujos_bonos_filtrados = bonos  # Mostrar todos los bonos cuando está en "Seleccione un Tipo"
-        elif flujos_tipo_seleccionado == "Todos":
+        if flujos_tipo_seleccionado in ("Seleccione un Tipo", "Todos"):
             flujos_bonos_filtrados = bonos
         else:
-            flujos_bonos_filtrados = [bono for bono in bonos if bono['tipo_bono'] == flujos_tipo_seleccionado]
-        
+            flujos_bonos_filtrados = [b for b in bonos if b['tipo_bono'] == flujos_tipo_seleccionado]
+
         if not flujos_bonos_filtrados:
             st.error("No hay bonos del tipo seleccionado")
         else:
-            # Selección de bono para flujos
-            flujos_nombres_bonos = [bono['nombre'] for bono in flujos_bonos_filtrados]
-            flujos_nombres_bonos.sort()  # Ordenar alfabéticamente
-            
-            flujos_bono_seleccionado = st.selectbox(
-                "Elija un Bono", 
+            flujos_nombres_bonos = sorted([b['nombre'] for b in flujos_bonos_filtrados])
+
+            # Selectbox con key rotativa: se resetea a None cada vez que se agrega un bono
+            bono_a_agregar = st.selectbox(
+                "Agregar Bono",
                 flujos_nombres_bonos,
-                index=None,  # Ningún bono seleccionado por defecto
+                index=None,
                 placeholder="Seleccione un bono...",
-                key="flujos_bono_selectbox"
+                key=f"flujos_bono_selectbox_{st.session_state.flujos_bono_selectbox_key}"
             )
-            
-            # Actualizar session_state solo cuando se selecciona un bono específico
-            if flujos_bono_seleccionado and flujos_bono_seleccionado != st.session_state.flujos_bono_seleccionado:
-                st.session_state.flujos_bono_seleccionado = flujos_bono_seleccionado
+
+            if bono_a_agregar:
+                ya_en_lista = [b['nombre'] for b in st.session_state.flujos_bonos_seleccionados]
+                if bono_a_agregar not in ya_en_lista:
+                    bono_info = next((b for b in bonos if b['nombre'] == bono_a_agregar), None)
+                    if bono_info:
+                        ticker_flujo = bono_info.get('ticker', '').strip()
+                        precio_api = None
+                        if ticker_flujo and ticker_flujo != 'SPX500':
+                            precio_api = obtener_precio_data912(ticker_flujo)
+                        # Guardar precio con key por nombre
+                        key_nombre = re.sub(r'[^a-zA-Z0-9]', '_', bono_a_agregar)
+                        precio_key_flujo = f"precio_flujo_{key_nombre}"
+                        st.session_state[precio_key_flujo] = float(precio_api) if precio_api and precio_api > 0 else 0.0
+                        st.session_state.flujos_bonos_seleccionados.append({
+                            'nombre': bono_a_agregar,
+                            'nominales': '',
+                            'precio': precio_api if precio_api and precio_api > 0 else '',
+                            'info': bono_info
+                        })
+                # Siempre resetear el selectbox y limpiar selecciones de rendimientos
+                st.session_state.flujos_bono_selectbox_key += 1
                 st.session_state.flujos_calcular = False
-            
-            # Mensaje para agregar más bonos (solo si ya hay bonos seleccionados)
-            if st.session_state.get('flujos_bonos_seleccionados') and len(st.session_state.flujos_bonos_seleccionados) > 0:
-                st.markdown("**Para agregar más bonos:** Selecciona otro bono en el sidebar")
-            
-            # Si se selecciona un bono en flujos, limpiar la pantalla principal y selecciones de rendimientos
-            if flujos_bono_seleccionado:
                 st.session_state.calcular = False
                 st.session_state.bono_seleccionado = None
-                st.session_state.tipo_seleccionado = "Seleccione un Tipo"  # Valor inicial
-                # Limpiar las selecciones de los selectbox de rendimientos
-                if 'tipo_selectbox' in st.session_state:
-                    del st.session_state['tipo_selectbox']
-                if 'bono_selectbox' in st.session_state:
-                    del st.session_state['bono_selectbox']
+                for k in ('tipo_selectbox', 'bono_selectbox'):
+                    if k in st.session_state:
+                        del st.session_state[k]
+                st.rerun()
         
-        # Botón Volver para flujos (siempre visible cuando hay bono seleccionado)
-        if st.session_state.get('flujos_bono_seleccionado', None):
+        # Botón Volver para flujos (visible cuando hay bonos en la lista)
+        if st.session_state.get('flujos_bonos_seleccionados'):
             if st.button("Volver", type="secondary", use_container_width=True, key="flujos_volver"):
-                # Resetear TODAS las selecciones - estado inicial completo
                 st.session_state.calcular = False
                 st.session_state.bono_seleccionado = None
-                st.session_state.tipo_seleccionado = "Seleccione un Tipo"
-                
-                # Limpiar TODAS las selecciones de flujos
-                st.session_state.flujos_bono_seleccionado = None
-                st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
                 st.session_state.flujos_calcular = False
-                if 'flujos_bonos_seleccionados' in st.session_state:
-                    del st.session_state['flujos_bonos_seleccionados']
-                
-                # Incrementar claves únicas para forzar reset de selectbox
+                st.session_state.flujos_bonos_seleccionados = []
                 st.session_state.tipo_selectbox_key += 1
                 st.session_state.flujos_tipo_selectbox_key += 1
-                
-                # Limpiar TODOS los selectbox para forzar reset
-                if 'bono_selectbox' in st.session_state:
-                    del st.session_state['bono_selectbox']
-                if 'flujos_bono_selectbox' in st.session_state:
-                    del st.session_state['flujos_bono_selectbox']
-                
+                st.session_state.flujos_bono_selectbox_key += 1
+                for k in ('bono_selectbox', 'tipo_selectbox'):
+                    if k in st.session_state:
+                        del st.session_state[k]
                 st.rerun()
     
         # Botón Mercados
@@ -1861,38 +1857,8 @@ try:
         """
         st.components.v1.html(ticket_tape_html, height=100)
     
-    # S2 (Calculadora de Flujos) - Prioridad alta (solo si mercados e indices no están activos)
-    elif st.session_state.get('flujos_bono_seleccionado') and not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False):
-        # Inicializar lista de bonos seleccionados si no existe
-        if 'flujos_bonos_seleccionados' not in st.session_state:
-            st.session_state.flujos_bonos_seleccionados = []
-        
-        # Agregar bono actual a la lista si no está ya
-        bono_actual = st.session_state.get('flujos_bono_seleccionado')
-        if bono_actual and bono_actual not in [b['nombre'] for b in st.session_state.flujos_bonos_seleccionados]:
-            # Encontrar el bono en la lista completa de bonos (no solo los filtrados)
-            bono_info = next((bono for bono in bonos if bono['nombre'] == bono_actual), None)
-            if bono_info:
-                # Intentar obtener precio desde data912.com
-                ticker_flujo = bono_info.get('ticker', '').strip()
-                precio_api = None
-                if ticker_flujo and ticker_flujo != 'SPX500':
-                    precio_api = obtener_precio_data912(ticker_flujo)
-                # Guardar precio en session_state con key basada en nombre (no índice)
-                key_nombre = re.sub(r'[^a-zA-Z0-9]', '_', bono_actual)
-                precio_key_nombre = f"precio_flujo_{key_nombre}"
-                if precio_api and precio_api > 0:
-                    st.session_state[precio_key_nombre] = float(precio_api)
-                elif precio_key_nombre not in st.session_state:
-                    st.session_state[precio_key_nombre] = 0.0
-                st.session_state.flujos_bonos_seleccionados.append({
-                    'nombre': bono_actual,
-                    'nominales': '',
-                    'precio': precio_api if precio_api and precio_api > 0 else '',
-                    'info': bono_info
-                })
-                # Resetear cálculo al agregar nuevo bono
-                st.session_state.flujos_calcular = False
+    # S2 (Calculadora de Flujos) - activo cuando hay bonos en la lista
+    elif st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False):
         
         # Mostrar lista de bonos seleccionados con recuadro transparente
         st.markdown("""
@@ -2380,7 +2346,7 @@ try:
             st.info("🔧 CALCULADORA DE FLUJOS - Pantalla lista para nuevas funcionalidades")
     
     # S1 (Calculadora de Rendimientos) - Mostrar cuando hay bono seleccionado (sin necesidad de calcular)
-    elif st.session_state.bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado') and not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False):
+    elif st.session_state.bono_seleccionado and not st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False):
         # Obtener el bono actual del session_state
         bono_actual = next((bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado), None)
         if not bono_actual:
@@ -2392,8 +2358,8 @@ try:
         
         # COLUMNA IZQUIERDA - INPUTS Y BOTONES
         with col1:
-            # Solo mostrar inputs si hay bono seleccionado Y NO hay bono en S2
-            if st.session_state.bono_seleccionado and not st.session_state.get('flujos_bono_seleccionado'):
+            # Solo mostrar inputs si hay bono seleccionado Y NO hay bonos en S2
+            if st.session_state.bono_seleccionado and not st.session_state.get('flujos_bonos_seleccionados'):
                 # Encontrar el bono seleccionado
                 bono_actual_main = next((bono for bono in bonos_filtrados if bono['nombre'] == st.session_state.bono_seleccionado), None)
                 if not bono_actual_main:
@@ -2451,22 +2417,14 @@ try:
                                 del st.session_state[key]
                             
                             # Limpiar TODAS las selecciones de flujos
-                            st.session_state.flujos_bono_seleccionado = None
-                            st.session_state.flujos_tipo_seleccionado = "Seleccione un Tipo"
                             st.session_state.flujos_calcular = False
-                            if 'flujos_bonos_seleccionados' in st.session_state:
-                                del st.session_state['flujos_bonos_seleccionados']
-                            
-                            # Incrementar claves únicas para forzar reset de selectbox
+                            st.session_state.flujos_bonos_seleccionados = []
                             st.session_state.tipo_selectbox_key += 1
                             st.session_state.flujos_tipo_selectbox_key += 1
-                            
-                            # Limpiar TODOS los selectbox para forzar reset
-                            if 'bono_selectbox' in st.session_state:
-                                del st.session_state['bono_selectbox']
-                            if 'flujos_bono_selectbox' in st.session_state:
-                                del st.session_state['flujos_bono_selectbox']
-                            
+                            st.session_state.flujos_bono_selectbox_key += 1
+                            for k in ('bono_selectbox', 'tipo_selectbox'):
+                                if k in st.session_state:
+                                    del st.session_state[k]
                             st.rerun()
                 
                 # Mapear periodicidad a texto
@@ -2797,7 +2755,7 @@ try:
         # No mostrar nada cuando hay bono seleccionado pero no se ha calculado
         pass
     
-    if not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False) and not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bono_seleccionado'):
+    if not st.session_state.get('mercados_activo', False) and not st.session_state.get('indices_activo', False) and not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bonos_seleccionados'):
         # Auto-refresh cada 10 minutos (con guard para evitar timers acumulados)
         st.components.v1.html("""<script>
         if (!window._autoRefreshSet) {
