@@ -2485,6 +2485,9 @@ try:
                     margin-bottom: 0.25rem;
                     line-height: 1.4;
                 }
+                div[data-testid="stSelectbox"] div[role="combobox"] {
+                    font-size: 0.85rem !important;
+                }
                 div[data-testid="stSelectbox"] label[data-testid="stWidgetLabel"],
                 div[data-testid="stDateInput"] label[data-testid="stWidgetLabel"],
                 div[data-testid="stNumberInput"] label[data-testid="stWidgetLabel"],
