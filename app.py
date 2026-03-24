@@ -730,6 +730,10 @@ st.markdown("""
         border-radius: 6px 6px 0 0 !important;
         font-size: 14px !important;
         font-weight: 700 !important;
+        margin: 0 !important;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab-list"] {
+        gap: 0 !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"] p,
     [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"] div,
