@@ -510,7 +510,7 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     .calc-card-title {
-        font-size: 0.68rem;
+        font-size: 0.95rem;
         font-weight: 700;
         color: #94a3b8;
         text-transform: uppercase;
@@ -2686,13 +2686,13 @@ try:
                 st.markdown(f"""
                 <div class="calc-card-fill">
                     <div class="calc-card-title">Información del Bono</div>
-                    <div style="font-size:0.83rem; color:#444; line-height:1.8;">
-                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Nombre:</strong> {bono_actual_main['nombre']}</p>
-                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
-                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
-                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Periodicidad:</strong> {periodicidad_texto_info}</p>
-                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
-                        <p style="margin:0.3rem 0;"><strong style="color:#1a237e;">Ticker:</strong> {bono_actual_main['ticker']}</p>
+                    <div style="font-size:0.95rem; color:#444; line-height:2.15;">
+                        <p style="margin:0.45rem 0;"><strong style="color:#1a237e;">Nombre:</strong> {bono_actual_main['nombre']}</p>
+                        <p style="margin:0.45rem 0;"><strong style="color:#1a237e;">Vencimiento:</strong> {fecha_vencimiento_info.strftime('%d/%m/%Y') if fecha_vencimiento_info else 'N/A'}</p>
+                        <p style="margin:0.45rem 0;"><strong style="color:#1a237e;">Tasa de cupón:</strong> {cupon_vigente_actual_info:.2%}</p>
+                        <p style="margin:0.45rem 0;"><strong style="color:#1a237e;">Periodicidad:</strong> {periodicidad_texto_info}</p>
+                        <p style="margin:0.45rem 0;"><strong style="color:#1a237e;">Base de cálculo:</strong> {bono_actual_main['base_calculo']}</p>
+                        <p style="margin:0.45rem 0;"><strong style="color:#1a237e;">Ticker:</strong> {bono_actual_main['ticker']}</p>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
