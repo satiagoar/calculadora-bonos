@@ -2476,15 +2476,24 @@ try:
                         st.session_state[precio_key_main] = precio_inicial
                         st.session_state.calcular = True
                 
-                col_inputs, _ = st.columns(2)
-                with col_inputs:
+                col_fecha, col_mep = st.columns(2)
+                with col_fecha:
                     fecha_liquidacion = st.date_input(
                         "Fecha de Liquidación",
                         value=get_next_business_day(),
                         format="DD/MM/YYYY",
                         key="fecha_liquidacion_main"
                     )
+                with col_mep:
+                    st.text_input(
+                        "Tipo de Cambio MEP",
+                        value="",
+                        key="tipo_cambio_mep_main",
+                        placeholder=""
+                    )
 
+                col_inputs, _ = st.columns(2)
+                with col_inputs:
                     precio_dirty = st.number_input(
                         "Precio Dirty",
                         min_value=0.0,
