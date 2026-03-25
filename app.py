@@ -1328,8 +1328,14 @@ try:
             count_row   = lrows[idx + 6] if idx + 6 < len(lrows) else (None,) * 4
             base_calculo = count_row[1] if isinstance(count_row[1], str) and '/' in count_row[1] else '30/360'
             # Sink Factor (Valor Final) en row+8, col B
-            sink_row     = lrows[idx + 8] if idx + 8 < len(lrows) else (None,) * 4
-            valor_final  = _sf(sink_row[1])
+            sink_row       = lrows[idx + 8] if idx + 8 < len(lrows) else (None,) * 4
+            valor_final    = _sf(sink_row[1])
+            # Días Remanente en row+11, col B
+            remanente_row  = lrows[idx + 11] if idx + 11 < len(lrows) else (None,) * 4
+            dias_remanente = _sf(remanente_row[1])
+            # Vida Media (días) en row+12, col B
+            vida_row       = lrows[idx + 12] if idx + 12 < len(lrows) else (None,) * 4
+            vida_media_lec = _sf(vida_row[1])
 
             bonos.append({
                 'nombre':        nombre.strip(),
@@ -1341,6 +1347,8 @@ try:
                 'fecha_emision': fecha_emision,
                 'maturity':      maturity,
                 'valor_final':   valor_final,
+                'dias_remanente': dias_remanente,
+                'vida_media_lec': vida_media_lec,
                 'flujos':        [],   # cálculos pendientes de implementar
             })
             idx += LECAP_BLOCK
@@ -2640,8 +2648,8 @@ try:
                 <div class="metrics-card">
                     <div class="metrics-card-title">Otros indicadores</div>
                     <div class="metrics-row">
-                        <div class="metric-card"><div class="metric-label">Días Remanente</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Días Remanente</div><div class="metric-value">{int(bono_actual.get('dias_remanente', 0))}</div></div>
+                        <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">{int(bono_actual.get('vida_media_lec', 0))}</div></div>
                         <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
                         <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
                     </div>
