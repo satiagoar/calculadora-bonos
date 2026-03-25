@@ -2640,10 +2640,10 @@ try:
                 <div class="metrics-card">
                     <div class="metrics-card-title">Otros indicadores</div>
                     <div class="metrics-row">
-                        <div class="metric-card"><div class="metric-label">Valor Técnico</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">Paridad</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">Próximo Cupón</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Días Remanente</div><div class="metric-value">-</div></div>
                         <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
+                        <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
                     </div>
                 </div>
                 ''', unsafe_allow_html=True)
