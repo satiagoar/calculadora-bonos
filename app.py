@@ -1333,9 +1333,9 @@ try:
             # Días Remanente en row+11, col B
             remanente_row  = lrows[idx + 11] if idx + 11 < len(lrows) else (None,) * 4
             dias_remanente = _sf(remanente_row[1])
-            # Vida Media (días) en row+12, col B
-            vida_row       = lrows[idx + 12] if idx + 12 < len(lrows) else (None,) * 4
-            vida_media_lec = _sf(vida_row[1])
+            # Vida Media en row+16, col E (Avg. Life)
+            vida_row       = lrows[idx + 16] if idx + 16 < len(lrows) else (None,) * 22
+            vida_media_lec = _sf(vida_row[4])
 
             bonos.append({
                 'nombre':        nombre.strip(),
