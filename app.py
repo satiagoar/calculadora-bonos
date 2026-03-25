@@ -1298,23 +1298,72 @@ try:
         if current_bono and current_bono['flujos']:
             bonos.append(current_bono)
 
-    # Inferir periodicidad para cada bono
+    # Inferir periodicidad para cada bono (sólo los que tienen flujos)
     for bono in bonos:
         bono['periodicidad'] = _infer_periodicidad(bono['flujos'])
+
+    # --- Parsear hoja Lecap (estructura diferente: bloques de 23 filas) ---
+    if 'Lecap' in wb.sheetnames:
+        ws_lecap = wb['Lecap']
+        lrows = list(ws_lecap.iter_rows(values_only=True))
+        LECAP_BLOCK = 23  # filas por título
+        LECAP_START = 2   # índice 0-based de la primera fila de datos (fila 3)
+        idx = LECAP_START
+        while idx < len(lrows):
+            row = lrows[idx]
+            nombre = row[0]
+            # Detectar fila de nombre: string que no es separador ni etiqueta
+            if not isinstance(nombre, str) or nombre in ('--', 'LECAP') or idx + LECAP_BLOCK > len(lrows):
+                idx += 1
+                continue
+            maturity   = row[1] if isinstance(row[1], datetime) else None
+            tasa_cupon = _sf(row[2])
+            # Issue Date está en row+2, col B
+            issue_row  = lrows[idx + 2] if idx + 2 < len(lrows) else (None,) * 4
+            fecha_emision = issue_row[1] if isinstance(issue_row[1], datetime) else None
+            # Freq. Coupon en row+5, col B
+            freq_row    = lrows[idx + 5] if idx + 5 < len(lrows) else (None,) * 4
+            periodicidad = int(_sf(freq_row[1], 1)) if freq_row[1] is not None else 1
+            # Count Days en row+6, col B
+            count_row   = lrows[idx + 6] if idx + 6 < len(lrows) else (None,) * 4
+            base_calculo = count_row[1] if isinstance(count_row[1], str) and '/' in count_row[1] else '30/360'
+
+            bonos.append({
+                'nombre':        nombre.strip(),
+                'tipo_bono':     'Lecaps & Boncaps',
+                'ticker':        nombre.strip(),
+                'tasa_cupon':    tasa_cupon,
+                'base_calculo':  base_calculo,
+                'periodicidad':  periodicidad,
+                'fecha_emision': fecha_emision,
+                'maturity':      maturity,
+                'flujos':        [],   # cálculos pendientes de implementar
+            })
+            idx += LECAP_BLOCK
 
     if not bonos:
         st.error("❌ No se encontraron bonos en el archivo")
         st.stop()
 
-    # Filtrar bonos vencidos: excluir aquellos cuyo último flujo ya pasó
+    # Filtrar bonos vencidos
     _hoy = datetime.now().date()
-    bonos = [
-        b for b in bonos
-        if b['flujos'] and max(
+    def _bono_vigente(b):
+        # Lecaps: usar campo maturity
+        if b['tipo_bono'] == 'Lecaps & Boncaps':
+            if b.get('maturity') is None:
+                return True
+            mat = b['maturity'].date() if hasattr(b['maturity'], 'date') else b['maturity']
+            return mat >= _hoy
+        # Resto: usar último flujo
+        if not b['flujos']:
+            return False
+        ultima = max(
             f['fecha'].date() if hasattr(f['fecha'], 'date') else f['fecha']
             for f in b['flujos']
-        ) >= _hoy
-    ]
+        )
+        return ultima >= _hoy
+
+    bonos = [b for b in bonos if _bono_vigente(b)]
 
     if not bonos:
         st.error("❌ No hay bonos vigentes disponibles")
@@ -2535,6 +2584,21 @@ try:
         if not bono_actual:
             st.session_state.bono_seleccionado = None
             st.rerun()
+
+        # --- Lecaps & Boncaps: pantalla en blanco con botón Volver ---
+        if bono_actual.get('tipo_bono') == 'Lecaps & Boncaps':
+            st.markdown(f"### {bono_actual['nombre']}")
+            mat = bono_actual.get('maturity')
+            if mat:
+                mat_str = mat.strftime('%d/%m/%Y') if hasattr(mat, 'strftime') else str(mat)
+                st.markdown(f"**Vencimiento:** {mat_str} &nbsp;|&nbsp; **Tasa:** {bono_actual['tasa_cupon']:.2%} &nbsp;|&nbsp; **Base:** {bono_actual['base_calculo']}")
+            st.info("Calculadora para Lecaps & Boncaps en desarrollo.")
+            if st.button("Volver", type="secondary", key="volver_lecap"):
+                st.session_state.bono_seleccionado = None
+                st.session_state.tipo_seleccionado = "Seleccione un Tipo"
+                st.session_state.calcular = False
+                st.rerun()
+            st.stop()
 
         # Layout principal
         col1, col2 = st.columns([1, 2])
