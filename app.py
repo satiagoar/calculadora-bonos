@@ -2625,15 +2625,6 @@ try:
             with col2_lec:
                 st.markdown('''
                 <div class="metrics-card">
-                    <div class="metrics-card-title">Precio y estructura</div>
-                    <div class="metrics-row">
-                        <div class="metric-card"><div class="metric-label">Precio Limpio</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">Intereses Corridos</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">Capital Residual</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">Cupón Vigente</div><div class="metric-value">-</div></div>
-                    </div>
-                </div>
-                <div class="metrics-card">
                     <div class="metrics-card-title">Rendimiento y duración</div>
                     <div class="metrics-row">
                         <div class="metric-card"><div class="metric-label">TIR Efectiva</div><div class="metric-value">-</div></div>
