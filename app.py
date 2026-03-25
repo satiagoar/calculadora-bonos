@@ -1327,6 +1327,9 @@ try:
             # Count Days en row+6, col B
             count_row   = lrows[idx + 6] if idx + 6 < len(lrows) else (None,) * 4
             base_calculo = count_row[1] if isinstance(count_row[1], str) and '/' in count_row[1] else '30/360'
+            # Sink Factor (Valor Final) en row+8, col B
+            sink_row     = lrows[idx + 8] if idx + 8 < len(lrows) else (None,) * 4
+            valor_final  = _sf(sink_row[1])
 
             bonos.append({
                 'nombre':        nombre.strip(),
@@ -1337,6 +1340,7 @@ try:
                 'periodicidad':  periodicidad,
                 'fecha_emision': fecha_emision,
                 'maturity':      maturity,
+                'valor_final':   valor_final,
                 'flujos':        [],   # cálculos pendientes de implementar
             })
             idx += LECAP_BLOCK
@@ -2623,14 +2627,14 @@ try:
                 </div>
                 """, unsafe_allow_html=True)
             with col2_lec:
-                st.markdown('''
+                st.markdown(f'''
                 <div class="metrics-card">
                     <div class="metrics-card-title">Rendimiento y duración</div>
                     <div class="metrics-row">
-                        <div class="metric-card"><div class="metric-label">TIR Efectiva</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">TIR Anual</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">TNA</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">-</div></div>
                         <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">Duración Macaulay</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Valor Final</div><div class="metric-value">{formatear_numero(bono_actual.get('valor_final', 0), 4)}</div></div>
                     </div>
                 </div>
                 <div class="metrics-card">
