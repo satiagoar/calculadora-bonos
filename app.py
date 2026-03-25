@@ -2585,19 +2585,73 @@ try:
             st.session_state.bono_seleccionado = None
             st.rerun()
 
-        # --- Lecaps & Boncaps: pantalla en blanco con botón Volver ---
+        # --- Lecaps & Boncaps: mismo layout, tarjetas en blanco por ahora ---
         if bono_actual.get('tipo_bono') == 'Lecaps & Boncaps':
-            st.markdown(f"### {bono_actual['nombre']}")
-            mat = bono_actual.get('maturity')
-            if mat:
-                mat_str = mat.strftime('%d/%m/%Y') if hasattr(mat, 'strftime') else str(mat)
-                st.markdown(f"**Vencimiento:** {mat_str} &nbsp;|&nbsp; **Tasa:** {bono_actual['tasa_cupon']:.2%} &nbsp;|&nbsp; **Base:** {bono_actual['base_calculo']}")
-            st.info("Calculadora para Lecaps & Boncaps en desarrollo.")
-            if st.button("Volver", type="secondary", key="volver_lecap"):
-                st.session_state.bono_seleccionado = None
-                st.session_state.tipo_seleccionado = "Seleccione un Tipo"
-                st.session_state.calcular = False
-                st.rerun()
+            col1_lec, col2_lec = st.columns([1, 2])
+            with col1_lec:
+                # Fecha de liquidación
+                st.markdown("<div class='inline-field-label'>Fecha de Liquidación</div>", unsafe_allow_html=True)
+                st.date_input("", value=get_next_business_day(), format="DD/MM/YYYY",
+                              key="fecha_liq_lecap", label_visibility="collapsed")
+                st.markdown("<div class='inline-field-label'>Precio Dirty</div>", unsafe_allow_html=True)
+                st.number_input("", min_value=0.0, step=0.01, format="%.2f",
+                                key=f"precio_lecap_{bono_actual['nombre']}", label_visibility="collapsed")
+                col_calc_lec, col_vol_lec = st.columns(2)
+                with col_calc_lec:
+                    st.button("Calcular", type="primary", use_container_width=True, key="calcular_lecap", disabled=True)
+                with col_vol_lec:
+                    if st.button("Volver", type="secondary", use_container_width=True, key="volver_lecap"):
+                        st.session_state.bono_seleccionado = None
+                        st.session_state.tipo_seleccionado = "Seleccione un Tipo"
+                        st.session_state.calcular = False
+                        st.session_state.tipo_selectbox_key += 1
+                        st.rerun()
+                # Información del Bono
+                mat = bono_actual.get('maturity')
+                mat_str = mat.strftime('%d/%m/%Y') if mat and hasattr(mat, 'strftime') else 'N/A'
+                st.markdown(f"""
+                <div class="calc-card-fill">
+                    <div class="calc-card-title">Información del Bono</div>
+                    <div style="font-size:0.92rem; color:#444; line-height:1.98;">
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Nombre:</strong> {bono_actual['nombre']}</p>
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Vencimiento:</strong> {mat_str}</p>
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Tasa de cupón:</strong> {bono_actual['tasa_cupon']:.2%}</p>
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Periodicidad:</strong> -</p>
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Base de cálculo:</strong> 30/360</p>
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Ticker:</strong> {bono_actual['ticker']}</p>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col2_lec:
+                st.markdown('''
+                <div class="metrics-card">
+                    <div class="metrics-card-title">Precio y estructura</div>
+                    <div class="metrics-row">
+                        <div class="metric-card"><div class="metric-label">Precio Limpio</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Intereses Corridos</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Capital Residual</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Cupón Vigente</div><div class="metric-value">-</div></div>
+                    </div>
+                </div>
+                <div class="metrics-card">
+                    <div class="metrics-card-title">Rendimiento y duración</div>
+                    <div class="metrics-row">
+                        <div class="metric-card"><div class="metric-label">TIR Efectiva</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">TIR Anual</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Duración Macaulay</div><div class="metric-value">-</div></div>
+                    </div>
+                </div>
+                <div class="metrics-card">
+                    <div class="metrics-card-title">Otros indicadores</div>
+                    <div class="metrics-row">
+                        <div class="metric-card"><div class="metric-label">Valor Técnico</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Paridad</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Próximo Cupón</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">-</div></div>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
             st.stop()
 
         # Layout principal
