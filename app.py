@@ -1154,72 +1154,139 @@ def obtener_tipo_cambio_implicito_data912(tipo_cambio='Tipo de Cambio MEP'):
 
 # Cargar datos del Excel
 try:
-    df = pd.read_excel('bonos_flujos.xlsx', engine='openpyxl')
-    
-    # Los tipos de bonos se generarán automáticamente después de procesar los bonos
-    
-    # Procesar bonos
+    import openpyxl as _openpyxl
+
+    # Época de Excel para convertir seriales numéricos (Corp ARG usa enteros en lugar de datetime)
+    _EXCEL_EPOCH = datetime(1899, 12, 30)
+
+    def _serial_to_dt(serial):
+        """Convierte serial numérico de Excel a datetime."""
+        return _EXCEL_EPOCH + timedelta(days=int(serial))
+
+    def _sf(v, default=0.0):
+        """Convierte a float de forma segura."""
+        if v is None:
+            return default
+        try:
+            f = float(v)
+            return default if (f != f) else f  # NaN check
+        except (ValueError, TypeError):
+            return default
+
+    def _infer_periodicidad(flujos):
+        """Infiere la periodicidad a partir del espaciado entre fechas de flujos."""
+        fechas = [f['fecha'] for f in flujos]
+        if len(fechas) < 2:
+            return 2
+        diffs = []
+        for i in range(min(6, len(fechas) - 1)):
+            d1 = fechas[i].date() if hasattr(fechas[i], 'date') else fechas[i]
+            d2 = fechas[i+1].date() if hasattr(fechas[i+1], 'date') else fechas[i+1]
+            diffs.append((d2 - d1).days)
+        avg = sum(diffs) / len(diffs)
+        if avg < 45:  return 12  # mensual
+        if avg < 100: return 4   # trimestral
+        if avg < 200: return 2   # semestral
+        return 1                 # anual
+
+    # Configuración por hoja: tipo de bono y base de cálculo por defecto
+    SHEET_CONFIG = {
+        'Corp ARG': {'tipo_bono': 'Corporativo Ley ARG', 'base_default': 'ACT/365'},
+        'Corp NY':  {'tipo_bono': 'Corporativo Ley NY',  'base_default': '30/360'},
+        'Sov USD':  {'tipo_bono': 'Soberano USD',        'base_default': '30/360'},
+    }
+
+    wb = _openpyxl.load_workbook('flujos new.xlsx', data_only=True)
     bonos = []
-    current_bono = None
-    
-    # No procesar ningún bono antes del bucle principal
-    
-    for index, row in df.iterrows():
-        # Verificar si es el inicio de un nuevo bono (cualquier carácter que no sea fecha en columna A)
-        if pd.notna(row.iloc[0]) and not isinstance(row.iloc[0], datetime):
-            if current_bono:
-                bonos.append(current_bono)
-            
-            # Función auxiliar para convertir a float de forma segura
-            def safe_float(value, default=0):
-                if pd.isna(value):
-                    return default
-                try:
-                    return float(value)
-                except (ValueError, TypeError):
-                    return default
-            
-            current_bono = {
-                'nombre': str(row.iloc[0]),
-                'base_calculo': str(row.iloc[1]) if pd.notna(row.iloc[1]) else "ACT/365",
-                'periodicidad': int(row.iloc[2]) if pd.notna(row.iloc[2]) else 2,
-                'tipo_bono': str(row.iloc[3]) if pd.notna(row.iloc[3]) else "General",
-                'tasa_cupon': 0.0,  # Se calculará con el primer flujo
-                'ticker': str(row.iloc[4]) if pd.notna(row.iloc[4]) else "SPX500",  # Columna E - ticker
-                'flujos': []
-            }
-        elif current_bono and pd.notna(row.iloc[0]) and isinstance(row.iloc[0], datetime):
-            # Es una fecha, agregar flujo
-            fecha = row.iloc[0]
-            
-            # Función auxiliar para convertir a float de forma segura
-            def safe_float(value, default=0):
-                if pd.isna(value):
-                    return default
-                try:
-                    return float(value)
-                except (ValueError, TypeError):
-                    return default
-            
-            # Si es el primer flujo, capturar la tasa de cupón
+
+    for sheet_name, config in SHEET_CONFIG.items():
+        if sheet_name not in wb.sheetnames:
+            continue
+
+        ws = wb[sheet_name]
+        tipo_bono    = config['tipo_bono']
+        base_default = config['base_default']
+        current_bono = None
+        skip_emission_row = False
+
+        for row in ws.iter_rows(values_only=True):
+            v0 = row[0]
+
+            # --- Fila de nombre de bono: col0 es string no vacío ---
+            if isinstance(v0, str) and v0.strip() and not v0.strip().startswith('#'):
+                if current_bono and current_bono['flujos']:
+                    bonos.append(current_bono)
+
+                nombre = v0.strip()
+                v1 = row[1]  # base_calculo override (si contiene '/')
+                v3 = row[3]  # ticker (Corp) o tasa_cupon inicial (Sov USD)
+
+                # base_calculo: override explícito si col1 contiene '/', si no default de hoja
+                if isinstance(v1, str) and '/' in v1:
+                    base_calculo = v1.strip()
+                else:
+                    base_calculo = base_default
+
+                # ticker: para Sov USD el nombre ES el ticker; para Corp viene en col3
+                if sheet_name == 'Sov USD':
+                    ticker = nombre
+                elif isinstance(v3, str) and v3.strip() and v3.strip() != '#N/A':
+                    ticker = v3.strip()
+                else:
+                    ticker = ''
+
+                current_bono = {
+                    'nombre': nombre,
+                    'base_calculo': base_calculo,
+                    'tipo_bono': tipo_bono,
+                    'tasa_cupon': 0.0,
+                    'ticker': ticker,
+                    'periodicidad': 2,  # se recalcula tras parsear los flujos
+                    'flujos': []
+                }
+                skip_emission_row = True  # la siguiente fila es la fecha de emisión
+                continue
+
+            # --- Fila de fecha de emisión: saltar ---
+            if skip_emission_row:
+                skip_emission_row = False
+                continue
+
+            if current_bono is None:
+                continue
+
+            # --- Fila de flujo ---
+            # col0 puede ser datetime (Corp NY / Sov USD) o entero serial (Corp ARG)
+            if isinstance(v0, datetime):
+                fecha = v0
+            elif isinstance(v0, (int, float)) and v0 > 1000:
+                fecha = _serial_to_dt(v0)
+            else:
+                continue  # fila vacía o inválida
+
+            tasa      = _sf(row[1])
+            intereses = _sf(row[2])
+            capital   = _sf(row[3])
+            total     = intereses + capital
+
             if len(current_bono['flujos']) == 0:
-                current_bono['tasa_cupon'] = safe_float(row.iloc[1], 0.0)  # Columna 2: cupón
-            
-            cupon = safe_float(row.iloc[2])  # Columna C
-            capital = safe_float(row.iloc[3])  # Columna D
-            total = safe_float(row.iloc[4])  # Columna E
-            cupon_vigente = safe_float(row.iloc[1])  # Columna B - cupón vigente
-            
+                current_bono['tasa_cupon'] = tasa
+
             current_bono['flujos'].append({
                 'fecha': fecha,
-                'cupon': cupon,
+                'cupon': intereses,
                 'capital': capital,
                 'total': total,
-                'cupon_vigente': cupon_vigente
+                'cupon_vigente': tasa,
             })
-    
-    if current_bono:
-        bonos.append(current_bono)
+
+        # No olvidar el último bono de la hoja
+        if current_bono and current_bono['flujos']:
+            bonos.append(current_bono)
+
+    # Inferir periodicidad para cada bono
+    for bono in bonos:
+        bono['periodicidad'] = _infer_periodicidad(bono['flujos'])
 
     if not bonos:
         st.error("❌ No se encontraron bonos en el archivo")
@@ -1240,8 +1307,7 @@ try:
         st.stop()
 
     # Generar tipos de bonos automáticamente a partir de los bonos procesados
-    tipos_bono = list(set([bono['tipo_bono'] for bono in bonos]))
-    tipos_bono.sort()  # Ordenar alfabéticamente
+    tipos_bono = sorted(set(b['tipo_bono'] for b in bonos))
 
     # Sidebar
     with st.sidebar:
