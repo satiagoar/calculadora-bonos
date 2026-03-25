@@ -1011,10 +1011,11 @@ def calcular_intereses_corridos(fecha_liquidacion, fecha_ultimo_cupon, tasa_cupo
         return (tasa_cupon * capital_residual) / 365 * dias
 
 # Función para encontrar el último cupón
-def encontrar_ultimo_cupon(fecha_liquidacion, fechas_cupones):
+def encontrar_ultimo_cupon(fecha_liquidacion, fechas_cupones, fecha_emision=None):
     fechas_anteriores = [fecha for fecha in fechas_cupones if fecha <= fecha_liquidacion]
     if not fechas_anteriores:
-        return None
+        # Bono en primer período: usar fecha de emisión como referencia
+        return fecha_emision
     return max(fechas_anteriores)
 
 # Función para calcular vida media
@@ -1067,8 +1068,18 @@ def encontrar_cupon_vigente(fecha_liquidacion, flujos):
             fechas_anteriores.append((fecha_flujo, flujo['cupon_vigente']))
     
     if not fechas_anteriores:
-        return 0.0  # Valor por defecto si no se encuentra
-    
+        # Bono en su primer período: devolver la tasa del próximo cupón
+        fechas_futuras = []
+        for flujo in flujos:
+            fecha_flujo = flujo['fecha']
+            if hasattr(fecha_flujo, 'date'):
+                fecha_flujo = fecha_flujo.date()
+            if fecha_flujo > fecha_liq:
+                fechas_futuras.append((fecha_flujo, flujo['cupon_vigente']))
+        if fechas_futuras:
+            return min(fechas_futuras, key=lambda x: x[0])[1]
+        return 0.0
+
     # Encontrar la fecha más cercana (inmediatamente anterior)
     fecha_mas_cercana = max(fechas_anteriores, key=lambda x: x[0])
     return fecha_mas_cercana[1]
@@ -1242,14 +1253,17 @@ try:
                     'tasa_cupon': 0.0,
                     'ticker': ticker,
                     'periodicidad': 2,  # se recalcula tras parsear los flujos
+                    'fecha_emision': None,  # se llena con la fila siguiente
                     'flujos': []
                 }
                 skip_emission_row = True  # la siguiente fila es la fecha de emisión
                 continue
 
-            # --- Fila de fecha de emisión: saltar ---
+            # --- Fila de fecha de emisión: guardar y saltar ---
             if skip_emission_row:
                 skip_emission_row = False
+                if current_bono and isinstance(v0, datetime):
+                    current_bono['fecha_emision'] = v0
                 continue
 
             if current_bono is None:
@@ -2889,7 +2903,7 @@ try:
                     capital_residual = 100 - sum([flujo['capital'] for flujo in bono_actual['flujos'] if flujo['fecha'] <= fecha_liquidacion_dt])
                 
                     # Calcular intereses corridos
-                    fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']])
+                    fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_liquidacion_dt, [flujo['fecha'] for flujo in bono_actual['flujos']], bono_actual.get('fecha_emision'))
                     if fecha_ultimo_cupon:
                         intereses_corridos = calcular_intereses_corridos(
                             fecha_liquidacion,
@@ -3055,7 +3069,7 @@ try:
                         ])
 
                         todas_fechas = [f['fecha'] for f in bono['flujos']]
-                        fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_hoy, todas_fechas)
+                        fecha_ultimo_cupon = encontrar_ultimo_cupon(fecha_hoy, todas_fechas, bono.get('fecha_emision'))
                         intereses_corridos = 0
                         if fecha_ultimo_cupon:
                             intereses_corridos = calcular_intereses_corridos(
