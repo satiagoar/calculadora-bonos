@@ -2635,11 +2635,15 @@ try:
                 </div>
                 """, unsafe_allow_html=True)
             with col2_lec:
+                _precio_lec = st.session_state.get(f"precio_lecap_{bono_actual['nombre']}", 0.0) or 0.0
+                _vf_lec = bono_actual.get('valor_final', 0) or 0
+                _dr_lec = bono_actual.get('dias_remanente', 0) or 0
+                _tna_lec = (_vf_lec - _precio_lec) / _precio_lec / _dr_lec * 365 if _precio_lec > 0 and _dr_lec > 0 else None
                 st.markdown(f'''
                 <div class="metrics-card">
                     <div class="metrics-card-title">Rendimiento y duración</div>
                     <div class="metrics-row">
-                        <div class="metric-card"><div class="metric-label">TNA</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">TNA</div><div class="metric-value">{f"{_tna_lec:.4%}" if _tna_lec is not None else "-"}</div></div>
                         <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">-</div></div>
                         <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">-</div></div>
                         <div class="metric-card"><div class="metric-label">Valor Final</div><div class="metric-value">{formatear_numero(bono_actual.get('valor_final', 0), 4)}</div></div>
@@ -2649,7 +2653,7 @@ try:
                     <div class="metrics-card-title">Otros indicadores</div>
                     <div class="metrics-row">
                         <div class="metric-card"><div class="metric-label">Días Remanente</div><div class="metric-value">{int(bono_actual.get('dias_remanente', 0))}</div></div>
-                        <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">{int(bono_actual.get('vida_media_lec', 0))}</div></div>
+                        <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">{formatear_numero(bono_actual.get('vida_media_lec', 0), 2)}</div></div>
                         <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
                         <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
                     </div>
