@@ -1336,6 +1336,9 @@ try:
             # Vida Media en row+16, col E (Avg. Life)
             vida_row       = lrows[idx + 16] if idx + 16 < len(lrows) else (None,) * 22
             vida_media_lec = _sf(vida_row[4])
+            # Duración Modificada en row+20, col B
+            dur_row        = lrows[idx + 20] if idx + 20 < len(lrows) else (None,) * 4
+            duracion_mod_lec = _sf(dur_row[1])
 
             bonos.append({
                 'nombre':        nombre.strip(),
@@ -1349,6 +1352,7 @@ try:
                 'valor_final':   valor_final,
                 'dias_remanente': dias_remanente,
                 'vida_media_lec': vida_media_lec,
+                'duracion_mod_lec': duracion_mod_lec,
                 'flujos':        [],   # cálculos pendientes de implementar
             })
             idx += LECAP_BLOCK
@@ -2645,7 +2649,7 @@ try:
                     <div class="metrics-row">
                         <div class="metric-card"><div class="metric-label">TNA</div><div class="metric-value">{f"{_tna_lec:.4%}" if _tna_lec is not None else "-"}</div></div>
                         <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">{formatear_numero(bono_actual.get('duracion_mod_lec', 0), 2)}</div></div>
                         <div class="metric-card"><div class="metric-label">Valor Final</div><div class="metric-value">{formatear_numero(bono_actual.get('valor_final', 0), 4)}</div></div>
                     </div>
                 </div>
