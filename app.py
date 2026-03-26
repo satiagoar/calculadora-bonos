@@ -2803,17 +2803,21 @@ try:
         .bond-table tr:nth-child(even) td { background:#f7f7f7; }
         .bond-table tr:nth-child(odd) td { background:#ffffff; }
         .bond-table tr:hover td { background:#eef2ff; }
+        .bond-table tr.group-sep td { border-top: 2px solid #b0bec5; padding-top: 10px; }
         </style>
         """
 
         def _esc(v):
             return str(v).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
-        def render_tabla_html(df, titulo=''):
+        def render_tabla_html(df, titulo='', separadores=None):
+            # separadores: set of row indices before which to insert a group separator line
+            sep_set = set(separadores) if separadores else set()
             cols = list(df.columns)
             headers = ''.join(f'<th>{_esc(c)}</th>' for c in cols)
             rows = ''
-            for _, row in df.iterrows():
+            for idx, (_, row) in enumerate(df.iterrows()):
+                tr_class = ' class="group-sep"' if idx in sep_set else ''
                 cells = ''
                 for col in cols:
                     val = row[col]
@@ -2823,7 +2827,7 @@ try:
                         cells += f'<td style="color:{color};font-weight:600">{val_str}</td>'
                     else:
                         cells += f'<td>{val_str}</td>'
-                rows += f'<tr>{cells}</tr>'
+                rows += f'<tr{tr_class}>{cells}</tr>'
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
@@ -2930,6 +2934,7 @@ try:
                 if 'corporativo' in tipo.lower():
                     df_tabla = df_tabla.sort_values(['Activo', 'Dur. Modificada']).reset_index(drop=True)
                 df_raw = df_tabla.copy()
+                _sov_separadores = set()
 
                 # Cueva Soberano USD
                 if 'soberano' in tipo.lower():
@@ -2943,6 +2948,9 @@ try:
                     df_tabla['_orden_grupo'] = df_tabla['_grupo'].map(orden_grupo)
                     df_tabla = df_tabla.sort_values(['_orden_grupo', 'Dur. Modificada']).reset_index(drop=True)
                     df_raw = df_tabla.copy()
+                    # Calcular índices de separación entre grupos para la tabla
+                    _grupos_col = df_tabla['_grupo'].tolist()
+                    _sov_separadores = {i for i in range(1, len(_grupos_col)) if _grupos_col[i] != _grupos_col[i-1]}
                     df_tabla = df_tabla.drop(columns=['_grupo', '_orden_grupo'])
                     df_curva = df_raw[['Activo', 'Ticker', '_grupo', 'Dur. Modificada', 'TIR Semestral']].dropna()
                     df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
@@ -3063,7 +3071,8 @@ try:
                 df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
-                st.markdown(render_tabla_html(df_tabla), unsafe_allow_html=True)
+                _sep = _sov_separadores if 'soberano' in tipo.lower() else None
+                st.markdown(render_tabla_html(df_tabla, separadores=_sep), unsafe_allow_html=True)
 
         tab_usd, tab_corp, tab_pesos = st.tabs(["Títulos en Dólares", "Bonos Corporativos", "Títulos en Pesos"])
 
