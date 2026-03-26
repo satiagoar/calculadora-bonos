@@ -3078,7 +3078,7 @@ try:
                 _sep = _sov_separadores if 'soberano' in tipo.lower() else None
                 st.markdown(render_tabla_html(df_tabla, separadores=_sep), unsafe_allow_html=True)
 
-        tab_usd, tab_corp, tab_pesos = st.tabs(["Títulos en Dólares", "Bonos Corporativos", "Títulos en Pesos"])
+        tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
         with tab_usd:
             _render_grupos(['Soberano USD'])
@@ -3086,7 +3086,7 @@ try:
         with tab_corp:
             _render_grupos(['Corporativo Ley NY', 'Corporativo Ley ARG'])
 
-        with tab_pesos:
+        with tab_ars:
             with st.spinner("Cargando precios y calculando métricas..."):
                 _fhp = get_next_business_day()
                 fecha_hoy_p = _fhp.date() if hasattr(_fhp, 'date') else _fhp
