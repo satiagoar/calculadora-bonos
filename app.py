@@ -2759,7 +2759,19 @@ try:
                 st.date_input("", value=get_next_business_day(), format="DD/MM/YYYY",
                               key="fecha_liq_cer", label_visibility="collapsed")
                 st.markdown("<div class='inline-field-label'>Precio Dirty</div>", unsafe_allow_html=True)
-                st.number_input("", min_value=0.0, step=0.01, format="%.2f",
+                _precio_cer_default = st.session_state.get(f"precio_cer_{bono_actual['nombre']}", 0.0) or 0.0
+                if f"precio_cer_{bono_actual['nombre']}" not in st.session_state:
+                    # Intentar obtener precio de la API si no viene de la tabla
+                    try:
+                        import requests as _rcer
+                        _pd = {**obtener_precios_data912('arg_bonds'), **obtener_precios_data912('arg_notes')}
+                        _pm = _pd.get(bono_actual['ticker'].upper())
+                        if _pm and _pm['c'] > 0:
+                            _precio_cer_default = float(_pm['c'])
+                            st.session_state[f"precio_cer_{bono_actual['nombre']}"] = _precio_cer_default
+                    except Exception:
+                        pass
+                st.number_input("", min_value=0.0, value=_precio_cer_default, step=0.01, format="%.2f",
                                 key=f"precio_cer_{bono_actual['nombre']}", label_visibility="collapsed")
                 col_calc_cer, col_vol_cer = st.columns(2)
                 with col_calc_cer:
