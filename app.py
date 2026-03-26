@@ -2803,7 +2803,6 @@ try:
         .bond-table tr:nth-child(even) td { background:#f7f7f7; }
         .bond-table tr:nth-child(odd) td { background:#ffffff; }
         .bond-table tr:hover td { background:#eef2ff; }
-        .bond-table tr.group-sep td { border-top: 2px solid #b0bec5; padding-top: 10px; }
         </style>
         """
 
@@ -2811,13 +2810,16 @@ try:
             return str(v).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
         def render_tabla_html(df, titulo='', separadores=None):
-            # separadores: set of row indices before which to insert a group separator line
+            # separadores: set of row indices before which to insert a visible separator row
             sep_set = set(separadores) if separadores else set()
             cols = list(df.columns)
+            ncols = len(cols)
             headers = ''.join(f'<th>{_esc(c)}</th>' for c in cols)
+            sep_row = f'<tr><td colspan="{ncols}" style="height:2px;background:#b0bec5;padding:0;border:none;line-height:0;font-size:0;"></td></tr>'
             rows = ''
             for idx, (_, row) in enumerate(df.iterrows()):
-                tr_class = ' class="group-sep"' if idx in sep_set else ''
+                if idx in sep_set:
+                    rows += sep_row
                 cells = ''
                 for col in cols:
                     val = row[col]
@@ -2827,7 +2829,7 @@ try:
                         cells += f'<td style="color:{color};font-weight:600">{val_str}</td>'
                     else:
                         cells += f'<td>{val_str}</td>'
-                rows += f'<tr{tr_class}>{cells}</tr>'
+                rows += f'<tr>{cells}</tr>'
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
