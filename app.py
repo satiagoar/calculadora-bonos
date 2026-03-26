@@ -2829,8 +2829,8 @@ try:
                 <div class="metrics-card">
                     <div class="metrics-card-title">Rendimiento y duración</div>
                     <div class="metrics-row">
-                        <div class="metric-card"><div class="metric-label">TIR Real</div><div class="metric-value">{f"{_tir_real_cer:.4%}" if _tir_real_cer is not None else "-"}</div></div>
-                        <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">TIR Efectiva Anual</div><div class="metric-value">{f"{_tir_real_cer:.4%}" if _tir_real_cer is not None else "-"}</div></div>
+                        <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">{f"{((1 + _tir_real_cer) ** (30/360) - 1):.4%}" if _tir_real_cer is not None else "-"}</div></div>
                         <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">-</div></div>
                         <div class="metric-card"><div class="metric-label">Factor CER</div><div class="metric-value">{formatear_numero(bono_actual.get("factor_cer", 0), 4)}</div></div>
                     </div>
