@@ -3519,6 +3519,8 @@ try:
                         continue
                     vf = bono.get('valor_final', 0) or 0
                     tna = (vf - precio) / precio / dr * 365 if precio > 0 else None
+                    tea = (1 + (vf - precio) / precio) ** (365.0 / dr) - 1 if precio > 0 and dr > 0 else None
+                    tem = (1 + tea) ** (1 / 12) - 1 if tea is not None else None
                     vm = dr / 365.0
 
                     # Pre-populate calculator default price
@@ -3528,12 +3530,13 @@ try:
 
                     filas_lecap.append({
                         'Activo': bono['nombre'],
-                        'Ticker': ticker,
                         'Vencimiento': mat_date.strftime('%d/%m/%Y'),
                         'Precio': precio,
                         'TNA': round(tna * 100, 2) if tna is not None else None,
+                        'TEM': round(tem * 100, 2) if tem is not None else None,
                         'Vida Media': round(vm, 2),
                         'Días Rem.': dr,
+                        'Valor Final': round(vf, 4),
                         'Var. Diaria %': pct_change,
                     })
 
@@ -3592,7 +3595,9 @@ try:
                 df_lec = df_lec.sort_values('Días Rem.').reset_index(drop=True)
                 df_lec['Precio'] = df_lec['Precio'].map('{:.2f}'.format)
                 df_lec['TNA'] = df_lec['TNA'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
+                df_lec['TEM'] = df_lec['TEM'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
                 df_lec['Vida Media'] = df_lec['Vida Media'].map('{:.2f}'.format)
+                df_lec['Valor Final'] = df_lec['Valor Final'].map('{:.4f}'.format)
                 df_lec['Var. Diaria %'] = df_lec['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
