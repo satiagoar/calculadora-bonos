@@ -2805,7 +2805,7 @@ try:
                 <div class="metrics-card">
                     <div class="metrics-card-title">Otros indicadores</div>
                     <div class="metrics-row">
-                        <div class="metric-card"><div class="metric-label">Residual</div><div class="metric-value">{formatear_numero(bono_actual.get("residual", 0), 2)}</div></div>
+                        <div class="metric-card"><div class="metric-label">CER Base</div><div class="metric-value">{formatear_numero(bono_actual.get("cer_base", 0), 4)}</div></div>
                         <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">-</div></div>
                         <div class="metric-card"><div class="metric-label">Sink Factor</div><div class="metric-value">{formatear_numero(bono_actual.get("sink_factor", 0), 4)}</div></div>
                         <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
