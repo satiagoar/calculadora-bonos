@@ -1362,6 +1362,56 @@ try:
             })
             idx += LECAP_BLOCK
 
+    # --- Parsear hoja CER (misma estructura de bloques de 23 filas que Lecap) ---
+    if 'CER' in wb.sheetnames:
+        ws_cer = wb['CER']
+        crows = list(ws_cer.iter_rows(values_only=True))
+        CER_BLOCK = 23
+        CER_START = 2
+        idx = CER_START
+        while idx < len(crows):
+            row = crows[idx]
+            nombre = row[0]
+            if not isinstance(nombre, str) or nombre.strip() in ('--', 'CER') or idx + CER_BLOCK > len(crows):
+                idx += 1
+                continue
+            nombre = nombre.strip()
+            maturity   = row[1] if isinstance(row[1], datetime) else None
+            tasa_cupon = _sf(row[2])
+            issue_row  = crows[idx + 2] if idx + 2 < len(crows) else (None,)*4
+            fecha_emision = issue_row[1] if isinstance(issue_row[1], datetime) else None
+            freq_row   = crows[idx + 5] if idx + 5 < len(crows) else (None,)*4
+            periodicidad = int(_sf(freq_row[1], 2)) if freq_row[1] is not None else 2
+            count_row  = crows[idx + 6] if idx + 6 < len(crows) else (None,)*4
+            base_calculo = count_row[1] if isinstance(count_row[1], str) and '/' in count_row[1] else '30/360'
+            resid_row  = crows[idx + 7] if idx + 7 < len(crows) else (None,)*4
+            residual   = _sf(resid_row[1])
+            sink_row   = crows[idx + 8] if idx + 8 < len(crows) else (None,)*4
+            sink_factor = _sf(sink_row[1])
+            fcer_row   = crows[idx + 9] if idx + 9 < len(crows) else (None,)*4
+            factor_cer = _sf(fcer_row[1])
+            cers_row   = crows[idx + 10] if idx + 10 < len(crows) else (None,)*4
+            cer_settl  = _sf(cers_row[1])
+            cerb_row   = crows[idx + 11] if idx + 11 < len(crows) else (None,)*4
+            cer_base   = _sf(cerb_row[1])
+            bonos.append({
+                'nombre':        nombre,
+                'tipo_bono':     'Bonos CER',
+                'ticker':        nombre,
+                'tasa_cupon':    tasa_cupon,
+                'base_calculo':  base_calculo,
+                'periodicidad':  periodicidad,
+                'fecha_emision': fecha_emision,
+                'maturity':      maturity,
+                'residual':      residual,
+                'sink_factor':   sink_factor,
+                'factor_cer':    factor_cer,
+                'cer_settl':     cer_settl,
+                'cer_base':      cer_base,
+                'flujos':        [],
+            })
+            idx += CER_BLOCK
+
     if not bonos:
         st.error("❌ No se encontraron bonos en el archivo")
         st.stop()
@@ -1369,8 +1419,8 @@ try:
     # Filtrar bonos vencidos
     _hoy = datetime.now().date()
     def _bono_vigente(b):
-        # Lecaps: usar campo maturity
-        if b['tipo_bono'] == 'Lecaps & Boncaps':
+        # Lecaps y Bonos CER: usar campo maturity
+        if b['tipo_bono'] in ('Lecaps & Boncaps', 'Bonos CER'):
             if b.get('maturity') is None:
                 return True
             mat = b['maturity'].date() if hasattr(b['maturity'], 'date') else b['maturity']
@@ -2701,6 +2751,69 @@ try:
                 ''', unsafe_allow_html=True)
             st.stop()
 
+        # --- Bonos CER: mismo layout que Lecaps ---
+        if bono_actual.get('tipo_bono') == 'Bonos CER':
+            col1_cer, col2_cer = st.columns([1, 2])
+            with col1_cer:
+                st.markdown("<div class='inline-field-label'>Fecha de Liquidación</div>", unsafe_allow_html=True)
+                st.date_input("", value=get_next_business_day(), format="DD/MM/YYYY",
+                              key="fecha_liq_cer", label_visibility="collapsed")
+                st.markdown("<div class='inline-field-label'>Precio Dirty</div>", unsafe_allow_html=True)
+                st.number_input("", min_value=0.0, step=0.01, format="%.2f",
+                                key=f"precio_cer_{bono_actual['nombre']}", label_visibility="collapsed")
+                col_calc_cer, col_vol_cer = st.columns(2)
+                with col_calc_cer:
+                    st.button("Calcular", type="primary", use_container_width=True, key="calcular_cer", disabled=True)
+                with col_vol_cer:
+                    if st.button("Volver", type="secondary", use_container_width=True, key="volver_cer"):
+                        st.session_state.bono_seleccionado = None
+                        st.session_state.tipo_seleccionado = "Seleccione un Tipo"
+                        st.session_state.calcular = False
+                        st.session_state.tipo_selectbox_key += 1
+                        st.session_state.flujos_tipo_selectbox_key = st.session_state.get('flujos_tipo_selectbox_key', 0) + 1
+                        st.session_state.flujos_bono_selectbox_key = st.session_state.get('flujos_bono_selectbox_key', 0) + 1
+                        for k in ('bono_selectbox', 'tipo_selectbox'):
+                            if k in st.session_state:
+                                del st.session_state[k]
+                        st.rerun()
+                mat_cer = bono_actual.get('maturity')
+                mat_cer_str = mat_cer.strftime('%d/%m/%Y') if mat_cer and hasattr(mat_cer, 'strftime') else 'N/A'
+                st.markdown(f"""
+                <div class="calc-card-fill">
+                    <div class="calc-card-title">Información del Bono</div>
+                    <div style="font-size:0.92rem; color:#444; line-height:1.98;">
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Nombre:</strong> {bono_actual['nombre']}</p>
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Vencimiento:</strong> {mat_cer_str}</p>
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Tasa de cupón:</strong> {bono_actual['tasa_cupon']:.2%}</p>
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Periodicidad:</strong> {bono_actual.get('periodicidad', '-')}</p>
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Base de cálculo:</strong> {bono_actual.get('base_calculo', '30/360')}</p>
+                        <p style="margin:0.37rem 0;"><strong style="color:#1a237e;">Ticker:</strong> {bono_actual['ticker']}</p>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col2_cer:
+                st.markdown(f'''
+                <div class="metrics-card">
+                    <div class="metrics-card-title">Rendimiento y duración</div>
+                    <div class="metrics-row">
+                        <div class="metric-card"><div class="metric-label">TIR Real</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Factor CER</div><div class="metric-value">{formatear_numero(bono_actual.get("factor_cer", 0), 4)}</div></div>
+                    </div>
+                </div>
+                <div class="metrics-card">
+                    <div class="metrics-card-title">Otros indicadores</div>
+                    <div class="metrics-row">
+                        <div class="metric-card"><div class="metric-label">Residual</div><div class="metric-value">{formatear_numero(bono_actual.get("residual", 0), 2)}</div></div>
+                        <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">Sink Factor</div><div class="metric-value">{formatear_numero(bono_actual.get("sink_factor", 0), 4)}</div></div>
+                        <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+            st.stop()
+
         # Layout principal
         col1, col2 = st.columns([1, 2])
         
@@ -3638,6 +3751,92 @@ try:
                 st.markdown(render_tabla_html(df_lec, 'Lecaps & Boncaps'), unsafe_allow_html=True)
             else:
                 st.info("No hay precios disponibles en este momento.")
+
+            # --- Tabla Bonos CER ---
+            st.markdown("<div style='margin-top:2.5rem'></div>", unsafe_allow_html=True)
+            bonos_cer = [b for b in bonos if b.get('tipo_bono') == 'Bonos CER']
+            filas_cer = []
+            for bono in bonos_cer:
+                ticker = bono.get('ticker', '').strip().upper()
+                if not ticker:
+                    continue
+                precio_data = precios_todos_p.get(ticker)
+                if not precio_data:
+                    continue
+                precio = precio_data['c']
+                pct_change = precio_data.get('pct_change')
+                if not precio or precio <= 0:
+                    continue
+                mat = bono.get('maturity')
+                if not mat:
+                    continue
+                mat_date = mat.date() if hasattr(mat, 'date') else mat
+                dr = max((mat_date - fecha_hoy_p).days, 0)
+                if dr == 0:
+                    continue
+
+                # Pre-populate calculator default price
+                key_precio_cer = f"precio_cer_{bono['nombre']}"
+                if key_precio_cer not in st.session_state:
+                    st.session_state[key_precio_cer] = float(precio)
+
+                filas_cer.append({
+                    'Activo': bono['nombre'],
+                    'Vencimiento': mat_date.strftime('%d/%m/%Y'),
+                    'Precio': precio,
+                    'Factor CER': round(bono.get('factor_cer', 0) or 0, 4),
+                    'Residual': round(bono.get('residual', 0) or 0, 2),
+                    'Días Rem.': dr,
+                    'Var. Diaria %': pct_change,
+                })
+
+            if filas_cer:
+                st.markdown(TABLE_CSS, unsafe_allow_html=True)
+                df_cer = pd.DataFrame(filas_cer)
+                df_cer_raw = df_cer.copy()
+
+                # Cueva — Precio vs Días Remanente (por ahora, cálculos pendientes)
+                df_curva_cer = df_cer_raw[['Activo', 'Días Rem.', 'Precio']].dropna()
+                if len(df_curva_cer) >= 2:
+                    fig_cer = go.Figure()
+                    fig_cer.add_trace(go.Scatter(
+                        x=df_curva_cer['Días Rem.'].values,
+                        y=df_curva_cer['Precio'].values,
+                        mode='markers+text',
+                        text=df_curva_cer['Activo'],
+                        textposition='top center',
+                        textfont=dict(size=10, color='#1b5e20'),
+                        marker=dict(size=9, color='#1b5e20'),
+                        name='Bonos CER',
+                        hovertemplate='<b>%{text}</b><br>Días Rem.: %{x:.0f}<br>Precio: %{y:.2f}<extra></extra>',
+                    ))
+                    fig_cer.update_layout(
+                        title='Bonos CER — Precio vs Días al Vencimiento',
+                        xaxis_title='Días al Vencimiento',
+                        yaxis_title='Precio',
+                        xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
+                        yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
+                        plot_bgcolor='#f4f6fb',
+                        paper_bgcolor='#f4f6fb',
+                        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                        height=420,
+                        margin=dict(t=60, b=40, l=60, r=20),
+                    )
+                    st.plotly_chart(fig_cer, use_container_width=True)
+
+                # Tabla
+                df_cer = df_cer.sort_values('Días Rem.').reset_index(drop=True)
+                df_cer['Precio'] = df_cer['Precio'].map('{:.2f}'.format)
+                df_cer['Factor CER'] = df_cer['Factor CER'].map('{:.4f}'.format)
+                df_cer['Residual'] = df_cer['Residual'].apply(lambda v: f'{v:.2f}%')
+                df_cer['Var. Diaria %'] = df_cer['Var. Diaria %'].apply(
+                    lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
+                )
+                st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
+                st.markdown(render_tabla_html(df_cer, 'Bonos CER'), unsafe_allow_html=True)
+            else:
+                st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
+                st.info("Bonos CER: no hay precios disponibles en este momento.")
 
 
 except FileNotFoundError:
