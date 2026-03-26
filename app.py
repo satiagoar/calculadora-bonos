@@ -2950,7 +2950,7 @@ try:
                     df_raw = df_tabla.copy()
                     # Calcular índices de separación entre grupos para la tabla
                     _grupos_col = df_tabla['_grupo'].tolist()
-                    _sov_separadores = {i for i in range(1, len(_grupos_col)) if _grupos_col[i] != _grupos_col[i-1]}
+                    _sov_separadores = {0} | {i for i in range(1, len(_grupos_col)) if _grupos_col[i] != _grupos_col[i-1]}
                     df_tabla = df_tabla.drop(columns=['_grupo', '_orden_grupo'])
                     df_curva = df_raw[['Activo', 'Ticker', '_grupo', 'Dur. Modificada', 'TIR Semestral']].dropna()
                     df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
