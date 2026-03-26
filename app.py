@@ -3479,7 +3479,8 @@ try:
 
         with tab_pesos:
             with st.spinner("Cargando precios y calculando métricas..."):
-                fecha_hoy_p = get_next_business_day()
+                _fhp = get_next_business_day()
+                fecha_hoy_p = _fhp.date() if hasattr(_fhp, 'date') else _fhp
                 precios_bonds_p = obtener_precios_data912('arg_bonds')
                 precios_corp_p  = obtener_precios_data912('arg_corp')
                 precios_todos_p = {**precios_bonds_p, **precios_corp_p}
