@@ -3176,6 +3176,7 @@ try:
 
             if filas_lecap:
                 st.markdown(TABLE_CSS, unsafe_allow_html=True)
+                st.markdown('<div class="bond-wrap"><div class="bond-title">Lecaps &amp; Boncaps</div></div>', unsafe_allow_html=True)
                 df_lec = pd.DataFrame(filas_lecap)
                 df_lec_raw = df_lec.copy()
 
@@ -3236,7 +3237,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(render_tabla_html(df_lec, 'Lecaps & Boncaps'), unsafe_allow_html=True)
+                st.markdown(render_tabla_html(df_lec), unsafe_allow_html=True)
             else:
                 st.info("No hay precios disponibles en este momento.")
 
@@ -3309,6 +3310,7 @@ try:
 
             if filas_cer:
                 st.markdown(TABLE_CSS, unsafe_allow_html=True)
+                st.markdown('<div class="bond-wrap"><div class="bond-title">Bonos CER</div></div>', unsafe_allow_html=True)
                 df_cer = pd.DataFrame(filas_cer)
                 df_cer_raw = df_cer.copy()
 
@@ -3366,7 +3368,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(render_tabla_html(df_cer, 'Bonos CER'), unsafe_allow_html=True)
+                st.markdown(render_tabla_html(df_cer), unsafe_allow_html=True)
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
