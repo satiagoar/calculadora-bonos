@@ -3803,6 +3803,18 @@ try:
 
             # --- Tabla Bonos CER ---
             st.markdown("<div style='margin-top:2.5rem'></div>", unsafe_allow_html=True)
+
+            # Obtener CER settlement una sola vez para toda la tabla
+            try:
+                import requests as _rcer_tab
+                _cer_resp_tab = _rcer_tab.get(
+                    'https://apis.datos.gob.ar/series/api/series/?ids=94.2_CD_D_0_0_10&last=1&format=json',
+                    timeout=5
+                ).json()
+                _cer_settl_tab = _cer_resp_tab['data'][0][1]
+            except Exception:
+                _cer_settl_tab = None
+
             bonos_cer = [b for b in bonos if b.get('tipo_bono') == 'Bonos CER']
             filas_cer = []
             for bono in bonos_cer:
@@ -3824,6 +3836,22 @@ try:
                 if dr == 0:
                     continue
 
+                # Factor CER vivo = CER settlement / CER base
+                _cb = bono.get('cer_base') or 0
+                factor_cer_vivo = round(_cer_settl_tab / _cb, 4) if (_cer_settl_tab and _cb) else None
+
+                # TIR Anual y TIR Mensual
+                if factor_cer_vivo and precio > 0 and dr > 0:
+                    tir_anual = (factor_cer_vivo * 100 / precio) ** (365.0 / dr) - 1
+                    tir_mensual = (1 + tir_anual) ** (30 / 360) - 1
+                else:
+                    tir_anual = None
+                    tir_mensual = None
+
+                # Duración Modificada (bullet)
+                vm = dr / 365.0
+                dur_mod = vm / (1 + tir_anual) if (tir_anual is not None and vm > 0) else None
+
                 # Pre-populate calculator default price
                 key_precio_cer = f"precio_cer_{bono['nombre']}"
                 if key_precio_cer not in st.session_state:
@@ -3832,10 +3860,11 @@ try:
                 filas_cer.append({
                     'Activo': bono['nombre'],
                     'Vencimiento': mat_date.strftime('%d/%m/%Y'),
+                    'Factor CER': factor_cer_vivo,
                     'Precio': precio,
-                    'Factor CER': round(bono.get('factor_cer', 0) or 0, 4),
-                    'Residual': round(bono.get('residual', 0) or 0, 2),
-                    'Días Rem.': dr,
+                    'TIR Anual': round(tir_anual * 100, 2) if tir_anual is not None else None,
+                    'TIR Mensual': round(tir_mensual * 100, 2) if tir_mensual is not None else None,
+                    'Dur. Modificada': round(dur_mod, 2) if dur_mod is not None else None,
                     'Var. Diaria %': pct_change,
                 })
 
@@ -3844,25 +3873,39 @@ try:
                 df_cer = pd.DataFrame(filas_cer)
                 df_cer_raw = df_cer.copy()
 
-                # Cueva — Precio vs Días Remanente (por ahora, cálculos pendientes)
-                df_curva_cer = df_cer_raw[['Activo', 'Días Rem.', 'Precio']].dropna()
+                # Cueva — TIR Anual vs Duración Modificada
+                df_curva_cer = df_cer_raw[['Activo', 'Dur. Modificada', 'TIR Anual']].dropna()
+                df_curva_cer = df_curva_cer[df_curva_cer['TIR Anual'].notna()]
                 if len(df_curva_cer) >= 2:
+                    x_cer = df_curva_cer['Dur. Modificada'].values.astype(float)
+                    y_cer = df_curva_cer['TIR Anual'].values.astype(float)
                     fig_cer = go.Figure()
                     fig_cer.add_trace(go.Scatter(
-                        x=df_curva_cer['Días Rem.'].values,
-                        y=df_curva_cer['Precio'].values,
+                        x=x_cer, y=y_cer,
                         mode='markers+text',
                         text=df_curva_cer['Activo'],
                         textposition='top center',
                         textfont=dict(size=10, color='#1b5e20'),
                         marker=dict(size=9, color='#1b5e20'),
                         name='Bonos CER',
-                        hovertemplate='<b>%{text}</b><br>Días Rem.: %{x:.0f}<br>Precio: %{y:.2f}<extra></extra>',
+                        hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Anual: %{y:.2f}%<extra></extra>',
                     ))
+                    if len(df_curva_cer) >= 3:
+                        coeffs_cer = np.polyfit(np.log(x_cer), y_cer, 1)
+                        x_line_cer = np.linspace(x_cer.min(), x_cer.max(), 200)
+                        y_line_cer = coeffs_cer[0] * np.log(x_line_cer) + coeffs_cer[1]
+                        fig_cer.add_trace(go.Scatter(
+                            x=x_line_cer, y=y_line_cer,
+                            mode='lines',
+                            line=dict(color='#66bb6a', width=2, dash='dash'),
+                            name='Tendencia',
+                            hoverinfo='skip',
+                            showlegend=False,
+                        ))
                     fig_cer.update_layout(
-                        title='Bonos CER — Precio vs Días al Vencimiento',
-                        xaxis_title='Días al Vencimiento',
-                        yaxis_title='Precio',
+                        title='Cueva de Rendimientos — Bonos CER',
+                        xaxis_title='Duración Modificada (años)',
+                        yaxis_title='TIR Anual (%)',
                         xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
                         yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
                         plot_bgcolor='#f4f6fb',
@@ -3874,10 +3917,12 @@ try:
                     st.plotly_chart(fig_cer, use_container_width=True)
 
                 # Tabla
-                df_cer = df_cer.sort_values('Días Rem.').reset_index(drop=True)
+                df_cer = df_cer.sort_values('Dur. Modificada').reset_index(drop=True)
+                df_cer['Factor CER'] = df_cer['Factor CER'].apply(lambda v: f'{v:.4f}' if v is not None else '-')
                 df_cer['Precio'] = df_cer['Precio'].map('{:.2f}'.format)
-                df_cer['Factor CER'] = df_cer['Factor CER'].map('{:.4f}'.format)
-                df_cer['Residual'] = df_cer['Residual'].apply(lambda v: f'{v:.2f}%')
+                df_cer['TIR Anual'] = df_cer['TIR Anual'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
+                df_cer['TIR Mensual'] = df_cer['TIR Mensual'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
+                df_cer['Dur. Modificada'] = df_cer['Dur. Modificada'].apply(lambda v: f'{v:.2f}' if v is not None else '-')
                 df_cer['Var. Diaria %'] = df_cer['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
