@@ -2676,8 +2676,8 @@ try:
                 # TEM: (1 + TEA) ^ (1/12) - 1
                 _tem_lec = (1 + _tea_lec) ** (1 / 12) - 1 if _tea_lec is not None else None
 
-                # Modified Duration = Macaulay / (1 + TNA × t)  [interés simple]
-                _mod_dur_lec = _macaulay_lec / (1 + _tna_lec * _vm_lec) if _tna_lec is not None and _vm_lec > 0 else None
+                # Modified Duration = Macaulay / (1 + TEA)  [interés compuesto]
+                _mod_dur_lec = _macaulay_lec / (1 + _tea_lec) if _tea_lec is not None and _vm_lec > 0 else None
 
                 st.markdown(f'''
                 <div class="metrics-card">
