@@ -3336,15 +3336,35 @@ try:
 
                     # Cueva de rendimientos solo para Soberano USD
                     if 'soberano' in tipo.lower():
-                        df_curva = df_raw[['Activo', 'Ticker', 'Dur. Modificada', 'TIR Semestral']].dropna()
+                        # Clasificar tickers en grupos
+                        def _sov_grupo(ticker):
+                            t = ticker.upper()
+                            if t.startswith('GD'):
+                                return 'GD'
+                            elif t.startswith('B'):
+                                return 'B'
+                            else:  # AL, AO, AN y otros → curva AL
+                                return 'AL'
+
+                        df_tabla['_grupo'] = df_tabla['Ticker'].apply(_sov_grupo)
+                        orden_grupo = {'AL': 0, 'GD': 1, 'B': 2}
+                        df_tabla['_orden_grupo'] = df_tabla['_grupo'].map(orden_grupo)
+                        df_tabla = df_tabla.sort_values(['_orden_grupo', 'Dur. Modificada']).reset_index(drop=True)
+                        df_raw = df_tabla.copy()
+                        df_tabla = df_tabla.drop(columns=['_grupo', '_orden_grupo'])
+
+                        df_curva = df_raw[['Activo', 'Ticker', '_grupo', 'Dur. Modificada', 'TIR Semestral']].dropna()
                         df_curva = df_curva[df_curva['Dur. Modificada'] > 0]
-                        df_gd = df_curva[df_curva['Ticker'].str.upper().str.startswith('GD')]
-                        df_al = df_curva[~df_curva['Ticker'].str.upper().str.startswith('GD')]
+                        df_gd = df_curva[df_curva['_grupo'] == 'GD']
+                        df_al = df_curva[df_curva['_grupo'] == 'AL']
+                        df_b  = df_curva[df_curva['_grupo'] == 'B']
+
                         if len(df_curva) >= 3:
                             fig = go.Figure()
+                            # Curvas con regresión logarítmica: AL y GD
                             for df_serie, color_pt, color_ln, nombre in [
                                 (df_gd, '#1a237e', '#42a5f5', 'GD (Ley NY)'),
-                                (df_al, '#1565c0', '#90caf9', 'AL/otros (Ley ARG)'),
+                                (df_al, '#1565c0', '#90caf9', 'AL / AO / AN (Ley ARG)'),
                             ]:
                                 if len(df_serie) < 2:
                                     continue
@@ -3370,6 +3390,19 @@ try:
                                     name=f'Tend. {nombre}',
                                     hoverinfo='skip',
                                     showlegend=False,
+                                ))
+                            # Bonos B: solo puntos, sin curva de regresión
+                            if len(df_b) > 0:
+                                fig.add_trace(go.Scatter(
+                                    x=df_b['Dur. Modificada'].values,
+                                    y=df_b['TIR Semestral'].values,
+                                    mode='markers+text',
+                                    text=df_b['Activo'],
+                                    textposition='top center',
+                                    textfont=dict(size=10, color='#6a1b9a'),
+                                    marker=dict(size=9, color='#6a1b9a', symbol='diamond'),
+                                    name='Bonares (B)',
+                                    hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
                                 ))
                             fig.update_layout(
                                 title='Cueva de Rendimientos — Soberano USD',
