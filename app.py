@@ -2621,6 +2621,11 @@ try:
                         st.session_state.tipo_seleccionado = "Seleccione un Tipo"
                         st.session_state.calcular = False
                         st.session_state.tipo_selectbox_key += 1
+                        st.session_state.flujos_tipo_selectbox_key = st.session_state.get('flujos_tipo_selectbox_key', 0) + 1
+                        st.session_state.flujos_bono_selectbox_key = st.session_state.get('flujos_bono_selectbox_key', 0) + 1
+                        for k in ('bono_selectbox', 'tipo_selectbox'):
+                            if k in st.session_state:
+                                del st.session_state[k]
                         st.rerun()
                 # Información del Bono
                 mat = bono_actual.get('maturity')
@@ -3174,6 +3179,42 @@ try:
         }
         </script>""", height=0)
 
+        TABLE_CSS = """
+        <style>
+        .bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
+        .bond-title { background:#fafafa; color:#333; font-weight:700; font-size:14px; padding:11px 14px; border-bottom:2px solid #e0e0e0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; letter-spacing:0.02em; }
+        .bond-table { width:100%; border-collapse:collapse; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+        .bond-table th { background:#fafafa; color:#555; font-weight:600; padding:9px 12px; text-align:center; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
+        .bond-table th:first-child { text-align:left; }
+        .bond-table td { padding:8px 12px; color:#333; white-space:nowrap; text-align:center; }
+        .bond-table td:first-child { text-align:left; }
+        .bond-table tr:nth-child(even) td { background:#f7f7f7; }
+        .bond-table tr:nth-child(odd) td { background:#ffffff; }
+        .bond-table tr:hover td { background:#eef2ff; }
+        </style>
+        """
+
+        def _esc(v):
+            return str(v).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+
+        def render_tabla_html(df, titulo=''):
+            cols = list(df.columns)
+            headers = ''.join(f'<th>{_esc(c)}</th>' for c in cols)
+            rows = ''
+            for _, row in df.iterrows():
+                cells = ''
+                for col in cols:
+                    val = row[col]
+                    val_str = _esc(val)
+                    if col == 'Var. Diaria %' and val != '-':
+                        color = '#2e7d32' if str(val).startswith('+') else '#c62828'
+                        cells += f'<td style="color:{color};font-weight:600">{val_str}</td>'
+                    else:
+                        cells += f'<td>{val_str}</td>'
+                rows += f'<tr>{cells}</tr>'
+            title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
+            return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
+
         tab_usd, tab_pesos = st.tabs(["Títulos en USD", "Títulos en Pesos"])
 
         with tab_usd:
@@ -3266,43 +3307,6 @@ try:
 
                     except Exception:
                         continue
-
-            TABLE_CSS = """
-            <style>
-            .bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
-            .bond-title { background:#fafafa; color:#333; font-weight:700; font-size:14px; padding:11px 14px; border-bottom:2px solid #e0e0e0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; letter-spacing:0.02em; }
-            .bond-table { width:100%; border-collapse:collapse; font-size:13px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
-            .bond-table th { background:#fafafa; color:#555; font-weight:600; padding:9px 12px; text-align:center; border-bottom:2px solid #e0e0e0; white-space:nowrap; }
-            .bond-table th:first-child { text-align:left; }
-            .bond-table td { padding:8px 12px; color:#333; white-space:nowrap; text-align:center; }
-            .bond-table td:first-child { text-align:left; }
-            .bond-table tr:nth-child(even) td { background:#f7f7f7; }
-            .bond-table tr:nth-child(odd) td { background:#ffffff; }
-            .bond-table tr:hover td { background:#eef2ff; }
-            </style>
-            """
-
-            def _esc(v):
-                """Escape special HTML characters in a string value."""
-                return str(v).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
-
-            def render_tabla_html(df, titulo=''):
-                cols = list(df.columns)
-                headers = ''.join(f'<th>{_esc(c)}</th>' for c in cols)
-                rows = ''
-                for _, row in df.iterrows():
-                    cells = ''
-                    for col in cols:
-                        val = row[col]
-                        val_str = _esc(val)
-                        if col == 'Var. Diaria %' and val != '-':
-                            color = '#2e7d32' if str(val).startswith('+') else '#c62828'
-                            cells += f'<td style="color:{color};font-weight:600">{val_str}</td>'
-                        else:
-                            cells += f'<td>{val_str}</td>'
-                    rows += f'<tr>{cells}</tr>'
-                title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
-                return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
             if grupos:
                 st.markdown(TABLE_CSS, unsafe_allow_html=True)
@@ -3474,15 +3478,113 @@ try:
                 st.info("No hay precios disponibles en este momento.")
 
         with tab_pesos:
-            PESOS_CSS = """
-            <style>
-            .bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
-            .bond-title { background:#fafafa; color:#333; font-weight:700; font-size:14px; padding:11px 14px; border-bottom:2px solid #e0e0e0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; letter-spacing:0.02em; }
-            </style>
-            """
-            st.markdown(PESOS_CSS, unsafe_allow_html=True)
-            st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-            st.markdown('<div class="bond-wrap"><div class="bond-title">Lecaps &amp; Boncaps</div></div>', unsafe_allow_html=True)
+            with st.spinner("Cargando precios y calculando métricas..."):
+                fecha_hoy_p = get_next_business_day()
+                precios_bonds_p = obtener_precios_data912('arg_bonds')
+                precios_corp_p  = obtener_precios_data912('arg_corp')
+                precios_todos_p = {**precios_bonds_p, **precios_corp_p}
+
+                lecaps = [b for b in bonos if b.get('tipo_bono') == 'Lecaps & Boncaps']
+                filas_lecap = []
+                for bono in lecaps:
+                    ticker = bono.get('ticker', '').strip().upper()
+                    if not ticker:
+                        continue
+                    precio_data = precios_todos_p.get(ticker)
+                    if not precio_data:
+                        continue
+                    precio = precio_data['c']
+                    pct_change = precio_data.get('pct_change')
+                    if not precio or precio <= 0:
+                        continue
+                    mat = bono.get('maturity')
+                    if not mat:
+                        continue
+                    mat_date = mat.date() if hasattr(mat, 'date') else mat
+                    dr = max((mat_date - fecha_hoy_p).days, 0)
+                    if dr == 0:
+                        continue
+                    vf = bono.get('valor_final', 0) or 0
+                    tna = (vf - precio) / precio / dr * 365 if precio > 0 else None
+                    vm = dr / 365.0
+
+                    # Pre-populate calculator default price
+                    key_precio = f"precio_lecap_{bono['nombre']}"
+                    if key_precio not in st.session_state:
+                        st.session_state[key_precio] = float(precio)
+
+                    filas_lecap.append({
+                        'Activo': bono['nombre'],
+                        'Ticker': ticker,
+                        'Vencimiento': mat_date.strftime('%d/%m/%Y'),
+                        'Precio': precio,
+                        'TNA': round(tna * 100, 2) if tna is not None else None,
+                        'Vida Media': round(vm, 2),
+                        'Días Rem.': dr,
+                        'Var. Diaria %': pct_change,
+                    })
+
+            if filas_lecap:
+                st.markdown(TABLE_CSS, unsafe_allow_html=True)
+                df_lec = pd.DataFrame(filas_lecap)
+                df_lec_raw = df_lec.copy()
+
+                # Cueva de rendimientos — TNA vs Días Remanente
+                df_curva_lec = df_lec_raw[['Activo', 'Días Rem.', 'TNA']].dropna()
+                df_curva_lec = df_curva_lec[df_curva_lec['TNA'] > 0]
+                if len(df_curva_lec) >= 2:
+                    x_lec = df_curva_lec['Días Rem.'].values.astype(float)
+                    y_lec = df_curva_lec['TNA'].values.astype(float)
+                    fig_lec = go.Figure()
+                    fig_lec.add_trace(go.Scatter(
+                        x=x_lec, y=y_lec,
+                        mode='markers+text',
+                        text=df_curva_lec['Activo'],
+                        textposition='top center',
+                        textfont=dict(size=10, color='#1a237e'),
+                        marker=dict(size=9, color='#1a237e'),
+                        name='Lecaps & Boncaps',
+                        hovertemplate='<b>%{text}</b><br>Días Rem.: %{x:.0f}<br>TNA: %{y:.2f}%<extra></extra>',
+                    ))
+                    if len(df_curva_lec) >= 3:
+                        import numpy as _np2
+                        coeffs_lec = _np2.polyfit(x_lec, y_lec, 1)
+                        x_line_lec = _np2.linspace(x_lec.min(), x_lec.max(), 200)
+                        y_line_lec = coeffs_lec[0] * x_line_lec + coeffs_lec[1]
+                        fig_lec.add_trace(go.Scatter(
+                            x=x_line_lec, y=y_line_lec,
+                            mode='lines',
+                            line=dict(color='#42a5f5', width=2, dash='dash'),
+                            name='Tendencia',
+                            hoverinfo='skip',
+                            showlegend=False,
+                        ))
+                    fig_lec.update_layout(
+                        title='Cueva de Rendimientos — Lecaps & Boncaps',
+                        xaxis_title='Días al Vencimiento',
+                        yaxis_title='TNA (%)',
+                        xaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
+                        yaxis=dict(showgrid=True, gridcolor='#cccccc', linecolor='#999999', linewidth=1, showline=True, tickfont=dict(color='#444444'), title_font=dict(color='#444444')),
+                        plot_bgcolor='#f4f6fb',
+                        paper_bgcolor='#f4f6fb',
+                        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                        height=420,
+                        margin=dict(t=60, b=40, l=60, r=20),
+                    )
+                    st.plotly_chart(fig_lec, use_container_width=True)
+
+                # Tabla
+                df_lec = df_lec.sort_values('Días Rem.').reset_index(drop=True)
+                df_lec['Precio'] = df_lec['Precio'].map('{:.2f}'.format)
+                df_lec['TNA'] = df_lec['TNA'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
+                df_lec['Vida Media'] = df_lec['Vida Media'].map('{:.2f}'.format)
+                df_lec['Var. Diaria %'] = df_lec['Var. Diaria %'].apply(
+                    lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
+                )
+                st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
+                st.markdown(render_tabla_html(df_lec, 'Lecaps & Boncaps'), unsafe_allow_html=True)
+            else:
+                st.info("No hay precios disponibles en este momento.")
 
 
 except FileNotFoundError:
