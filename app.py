@@ -2820,7 +2820,7 @@ try:
                     <div class="metrics-row">
                         <div class="metric-card"><div class="metric-label">CER Base</div><div class="metric-value">{formatear_numero(bono_actual.get("cer_base", 0), 4)}</div></div>
                         <div class="metric-card"><div class="metric-label">CER Settlement</div><div class="metric-value">{_cer_settl_str}</div></div>
-                        <div class="metric-card"><div class="metric-label">Sink Factor</div><div class="metric-value">{formatear_numero(bono_actual.get("sink_factor", 0), 4)}</div></div>
+                        <div class="metric-card"><div class="metric-label">Factor CER</div><div class="metric-value">{formatear_numero(_cer_settlement / bono_actual.get("cer_base", 1) if _cer_settlement and bono_actual.get("cer_base") else None, 4) if _cer_settlement and bono_actual.get("cer_base") else "-"}</div></div>
                         <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
                     </div>
                 </div>
