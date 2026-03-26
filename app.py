@@ -731,6 +731,8 @@ st.markdown("""
         font-size: 14px !important;
         font-weight: 700 !important;
         margin: 0 !important;
+        border: 1px solid #b8bcc4 !important;
+        border-bottom: none !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab-list"] {
         gap: 0 !important;
