@@ -2805,11 +2805,31 @@ try:
                     _cer_settlement = None
                     _cer_settlement_fecha = ''
                 _cer_settl_str = f"{formatear_numero(_cer_settlement, 4)}<br><span style='font-size:0.7rem;color:#888'>({_cer_settlement_fecha})</span>" if _cer_settlement else "-"
+
+                # Cálculos para TIR Real
+                _precio_cer = st.session_state.get(f"precio_cer_{bono_actual['nombre']}", 0.0) or 0.0
+                _fecha_liq_cer = st.session_state.get('fecha_liq_cer', get_next_business_day())
+                _mat_cer2 = bono_actual.get('maturity')
+                if _mat_cer2 and _fecha_liq_cer:
+                    _mat_date_cer = _mat_cer2.date() if hasattr(_mat_cer2, 'date') else _mat_cer2
+                    _liq_date_cer = _fecha_liq_cer.date() if hasattr(_fecha_liq_cer, 'date') else _fecha_liq_cer
+                    _dr_cer = max((_mat_date_cer - _liq_date_cer).days, 0)
+                else:
+                    _dr_cer = 0
+                _cer_base_val = bono_actual.get('cer_base') or 0
+                _factor_cer_vivo = (_cer_settlement / _cer_base_val) if (_cer_settlement and _cer_base_val) else None
+                # TIR Real = XIRR(-precio, factor_cer*100; fecha_liq, fecha_vto)
+                # Con 2 flujos: (factor_cer*100 / precio)^(365/días) - 1
+                if _precio_cer > 0 and _dr_cer > 0 and _factor_cer_vivo:
+                    _tir_real_cer = (_factor_cer_vivo * 100 / _precio_cer) ** (365.0 / _dr_cer) - 1
+                else:
+                    _tir_real_cer = None
+
                 st.markdown(f'''
                 <div class="metrics-card">
                     <div class="metrics-card-title">Rendimiento y duración</div>
                     <div class="metrics-row">
-                        <div class="metric-card"><div class="metric-label">TIR Real</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">TIR Real</div><div class="metric-value">{f"{_tir_real_cer:.4%}" if _tir_real_cer is not None else "-"}</div></div>
                         <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">-</div></div>
                         <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">-</div></div>
                         <div class="metric-card"><div class="metric-label">Factor CER</div><div class="metric-value">{formatear_numero(bono_actual.get("factor_cer", 0), 4)}</div></div>
