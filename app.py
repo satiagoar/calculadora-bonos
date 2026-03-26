@@ -2641,24 +2641,44 @@ try:
             with col2_lec:
                 _precio_lec = st.session_state.get(f"precio_lecap_{bono_actual['nombre']}", 0.0) or 0.0
                 _vf_lec = bono_actual.get('valor_final', 0) or 0
-                _dr_lec = bono_actual.get('dias_remanente', 0) or 0
+
+                # Días remanente: vencimiento − fecha liquidación
+                _fecha_liq_lec = st.session_state.get('fecha_liq_lecap', get_next_business_day())
+                _mat_lec = bono_actual.get('maturity')
+                if _mat_lec and _fecha_liq_lec:
+                    _mat_date_lec = _mat_lec.date() if hasattr(_mat_lec, 'date') else _mat_lec
+                    _dr_lec = max((_mat_date_lec - _fecha_liq_lec).days, 0)
+                else:
+                    _dr_lec = 0
+
+                # Vida Media (base anual, estructura bullet): único flujo al vencimiento
+                _vm_lec = _dr_lec / 365.0 if _dr_lec > 0 else 0.0  # en años
+
+                # Macaulay Duration = Vida Media para zero-coupon bullet
+                _macaulay_lec = _vm_lec
+
+                # TNA (interés simple): (VF − P) / P / t * 365
                 _tna_lec = (_vf_lec - _precio_lec) / _precio_lec / _dr_lec * 365 if _precio_lec > 0 and _dr_lec > 0 else None
+
+                # Modified Duration = Macaulay / (1 + TNA × t)  [interés simple]
+                _mod_dur_lec = _macaulay_lec / (1 + _tna_lec * _vm_lec) if _tna_lec is not None and _vm_lec > 0 else None
+
                 st.markdown(f'''
                 <div class="metrics-card">
                     <div class="metrics-card-title">Rendimiento y duración</div>
                     <div class="metrics-row">
                         <div class="metric-card"><div class="metric-label">TNA</div><div class="metric-value">{f"{_tna_lec:.4%}" if _tna_lec is not None else "-"}</div></div>
                         <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">{formatear_numero(bono_actual.get('duracion_mod_lec', 0), 2)}</div></div>
-                        <div class="metric-card"><div class="metric-label">Valor Final</div><div class="metric-value">{formatear_numero(bono_actual.get('valor_final', 0), 4)}</div></div>
+                        <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">{formatear_numero(_mod_dur_lec, 2) if _mod_dur_lec is not None else "-"}</div></div>
+                        <div class="metric-card"><div class="metric-label">Valor Final</div><div class="metric-value">{formatear_numero(_vf_lec, 4)}</div></div>
                     </div>
                 </div>
                 <div class="metrics-card">
                     <div class="metrics-card-title">Otros indicadores</div>
                     <div class="metrics-row">
-                        <div class="metric-card"><div class="metric-label">Días Remanente</div><div class="metric-value">{int(bono_actual.get('dias_remanente', 0))}</div></div>
-                        <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">{formatear_numero(bono_actual.get('vida_media_lec', 0), 2)}</div></div>
-                        <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
+                        <div class="metric-card"><div class="metric-label">Días Remanente</div><div class="metric-value">{int(_dr_lec) if _dr_lec > 0 else "-"}</div></div>
+                        <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">{formatear_numero(_vm_lec, 2) if _vm_lec > 0 else "-"}</div></div>
+                        <div class="metric-card"><div class="metric-label">Macaulay Duration</div><div class="metric-value">{formatear_numero(_macaulay_lec, 2) if _macaulay_lec > 0 else "-"}</div></div>
                         <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
                     </div>
                 </div>
