@@ -2792,6 +2792,19 @@ try:
                 </div>
                 """, unsafe_allow_html=True)
             with col2_cer:
+                # Obtener último valor CER desde API datos.gob.ar
+                try:
+                    import requests as _req_cer
+                    _cer_resp = _req_cer.get(
+                        'https://apis.datos.gob.ar/series/api/series/?ids=94.2_CD_D_0_0_10&last=1&format=json',
+                        timeout=5
+                    ).json()
+                    _cer_settlement = _cer_resp['data'][0][1]
+                    _cer_settlement_fecha = _cer_resp['data'][0][0]
+                except Exception:
+                    _cer_settlement = None
+                    _cer_settlement_fecha = ''
+                _cer_settl_str = f"{formatear_numero(_cer_settlement, 4)}<br><span style='font-size:0.7rem;color:#888'>({_cer_settlement_fecha})</span>" if _cer_settlement else "-"
                 st.markdown(f'''
                 <div class="metrics-card">
                     <div class="metrics-card-title">Rendimiento y duración</div>
@@ -2806,7 +2819,7 @@ try:
                     <div class="metrics-card-title">Otros indicadores</div>
                     <div class="metrics-row">
                         <div class="metric-card"><div class="metric-label">CER Base</div><div class="metric-value">{formatear_numero(bono_actual.get("cer_base", 0), 4)}</div></div>
-                        <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">CER Settlement</div><div class="metric-value">{_cer_settl_str}</div></div>
                         <div class="metric-card"><div class="metric-label">Sink Factor</div><div class="metric-value">{formatear_numero(bono_actual.get("sink_factor", 0), 4)}</div></div>
                         <div class="metric-card"><div class="metric-label"></div><div class="metric-value"></div></div>
                     </div>
