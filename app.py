@@ -2825,14 +2825,18 @@ try:
                 else:
                     _tir_real_cer = None
 
+                # Vida Media y Duración Modificada (bullet, datos disponibles)
+                _vm_cer = _dr_cer / 365.0 if _dr_cer > 0 else None
+                _dur_mod_cer = _vm_cer / (1 + _tir_real_cer) if (_vm_cer and _tir_real_cer is not None) else None
+
                 st.markdown(f'''
                 <div class="metrics-card">
                     <div class="metrics-card-title">Rendimiento y duración</div>
                     <div class="metrics-row">
                         <div class="metric-card"><div class="metric-label">TIR Efectiva Anual</div><div class="metric-value">{f"{_tir_real_cer:.4%}" if _tir_real_cer is not None else "-"}</div></div>
                         <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">{f"{((1 + _tir_real_cer) ** (30/360) - 1):.4%}" if _tir_real_cer is not None else "-"}</div></div>
-                        <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">-</div></div>
-                        <div class="metric-card"><div class="metric-label">Factor CER</div><div class="metric-value">{formatear_numero(bono_actual.get("factor_cer", 0), 4)}</div></div>
+                        <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">{formatear_numero(_dur_mod_cer, 2) if _dur_mod_cer is not None else "-"}</div></div>
+                        <div class="metric-card"><div class="metric-label">Vida Media</div><div class="metric-value">{formatear_numero(_vm_cer, 2) if _vm_cer is not None else "-"}</div></div>
                     </div>
                 </div>
                 <div class="metrics-card">
