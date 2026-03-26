@@ -2827,7 +2827,7 @@ try:
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
-        tab_usd, tab_pesos = st.tabs(["Títulos en USD", "Títulos en Pesos"])
+        tab_usd, tab_pesos = st.tabs(["Títulos en Dólares", "Títulos en Pesos"])
 
         with tab_usd:
             with st.spinner("Cargando precios y calculando métricas..."):
