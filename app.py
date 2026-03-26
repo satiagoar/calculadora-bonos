@@ -3000,8 +3000,8 @@ try:
                                     mode='markers+text',
                                     text=df_b['Activo'],
                                     textposition='top center',
-                                    textfont=dict(size=10, color='#6a1b9a'),
-                                    marker=dict(size=9, color='#6a1b9a', symbol='diamond'),
+                                    textfont=dict(size=10, color='#1a237e'),
+                                    marker=dict(size=9, color='#1a237e', symbol='circle'),
                                     name='Bonares (B)',
                                     hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>',
                                 ))
