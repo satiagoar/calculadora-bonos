@@ -3885,8 +3885,8 @@ try:
                         mode='markers+text',
                         text=df_curva_cer['Activo'],
                         textposition='top center',
-                        textfont=dict(size=10, color='#1b5e20'),
-                        marker=dict(size=9, color='#1b5e20'),
+                        textfont=dict(size=10, color='#1a237e'),
+                        marker=dict(size=9, color='#1a237e'),
                         name='Bonos CER',
                         hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Anual: %{y:.2f}%<extra></extra>',
                     ))
@@ -3897,7 +3897,7 @@ try:
                         fig_cer.add_trace(go.Scatter(
                             x=x_line_cer, y=y_line_cer,
                             mode='lines',
-                            line=dict(color='#66bb6a', width=2, dash='dash'),
+                            line=dict(color='#42a5f5', width=2, dash='dash'),
                             name='Tendencia',
                             hoverinfo='skip',
                             showlegend=False,
