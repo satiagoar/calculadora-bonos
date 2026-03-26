@@ -3555,9 +3555,11 @@ try:
                     ))
                     if len(df_curva_lec) >= 3:
                         import numpy as _np2
-                        coeffs_lec = _np2.polyfit(x_lec, y_lec, 1)
+                        # Regresión logarítmica: y = a * ln(x) + b
+                        log_x_lec = _np2.log(x_lec)
+                        coeffs_lec = _np2.polyfit(log_x_lec, y_lec, 1)
                         x_line_lec = _np2.linspace(x_lec.min(), x_lec.max(), 200)
-                        y_line_lec = coeffs_lec[0] * x_line_lec + coeffs_lec[1]
+                        y_line_lec = coeffs_lec[0] * _np2.log(x_line_lec) + coeffs_lec[1]
                         fig_lec.add_trace(go.Scatter(
                             x=x_line_lec, y=y_line_lec,
                             mode='lines',
