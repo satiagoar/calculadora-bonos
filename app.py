@@ -2670,6 +2670,12 @@ try:
                 # TNA (interés simple): (VF − P) / P / t * 365
                 _tna_lec = (_vf_lec - _precio_lec) / _precio_lec / _dr_lec * 365 if _precio_lec > 0 and _dr_lec > 0 else None
 
+                # TEA (interés compuesto): (1 + (VF-P)/P) ^ (365/días) - 1
+                _tea_lec = (1 + (_vf_lec - _precio_lec) / _precio_lec) ** (365.0 / _dr_lec) - 1 if _precio_lec > 0 and _dr_lec > 0 else None
+
+                # TEM: (1 + TEA) ^ (1/12) - 1
+                _tem_lec = (1 + _tea_lec) ** (1 / 12) - 1 if _tea_lec is not None else None
+
                 # Modified Duration = Macaulay / (1 + TNA × t)  [interés simple]
                 _mod_dur_lec = _macaulay_lec / (1 + _tna_lec * _vm_lec) if _tna_lec is not None and _vm_lec > 0 else None
 
@@ -2678,7 +2684,7 @@ try:
                     <div class="metrics-card-title">Rendimiento y duración</div>
                     <div class="metrics-row">
                         <div class="metric-card"><div class="metric-label">TNA</div><div class="metric-value">{f"{_tna_lec:.4%}" if _tna_lec is not None else "-"}</div></div>
-                        <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">-</div></div>
+                        <div class="metric-card"><div class="metric-label">TEM</div><div class="metric-value">{f"{_tem_lec:.4%}" if _tem_lec is not None else "-"}</div></div>
                         <div class="metric-card"><div class="metric-label">Duración Modificada</div><div class="metric-value">{formatear_numero(_mod_dur_lec, 2) if _mod_dur_lec is not None else "-"}</div></div>
                         <div class="metric-card"><div class="metric-label">Valor Final</div><div class="metric-value">{formatear_numero(_vf_lec, 4)}</div></div>
                     </div>
