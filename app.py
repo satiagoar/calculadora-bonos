@@ -722,7 +722,7 @@ st.markdown("""
     }
     /* Color azul en las tabs */
     [data-testid="stTabs"] button[role="tab"] {
-        color: #1a56db !important;
+        color: #3d5a80 !important;
         background-color: #e4e6ea !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"] {
@@ -743,7 +743,7 @@ st.markdown("""
         font-size: 14px !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab-list"] button[role="tab"][aria-selected="true"] {
-        color: #1a56db !important;
+        color: #3d5a80 !important;
         background-color: #d1d5db !important;
         border-radius: 6px 6px 0 0 !important;
     }
@@ -753,7 +753,7 @@ st.markdown("""
     }
     /* Línea de selección azul (solo el indicador activo, no la línea base) */
     [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
-        background-color: #1a56db !important;
+        background-color: #3d5a80 !important;
     }
 </style>
 """, unsafe_allow_html=True)
