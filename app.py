@@ -1340,8 +1340,8 @@ try:
             dur_row        = lrows[idx + 20] if idx + 20 < len(lrows) else (None,) * 4
             duracion_mod_lec = _sf(dur_row[1])
 
-            # Filtrar tickers que empiezan con TT
-            if nombre.strip().upper().startswith('TT'):
+            # Filtrar tickers que empiezan con TT o TY
+            if nombre.strip().upper().startswith(('TT', 'TY')):
                 idx += LECAP_BLOCK
                 continue
 
