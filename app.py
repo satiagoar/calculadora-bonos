@@ -2864,11 +2864,15 @@ try:
                    **obtener_precios_data912('arg_notes')}
 
         def _mon_tabla(cols, df):
-            _hdr = ''.join(f'<th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e0e0e0;background:#fafafa;font-weight:700;font-size:13px">{c}</th>' for c in cols)
+            _hdr = ''.join(
+                f'<th style="padding:10px 14px;text-align:{"left" if c == "Activo" else "center"};border-bottom:2px solid #e0e0e0;background:#fafafa;font-weight:700;font-size:16px">{c}</th>'
+                for c in cols)
             _rows = ''
             for _i, _r in df[cols].iterrows():
                 _bg = '#ffffff' if _i % 2 == 0 else '#f7f9fc'
-                _rows += '<tr style="background:' + _bg + '">' + ''.join(f'<td style="padding:7px 12px;border-bottom:1px solid #e8e8e8;font-size:13px">{_r[c]}</td>' for c in cols) + '</tr>'
+                _rows += '<tr style="background:' + _bg + '">' + ''.join(
+                    f'<td style="padding:9px 14px;border-bottom:1px solid #e8e8e8;font-size:16px;text-align:{"left" if c == "Activo" else "center"}">{_r[c]}</td>'
+                    for c in cols) + '</tr>'
             st.markdown(f'<div style="border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;margin-top:8px"><table style="width:100%;border-collapse:collapse">{_hdr}{_rows}</table></div>', unsafe_allow_html=True)
 
         # ── Panel 0: Soberano USD ─────────────────────────────────────────
