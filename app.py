@@ -1433,14 +1433,6 @@ try:
     # Generar tipos de bonos automáticamente a partir de los bonos procesados
     tipos_bono = sorted(set(b['tipo_bono'] for b in bonos))
 
-    # Manejar clic en bono desde tabla (query param ?bono=NOMBRE)
-    if 'bono' in st.query_params:
-        _bono_clicked = st.query_params['bono']
-        if any(b['nombre'] == _bono_clicked for b in bonos):
-            st.session_state.bono_seleccionado = _bono_clicked
-            st.session_state.calcular = False
-        del st.query_params['bono']
-
     # Sidebar
     with st.sidebar:
         st.markdown("# CALCULADORA DE RENDIMIENTOS")
@@ -2852,42 +2844,6 @@ try:
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
-        _IFRAME_CSS = (
-            'body{margin:0;padding:0;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}'
-            '.bond-wrap{border-radius:10px;overflow:hidden;border:1px solid #e0e0e0}'
-            '.bond-title{background:#fafafa;color:#333;font-weight:700;font-size:14px;padding:11px 14px;border-bottom:2px solid #e0e0e0;letter-spacing:.02em}'
-            '.bond-table{width:100%;border-collapse:collapse;font-size:13px}'
-            '.bond-table th{background:#fafafa;color:#555;font-weight:600;padding:9px 12px;text-align:center;border-bottom:2px solid #e0e0e0;white-space:nowrap}'
-            '.bond-table th:first-child{text-align:left}'
-            '.bond-table td{padding:8px 12px;color:#333;white-space:nowrap;text-align:center}'
-            '.bond-table td:first-child{text-align:left}'
-            '.bond-table tr:nth-child(even) td{background:#f7f7f7}'
-            '.bond-table tr:nth-child(odd) td{background:#ffffff}'
-            '.bond-table tr:hover td{background:#eef2ff}'
-            '.bond-table tr[data-bono]{cursor:pointer}'
-            '.bond-table tr[data-bono]:hover td{background:#dbeafe!important}'
-        )
-        _IFRAME_JS = (
-            'document.querySelectorAll("tr[data-bono]").forEach(function(r){'
-            '  r.addEventListener("click",function(){'
-            '    window.parent.location.search="?bono="+encodeURIComponent(this.getAttribute("data-bono"));'
-            '  });'
-            '});'
-            'if(window.frameElement)window.frameElement.height=document.body.scrollHeight+"px";'
-        )
-
-        def _render_tabla_iframe(table_html, nrows, nsep=0):
-            h = max(120, nrows * 38 + nsep * 6 + 55)
-            doc = (
-                '<html><head><meta charset="utf-8"><style>'
-                + _IFRAME_CSS
-                + '</style></head><body>'
-                + table_html
-                + '<script>' + _IFRAME_JS + '</script>'
-                + '</body></html>'
-            )
-            st.components.v1.html(doc, height=h, scrolling=False)
-
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
         with st.spinner("Cargando precios y calculando métricas..."):
             fecha_hoy = get_next_business_day()
@@ -3128,11 +3084,20 @@ try:
                 df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
-                _sep = _sov_separadores if 'soberano' in tipo.lower() else None
-                _render_tabla_iframe(
-                    render_tabla_html(df_tabla, separadores=_sep, clickable=True),
-                    nrows=len(df_tabla), nsep=len(_sep) if _sep else 0
+                _tabla_key = f"tabla_{tipo.lower().replace(' ', '_').replace('/', '_')}"
+                _ev = st.dataframe(
+                    df_tabla,
+                    on_select="rerun",
+                    selection_mode="single-row",
+                    use_container_width=True,
+                    hide_index=True,
+                    key=_tabla_key,
                 )
+                if _ev.selection.rows:
+                    _nombre = df_raw.iloc[_ev.selection.rows[0]]['Activo']
+                    st.session_state.bono_seleccionado = _nombre
+                    st.session_state.calcular = False
+                    st.rerun()
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
@@ -3257,7 +3222,15 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                _render_tabla_iframe(render_tabla_html(df_lec, clickable=True), nrows=len(df_lec))
+                _ev_lec = st.dataframe(
+                    df_lec, on_select="rerun", selection_mode="single-row",
+                    use_container_width=True, hide_index=True, key="tabla_lecaps",
+                )
+                if _ev_lec.selection.rows:
+                    _nombre = df_lec_raw.iloc[_ev_lec.selection.rows[0]]['Activo']
+                    st.session_state.bono_seleccionado = _nombre
+                    st.session_state.calcular = False
+                    st.rerun()
             else:
                 st.info("No hay precios disponibles en este momento.")
 
@@ -3388,7 +3361,15 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                _render_tabla_iframe(render_tabla_html(df_cer, clickable=True), nrows=len(df_cer))
+                _ev_cer = st.dataframe(
+                    df_cer, on_select="rerun", selection_mode="single-row",
+                    use_container_width=True, hide_index=True, key="tabla_cer",
+                )
+                if _ev_cer.selection.rows:
+                    _nombre = df_cer_raw.iloc[_ev_cer.selection.rows[0]]['Activo']
+                    st.session_state.bono_seleccionado = _nombre
+                    st.session_state.calcular = False
+                    st.rerun()
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
