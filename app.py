@@ -2837,14 +2837,8 @@ try:
         _remaining = max(1.0, _CYCLE - (_now - st.session_state.monitor_tick))
         _pidx      = st.session_state.monitor_panel
 
-        # Timer de rotación automática — click oculto para preservar session_state
-        # Se incluye _pidx e int(_now) para que el HTML sea único en cada rerun
-        # y Streamlit re-monte el iframe ejecutando el script de nuevo.
+        # Timer de rotación automática
         _mon_tick_ms = int(_remaining * 1000)
-        st.markdown('<div style="height:0;overflow:hidden;position:absolute">', unsafe_allow_html=True)
-        if st.button("↺", key="mon_auto_tick"):
-            pass  # el click sólo dispara el rerun; la lógica de panel ya está arriba
-        st.markdown('</div>', unsafe_allow_html=True)
         st.components.v1.html(f"""<script>
         /* panel={_pidx} ts={int(_now * 1000)} */
         setTimeout(function() {{
@@ -3067,13 +3061,18 @@ try:
             else:
                 st.info("No hay precios disponibles para Bonos CER.")
 
-        # Botón Salir al final
+        # Botones al final
         st.markdown("<div style='margin-top:24px'></div>", unsafe_allow_html=True)
-        if st.button("Salir del Monitor", type="secondary", use_container_width=False, key="mon_exit"):
-            st.session_state.monitor = False
-            for _k in ('monitor_tick', 'monitor_panel'):
-                st.session_state.pop(_k, None)
-            st.rerun()
+        _bca, _bcb, _bcc = st.columns([1, 1, 4])
+        with _bca:
+            if st.button("↺", key="mon_auto_tick", use_container_width=True):
+                pass  # dispara rerun; la lógica de panel ya está arriba
+        with _bcb:
+            if st.button("Salir del Monitor", type="secondary", use_container_width=True, key="mon_exit"):
+                st.session_state.monitor = False
+                for _k in ('monitor_tick', 'monitor_panel'):
+                    st.session_state.pop(_k, None)
+                st.rerun()
 
     # ── S0: Tablas de mercado ─────────────────────────────────────────────
     if not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('monitor'):
