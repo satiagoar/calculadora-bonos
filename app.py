@@ -2836,16 +2836,19 @@ try:
         _pidx      = st.session_state.monitor_panel
 
         # Timer de rotación automática — click oculto para preservar session_state
+        # Se incluye _pidx e int(_now) para que el HTML sea único en cada rerun
+        # y Streamlit re-monte el iframe ejecutando el script de nuevo.
         _mon_tick_ms = int(_remaining * 1000)
         st.markdown('<div style="height:0;overflow:hidden;position:absolute">', unsafe_allow_html=True)
         if st.button("↺", key="mon_auto_tick"):
             pass  # el click sólo dispara el rerun; la lógica de panel ya está arriba
         st.markdown('</div>', unsafe_allow_html=True)
         st.components.v1.html(f"""<script>
+        /* panel={_pidx} ts={int(_now * 1000)} */
         setTimeout(function() {{
             var els = window.parent.document.querySelectorAll('button p, button span');
             for (var el of els) {{
-                if (el.textContent.trim() === '↺') {{
+                if (el.textContent.trim() === '\u21ba') {{
                     el.closest('button').click();
                     return;
                 }}
