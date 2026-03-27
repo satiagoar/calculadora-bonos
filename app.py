@@ -1433,6 +1433,14 @@ try:
     # Generar tipos de bonos automáticamente a partir de los bonos procesados
     tipos_bono = sorted(set(b['tipo_bono'] for b in bonos))
 
+    # Manejar clic en bono desde tabla (query param ?bono=NOMBRE)
+    if 'bono' in st.query_params:
+        _bono_clicked = st.query_params['bono']
+        if any(b['nombre'] == _bono_clicked for b in bonos):
+            st.session_state.bono_seleccionado = _bono_clicked
+            st.session_state.calcular = False
+        del st.query_params['bono']
+
     # Sidebar
     with st.sidebar:
         st.markdown("# CALCULADORA DE RENDIMIENTOS")
@@ -1467,10 +1475,13 @@ try:
             st.session_state.bono_seleccionado = None
         if 'calcular' not in st.session_state:
             st.session_state.calcular = False
+        _bono_idx = None
+        if st.session_state.get('bono_seleccionado') in nombres_bonos:
+            _bono_idx = nombres_bonos.index(st.session_state.bono_seleccionado)
         bono_seleccionado = st.selectbox(
-            "Elija un Bono", 
+            "Elija un Bono",
             nombres_bonos,
-            index=None,  # Ningún bono seleccionado por defecto
+            index=_bono_idx,
             placeholder="Seleccione un bono...",
             key="bono_selectbox"
         )
@@ -2805,13 +2816,15 @@ try:
         .bond-table tr:nth-child(even) td { background:#f7f7f7; }
         .bond-table tr:nth-child(odd) td { background:#ffffff; }
         .bond-table tr:hover td { background:#eef2ff; }
+        .bond-table tr[data-bono] { cursor: pointer; }
+        .bond-table tr[data-bono]:hover td { background:#dbeafe !important; }
         </style>
         """
 
         def _esc(v):
             return str(v).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
-        def render_tabla_html(df, titulo='', separadores=None):
+        def render_tabla_html(df, titulo='', separadores=None, clickable=False):
             # separadores: set of row indices before which to insert a visible separator row
             sep_set = set(separadores) if separadores else set()
             cols = list(df.columns)
@@ -2831,7 +2844,11 @@ try:
                         cells += f'<td style="color:{color};font-weight:600">{val_str}</td>'
                     else:
                         cells += f'<td>{val_str}</td>'
-                rows += f'<tr>{cells}</tr>'
+                if clickable:
+                    bono_name = _esc(str(row[cols[0]]))
+                    rows += f'<tr data-bono="{bono_name}">{cells}</tr>'
+                else:
+                    rows += f'<tr>{cells}</tr>'
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
@@ -3076,7 +3093,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 _sep = _sov_separadores if 'soberano' in tipo.lower() else None
-                st.markdown(render_tabla_html(df_tabla, separadores=_sep), unsafe_allow_html=True)
+                st.markdown(render_tabla_html(df_tabla, separadores=_sep, clickable=True), unsafe_allow_html=True)
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
@@ -3201,7 +3218,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(render_tabla_html(df_lec), unsafe_allow_html=True)
+                st.markdown(render_tabla_html(df_lec, clickable=True), unsafe_allow_html=True)
             else:
                 st.info("No hay precios disponibles en este momento.")
 
@@ -3332,10 +3349,33 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(render_tabla_html(df_cer), unsafe_allow_html=True)
+                st.markdown(render_tabla_html(df_cer, clickable=True), unsafe_allow_html=True)
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
+
+        # JS: habilitar clic en filas de tabla para navegar a la calculadora del bono
+        st.components.v1.html("""
+        <script>
+        (function() {
+            function bindClicks() {
+                var rows = window.parent.document.querySelectorAll('tr[data-bono]');
+                rows.forEach(function(row) {
+                    if (!row._bonoClickBound) {
+                        row._bonoClickBound = true;
+                        row.addEventListener('click', function() {
+                            var bono = this.getAttribute('data-bono');
+                            window.parent.location.search = '?bono=' + encodeURIComponent(bono);
+                        });
+                    }
+                });
+            }
+            bindClicks();
+            setTimeout(bindClicks, 400);
+            setTimeout(bindClicks, 1200);
+        })();
+        </script>
+        """, height=0)
 
 
 except FileNotFoundError:
