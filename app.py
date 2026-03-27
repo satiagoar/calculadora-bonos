@@ -2819,8 +2819,8 @@ try:
         [data-testid="stSidebar"]{display:none!important}
         [data-testid="stSidebarCollapseButton"]{display:none!important}
         section[data-testid="stMain"]{margin-left:0!important;width:100vw!important;max-width:100vw!important}
-        section[data-testid="stMain"] > div:first-child > div:first-child > div:first-child {padding-left:30vw!important;padding-right:30vw!important}
-        [data-testid="stMainBlockContainer"]{padding-left:30vw!important;padding-right:30vw!important;max-width:100vw!important}
+        section[data-testid="stMain"] > div:first-child > div:first-child > div:first-child {padding-left:15vw!important;padding-right:15vw!important}
+        [data-testid="stMainBlockContainer"]{padding-left:15vw!important;padding-right:15vw!important;max-width:100vw!important}
         </style>""", unsafe_allow_html=True)
 
         _PANELES = ['Soberano USD', 'Lecaps & Boncaps', 'Bonos CER']
