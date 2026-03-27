@@ -2887,7 +2887,7 @@ try:
                     _fl = [f['total'] for f in _b['flujos'] if f['fecha'] > _mf]
                     _fe = [f['fecha']  for f in _b['flujos'] if f['fecha'] > _mf]
                     if not _fl: continue
-                    _ytm  = calcular_ytm(_fl, _fe, _precio, _mf, _b['base_calculo'])
+                    _ytm  = calcular_ytm(_precio, _fl, _fe, _mf, _b['base_calculo'])
                     _tirs = _b['periodicidad'] * ((1 + _ytm) ** (1 / _b['periodicidad']) - 1)
                     _mac  = calcular_duracion_macaulay(_fl, _fe, _mf, _ytm, _b['base_calculo'])
                     _ytma = _b['periodicidad'] * ((1 + _ytm) ** (1 / _b['periodicidad']) - 1)
