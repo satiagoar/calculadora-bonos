@@ -2821,7 +2821,7 @@ try:
         section[data-testid="stMain"]{margin-left:0!important;width:100vw!important;max-width:100vw!important}
         </style>""", unsafe_allow_html=True)
 
-        _PANELES = ['Soberano USD', 'Lecaps & Boncaps']
+        _PANELES = ['Soberano USD', 'Lecaps & Boncaps', 'Bonos CER']
         _CYCLE   = 30
         _now     = time.time()
 
@@ -2835,45 +2835,29 @@ try:
         _remaining = max(1.0, _CYCLE - (_now - st.session_state.monitor_tick))
         _pidx      = st.session_state.monitor_panel
 
-        # Barra de control
-        _ca, _cb, _cc, _cd = st.columns([1, 5, 1, 2])
-        with _ca:
-            if st.button("◀", use_container_width=True, key="mon_prev"):
-                st.session_state.monitor_panel = (_pidx - 1) % len(_PANELES)
-                st.session_state.monitor_tick  = _now
-                st.rerun()
-        with _cb:
-            st.markdown(f"<h2 style='text-align:center;margin:4px 0'>{_PANELES[_pidx]}</h2>",
-                        unsafe_allow_html=True)
-            st.progress(1.0 - _remaining / _CYCLE, text=f"Próximo panel en {int(_remaining)}s")
-        with _cc:
-            if st.button("▶", use_container_width=True, key="mon_next"):
-                st.session_state.monitor_panel = (_pidx + 1) % len(_PANELES)
-                st.session_state.monitor_tick  = _now
-                st.rerun()
-        with _cd:
-            if st.button("Salir del Monitor", type="secondary", use_container_width=True, key="mon_exit"):
-                st.session_state.monitor = False
-                for _k in ('monitor_tick', 'monitor_panel'):
-                    st.session_state.pop(_k, None)
-                st.rerun()
-
-        st.divider()
-
         # Timer de rotación automática
         st.components.v1.html(
             f"<script>setTimeout(function(){{window.parent.location.reload();}},{int(_remaining*1000)});</script>",
             height=0)
 
-        # Fetch precios (una sola vez, para ambos paneles)
+        # Fetch precios
         with st.spinner("Cargando datos..."):
             _mf = get_next_business_day()
             _mp = {**obtener_precios_data912('arg_bonds'),
                    **obtener_precios_data912('arg_corp'),
                    **obtener_precios_data912('arg_notes')}
 
+        def _mon_tabla(cols, df):
+            _hdr = ''.join(f'<th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e0e0e0;background:#fafafa;font-weight:700;font-size:13px">{c}</th>' for c in cols)
+            _rows = ''
+            for _i, _r in df[cols].iterrows():
+                _bg = '#ffffff' if _i % 2 == 0 else '#f7f9fc'
+                _rows += '<tr style="background:' + _bg + '">' + ''.join(f'<td style="padding:7px 12px;border-bottom:1px solid #e8e8e8;font-size:13px">{_r[c]}</td>' for c in cols) + '</tr>'
+            st.markdown(f'<div style="border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;margin-top:8px"><table style="width:100%;border-collapse:collapse">{_hdr}{_rows}</table></div>', unsafe_allow_html=True)
+
         # ── Panel 0: Soberano USD ─────────────────────────────────────────
         if _pidx == 0:
+            st.markdown("<h2 style='text-align:center;margin:8px 0 16px'>Soberano USD</h2>", unsafe_allow_html=True)
             _filas = []
             for _b in bonos:
                 if _b.get('tipo_bono') != 'Soberano USD': continue
@@ -2930,18 +2914,13 @@ try:
                         xaxis=dict(showgrid=True, gridcolor='#cccccc'),
                         yaxis=dict(showgrid=True, gridcolor='#cccccc'))
                     st.plotly_chart(_fig, use_container_width=True)
-                _cols_usd = ['Activo','Vencimiento','Precio','TIR Semestral','Dur. Mod.','Var. %']
-                _hdr = ''.join(f'<th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e0e0e0;background:#fafafa;font-weight:700;font-size:13px">{c}</th>' for c in _cols_usd)
-                _rows = ''
-                for _i, _r in _df[_cols_usd].iterrows():
-                    _bg = '#ffffff' if _i % 2 == 0 else '#f7f9fc'
-                    _rows += '<tr style="background:' + _bg + '">' + ''.join(f'<td style="padding:7px 12px;border-bottom:1px solid #e8e8e8;font-size:13px">{_r[c]}</td>' for c in _cols_usd) + '</tr>'
-                st.markdown(f'<div style="border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;margin-top:8px"><table style="width:100%;border-collapse:collapse">{_hdr}{_rows}</table></div>', unsafe_allow_html=True)
+                _mon_tabla(['Activo','Vencimiento','Precio','TIR Semestral','Dur. Mod.','Var. %'], _df)
             else:
                 st.info("No hay precios disponibles para Soberano USD.")
 
         # ── Panel 1: Lecaps & Boncaps ─────────────────────────────────────
-        else:
+        elif _pidx == 1:
+            st.markdown("<h2 style='text-align:center;margin:8px 0 16px'>Lecaps & Boncaps</h2>", unsafe_allow_html=True)
             _lf    = _mf.date() if hasattr(_mf, 'date') else _mf
             _filas = []
             for _b in bonos:
@@ -2990,15 +2969,89 @@ try:
                         xaxis=dict(showgrid=True, gridcolor='#cccccc'),
                         yaxis=dict(showgrid=True, gridcolor='#cccccc'))
                     st.plotly_chart(_fig, use_container_width=True)
-                _cols_lec = ['Activo','Vencimiento','Días Rem.','Precio','TNA','TEM','Var. %']
-                _hdr2 = ''.join(f'<th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e0e0e0;background:#fafafa;font-weight:700;font-size:13px">{c}</th>' for c in _cols_lec)
-                _rows2 = ''
-                for _i, _r in _df[_cols_lec].iterrows():
-                    _bg2 = '#ffffff' if _i % 2 == 0 else '#f7f9fc'
-                    _rows2 += '<tr style="background:' + _bg2 + '">' + ''.join(f'<td style="padding:7px 12px;border-bottom:1px solid #e8e8e8;font-size:13px">{_r[c]}</td>' for c in _cols_lec) + '</tr>'
-                st.markdown(f'<div style="border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;margin-top:8px"><table style="width:100%;border-collapse:collapse">{_hdr2}{_rows2}</table></div>', unsafe_allow_html=True)
+                _mon_tabla(['Activo','Vencimiento','Días Rem.','Precio','TNA','TEM','Var. %'], _df)
             else:
                 st.info("No hay precios disponibles para Lecaps & Boncaps.")
+
+        # ── Panel 2: Bonos CER ────────────────────────────────────────────
+        else:
+            st.markdown("<h2 style='text-align:center;margin:8px 0 16px'>Bonos CER</h2>", unsafe_allow_html=True)
+            _lf = _mf.date() if hasattr(_mf, 'date') else _mf
+            # Obtener CER de liquidación
+            _cer_mon = None
+            try:
+                import requests as _req
+                _cr = _req.get(
+                    'https://apis.datos.gob.ar/series/api/series/?ids=94.2_CD_D_0_0_10&last=1&format=json',
+                    timeout=5).json()
+                _cer_mon = _cr['data'][0][1]
+            except Exception:
+                pass
+            _filas = []
+            for _b in bonos:
+                if _b.get('tipo_bono') != 'Bonos CER': continue
+                _tk = _b.get('ticker', '').strip().upper()
+                if not _tk: continue
+                _pd = _mp.get(_tk)
+                if not _pd or not _pd.get('c') or _pd['c'] <= 0: continue
+                _precio = _pd['c']; _pct = _pd.get('pct_change')
+                _mat = _b.get('maturity')
+                if not _mat: continue
+                _matd = _mat.date() if hasattr(_mat, 'date') else _mat
+                _dr = max((_matd - _lf).days, 0)
+                if _dr == 0: continue
+                _cb = _b.get('cer_base') or 0
+                _fcv = round(_cer_mon / _cb, 4) if (_cer_mon and _cb) else None
+                if _fcv and _precio > 0 and _dr > 0:
+                    _tir_a = (_fcv * 100 / _precio) ** (365.0 / _dr) - 1
+                    _tir_m = (1 + _tir_a) ** (30 / 360) - 1
+                    _vm = _dr / 365.0
+                    _dur_m = _vm / (1 + _tir_a)
+                else:
+                    _tir_a = _tir_m = _dur_m = None
+                _filas.append({
+                    'Activo': _b['nombre'],
+                    'Vencimiento': _matd.strftime('%d/%m/%Y'),
+                    'Días Rem.': _dr,
+                    'Precio': f"{_precio:.2f}",
+                    'TIR Anual': f"{_tir_a*100:.2f}%" if _tir_a is not None else '-',
+                    'TIR Mensual': f"{_tir_m*100:.2f}%" if _tir_m is not None else '-',
+                    'Dur. Mod.': f"{_dur_m:.2f}" if _dur_m is not None else '-',
+                    'Var. %': f"{_pct:+.2f}%" if _pct is not None and not pd.isna(_pct) else '-',
+                    '_tir_a': _tir_a * 100 if _tir_a is not None else None,
+                    '_dur_m': _dur_m,
+                })
+            if _filas:
+                _df = pd.DataFrame(_filas).sort_values('Días Rem.').reset_index(drop=True)
+                _cc = _df[['Activo', '_dur_m', '_tir_a']].dropna()
+                _cc = _cc[_cc['_dur_m'] > 0]
+                if len(_cc) >= 2:
+                    _fig = go.Figure()
+                    _fig.add_trace(go.Scatter(
+                        x=_cc['_dur_m'].values, y=_cc['_tir_a'].values,
+                        mode='markers+text', text=_cc['Activo'], textposition='top center',
+                        textfont=dict(size=10, color='#1a237e'),
+                        marker=dict(size=9, color='#1a237e'),
+                        hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Anual: %{y:.2f}%<extra></extra>'))
+                    _fig.update_layout(
+                        title='Cueva de Rendimientos — Bonos CER',
+                        xaxis_title='Duración Modificada', yaxis_title='TIR Anual (%)',
+                        plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=400,
+                        margin=dict(t=50, b=40, l=60, r=20),
+                        xaxis=dict(showgrid=True, gridcolor='#cccccc'),
+                        yaxis=dict(showgrid=True, gridcolor='#cccccc'))
+                    st.plotly_chart(_fig, use_container_width=True)
+                _mon_tabla(['Activo','Vencimiento','Días Rem.','Precio','TIR Anual','TIR Mensual','Dur. Mod.','Var. %'], _df)
+            else:
+                st.info("No hay precios disponibles para Bonos CER.")
+
+        # Botón Salir al final
+        st.markdown("<div style='margin-top:24px'></div>", unsafe_allow_html=True)
+        if st.button("Salir del Monitor", type="secondary", use_container_width=False, key="mon_exit"):
+            st.session_state.monitor = False
+            for _k in ('monitor_tick', 'monitor_panel'):
+                st.session_state.pop(_k, None)
+            st.rerun()
 
     # ── S0: Tablas de mercado ─────────────────────────────────────────────
     if not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('monitor'):
