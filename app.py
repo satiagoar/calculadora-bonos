@@ -2970,13 +2970,21 @@ try:
                 _lc = _df[['Activo', '_dr', '_tna']].dropna()
                 _lc = _lc[_lc['_tna'] > 0]
                 if len(_lc) >= 2:
+                    _x_lec, _y_lec = _lc['_dr'].values, _lc['_tna'].values
                     _fig = go.Figure()
                     _fig.add_trace(go.Scatter(
-                        x=_lc['_dr'].values, y=_lc['_tna'].values,
+                        x=_x_lec, y=_y_lec,
                         mode='markers+text', text=_lc['Activo'], textposition='top center',
                         textfont=dict(size=10, color='#1a237e'),
                         marker=dict(size=9, color='#1a237e'),
                         hovertemplate='<b>%{text}</b><br>Días: %{x:.0f}<br>TNA: %{y:.2f}%<extra></extra>'))
+                    if len(_lc) >= 3:
+                        _cl = np.polyfit(np.log(_x_lec), _y_lec, 1)
+                        _xll = np.linspace(_x_lec.min(), _x_lec.max(), 100)
+                        _fig.add_trace(go.Scatter(
+                            x=_xll, y=_cl[0]*np.log(_xll)+_cl[1], mode='lines',
+                            line=dict(color='#42a5f5', width=2, dash='dash'),
+                            hoverinfo='skip', showlegend=False))
                     _fig.update_layout(
                         title='Cueva de Rendimientos — Lecaps & Boncaps',
                         xaxis_title='Días al Vencimiento', yaxis_title='TNA (%)',
@@ -3042,13 +3050,21 @@ try:
                 _cc = _df[['Activo', '_dur_m', '_tir_a']].dropna()
                 _cc = _cc[_cc['_dur_m'] > 0]
                 if len(_cc) >= 2:
+                    _x_cer, _y_cer = _cc['_dur_m'].values, _cc['_tir_a'].values
                     _fig = go.Figure()
                     _fig.add_trace(go.Scatter(
-                        x=_cc['_dur_m'].values, y=_cc['_tir_a'].values,
+                        x=_x_cer, y=_y_cer,
                         mode='markers+text', text=_cc['Activo'], textposition='top center',
                         textfont=dict(size=10, color='#1a237e'),
                         marker=dict(size=9, color='#1a237e'),
                         hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Anual: %{y:.2f}%<extra></extra>'))
+                    if len(_cc) >= 3:
+                        _cc2 = np.polyfit(np.log(_x_cer), _y_cer, 1)
+                        _xlc = np.linspace(_x_cer.min(), _x_cer.max(), 100)
+                        _fig.add_trace(go.Scatter(
+                            x=_xlc, y=_cc2[0]*np.log(_xlc)+_cc2[1], mode='lines',
+                            line=dict(color='#42a5f5', width=2, dash='dash'),
+                            hoverinfo='skip', showlegend=False))
                     _fig.update_layout(
                         title='Cueva de Rendimientos — Bonos CER',
                         xaxis_title='Duración Modificada', yaxis_title='TIR Anual (%)',
