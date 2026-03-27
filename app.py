@@ -2106,8 +2106,22 @@ try:
                 st.date_input("", value=get_next_business_day(), format="DD/MM/YYYY",
                               key="fecha_liq_lecap", label_visibility="collapsed")
                 st.markdown("<div class='inline-field-label'>Precio Dirty</div>", unsafe_allow_html=True)
-                st.number_input("", min_value=0.0, step=0.01, format="%.2f",
-                                key=f"precio_lecap_{bono_actual['nombre']}", label_visibility="collapsed")
+                _key_lec = f"precio_lecap_{bono_actual['nombre']}"
+                _precio_lec_default = st.session_state.get(_key_lec, 0.0) or 0.0
+                if _key_lec not in st.session_state:
+                    try:
+                        _pd_lec = {**obtener_precios_data912('arg_bonds'),
+                                   **obtener_precios_data912('arg_corp'),
+                                   **obtener_precios_data912('arg_notes')}
+                        _tk_lec = bono_actual.get('ticker', '').strip().upper()
+                        _pm_lec = _pd_lec.get(_tk_lec)
+                        if _pm_lec and _pm_lec.get('c', 0) > 0:
+                            _precio_lec_default = float(_pm_lec['c'])
+                            st.session_state[_key_lec] = _precio_lec_default
+                    except Exception:
+                        pass
+                st.number_input("", min_value=0.0, value=_precio_lec_default, step=0.01, format="%.2f",
+                                key=_key_lec, label_visibility="collapsed")
                 col_calc_lec, col_vol_lec = st.columns(2)
                 with col_calc_lec:
                     st.button("Calcular", type="primary", use_container_width=True, key="calcular_lecap", disabled=True)
