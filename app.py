@@ -2930,9 +2930,13 @@ try:
                         xaxis=dict(showgrid=True, gridcolor='#cccccc'),
                         yaxis=dict(showgrid=True, gridcolor='#cccccc'))
                     st.plotly_chart(_fig, use_container_width=True)
-                st.dataframe(
-                    _df[['Activo','Vencimiento','Precio','TIR Semestral','Dur. Mod.','Var. %']],
-                    use_container_width=True, hide_index=True)
+                _cols_usd = ['Activo','Vencimiento','Precio','TIR Semestral','Dur. Mod.','Var. %']
+                _hdr = ''.join(f'<th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e0e0e0;background:#fafafa;font-weight:700;font-size:13px">{c}</th>' for c in _cols_usd)
+                _rows = ''
+                for _i, _r in _df[_cols_usd].iterrows():
+                    _bg = '#ffffff' if _i % 2 == 0 else '#f7f9fc'
+                    _rows += '<tr style="background:' + _bg + '">' + ''.join(f'<td style="padding:7px 12px;border-bottom:1px solid #e8e8e8;font-size:13px">{_r[c]}</td>' for c in _cols_usd) + '</tr>'
+                st.markdown(f'<div style="border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;margin-top:8px"><table style="width:100%;border-collapse:collapse">{_hdr}{_rows}</table></div>', unsafe_allow_html=True)
             else:
                 st.info("No hay precios disponibles para Soberano USD.")
 
@@ -2986,9 +2990,13 @@ try:
                         xaxis=dict(showgrid=True, gridcolor='#cccccc'),
                         yaxis=dict(showgrid=True, gridcolor='#cccccc'))
                     st.plotly_chart(_fig, use_container_width=True)
-                st.dataframe(
-                    _df[['Activo','Vencimiento','Días Rem.','Precio','TNA','TEM','Var. %']],
-                    use_container_width=True, hide_index=True)
+                _cols_lec = ['Activo','Vencimiento','Días Rem.','Precio','TNA','TEM','Var. %']
+                _hdr2 = ''.join(f'<th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e0e0e0;background:#fafafa;font-weight:700;font-size:13px">{c}</th>' for c in _cols_lec)
+                _rows2 = ''
+                for _i, _r in _df[_cols_lec].iterrows():
+                    _bg2 = '#ffffff' if _i % 2 == 0 else '#f7f9fc'
+                    _rows2 += '<tr style="background:' + _bg2 + '">' + ''.join(f'<td style="padding:7px 12px;border-bottom:1px solid #e8e8e8;font-size:13px">{_r[c]}</td>' for c in _cols_lec) + '</tr>'
+                st.markdown(f'<div style="border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;margin-top:8px"><table style="width:100%;border-collapse:collapse">{_hdr2}{_rows2}</table></div>', unsafe_allow_html=True)
             else:
                 st.info("No hay precios disponibles para Lecaps & Boncaps.")
 
