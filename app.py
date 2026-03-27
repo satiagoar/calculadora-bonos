@@ -8,6 +8,7 @@ from plotly.subplots import make_subplots
 import json
 import requests
 import re
+from urllib.parse import quote
 warnings.filterwarnings('ignore')
 
 def formatear_numero(numero, decimales=2, usar_separador_miles=True):
@@ -2845,8 +2846,24 @@ try:
                     else:
                         cells += f'<td>{val_str}</td>'
                 if clickable:
-                    bono_name = _esc(str(row[cols[0]]))
-                    rows += f'<tr data-bono="{bono_name}">{cells}</tr>'
+                    bono_raw = str(row[cols[0]])
+                    bono_href = quote(bono_raw, safe='')
+                    anchor = f'<a href="?bono={bono_href}" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:1;"></a>'
+                    # Inject anchor into first cell so it covers the entire row
+                    first_col = cols[0]
+                    cells_click = ''
+                    for i, col in enumerate(cols):
+                        val = row[col]
+                        val_str = _esc(val)
+                        if col == 'Var. Diaria %' and val != '-':
+                            color = '#2e7d32' if str(val).startswith('+') else '#c62828'
+                            td = f'<td style="color:{color};font-weight:600">{val_str}</td>'
+                        else:
+                            td = f'<td>{val_str}</td>'
+                        if i == 0:
+                            td = f'<td style="position:relative">{anchor}{val_str}</td>'
+                        cells_click += td
+                    rows += f'<tr style="position:relative;cursor:pointer">{cells_click}</tr>'
                 else:
                     rows += f'<tr>{cells}</tr>'
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
@@ -3354,28 +3371,6 @@ try:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
 
-        # JS: habilitar clic en filas de tabla para navegar a la calculadora del bono
-        st.components.v1.html("""
-        <script>
-        (function() {
-            function bindClicks() {
-                var rows = window.parent.document.querySelectorAll('tr[data-bono]');
-                rows.forEach(function(row) {
-                    if (!row._bonoClickBound) {
-                        row._bonoClickBound = true;
-                        row.addEventListener('click', function() {
-                            var bono = this.getAttribute('data-bono');
-                            window.parent.location.search = '?bono=' + encodeURIComponent(bono);
-                        });
-                    }
-                });
-            }
-            bindClicks();
-            setTimeout(bindClicks, 400);
-            setTimeout(bindClicks, 1200);
-        })();
-        </script>
-        """, height=0)
 
 
 except FileNotFoundError:
