@@ -8,7 +8,6 @@ from plotly.subplots import make_subplots
 import json
 import requests
 import re
-from urllib.parse import quote
 warnings.filterwarnings('ignore')
 
 def formatear_numero(numero, decimales=2, usar_separador_miles=True):
@@ -2846,28 +2845,48 @@ try:
                     else:
                         cells += f'<td>{val_str}</td>'
                 if clickable:
-                    bono_raw = str(row[cols[0]])
-                    bono_href = quote(bono_raw, safe='')
-                    anchor = f'<a href="?bono={bono_href}" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:1;"></a>'
-                    # Inject anchor into first cell so it covers the entire row
-                    first_col = cols[0]
-                    cells_click = ''
-                    for i, col in enumerate(cols):
-                        val = row[col]
-                        val_str = _esc(val)
-                        if col == 'Var. Diaria %' and val != '-':
-                            color = '#2e7d32' if str(val).startswith('+') else '#c62828'
-                            td = f'<td style="color:{color};font-weight:600">{val_str}</td>'
-                        else:
-                            td = f'<td>{val_str}</td>'
-                        if i == 0:
-                            td = f'<td style="position:relative">{anchor}{val_str}</td>'
-                        cells_click += td
-                    rows += f'<tr style="position:relative;cursor:pointer">{cells_click}</tr>'
+                    bono_name = _esc(str(row[cols[0]]))
+                    rows += f'<tr data-bono="{bono_name}">{cells}</tr>'
                 else:
                     rows += f'<tr>{cells}</tr>'
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
+
+        _IFRAME_CSS = (
+            'body{margin:0;padding:0;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}'
+            '.bond-wrap{border-radius:10px;overflow:hidden;border:1px solid #e0e0e0}'
+            '.bond-title{background:#fafafa;color:#333;font-weight:700;font-size:14px;padding:11px 14px;border-bottom:2px solid #e0e0e0;letter-spacing:.02em}'
+            '.bond-table{width:100%;border-collapse:collapse;font-size:13px}'
+            '.bond-table th{background:#fafafa;color:#555;font-weight:600;padding:9px 12px;text-align:center;border-bottom:2px solid #e0e0e0;white-space:nowrap}'
+            '.bond-table th:first-child{text-align:left}'
+            '.bond-table td{padding:8px 12px;color:#333;white-space:nowrap;text-align:center}'
+            '.bond-table td:first-child{text-align:left}'
+            '.bond-table tr:nth-child(even) td{background:#f7f7f7}'
+            '.bond-table tr:nth-child(odd) td{background:#ffffff}'
+            '.bond-table tr:hover td{background:#eef2ff}'
+            '.bond-table tr[data-bono]{cursor:pointer}'
+            '.bond-table tr[data-bono]:hover td{background:#dbeafe!important}'
+        )
+        _IFRAME_JS = (
+            'document.querySelectorAll("tr[data-bono]").forEach(function(r){'
+            '  r.addEventListener("click",function(){'
+            '    window.parent.location.search="?bono="+encodeURIComponent(this.getAttribute("data-bono"));'
+            '  });'
+            '});'
+            'if(window.frameElement)window.frameElement.height=document.body.scrollHeight+"px";'
+        )
+
+        def _render_tabla_iframe(table_html, nrows, nsep=0):
+            h = max(120, nrows * 38 + nsep * 6 + 55)
+            doc = (
+                '<html><head><meta charset="utf-8"><style>'
+                + _IFRAME_CSS
+                + '</style></head><body>'
+                + table_html
+                + '<script>' + _IFRAME_JS + '</script>'
+                + '</body></html>'
+            )
+            st.components.v1.html(doc, height=h, scrolling=False)
 
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
         with st.spinner("Cargando precios y calculando métricas..."):
@@ -3110,7 +3129,10 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 _sep = _sov_separadores if 'soberano' in tipo.lower() else None
-                st.markdown(render_tabla_html(df_tabla, separadores=_sep, clickable=True), unsafe_allow_html=True)
+                _render_tabla_iframe(
+                    render_tabla_html(df_tabla, separadores=_sep, clickable=True),
+                    nrows=len(df_tabla), nsep=len(_sep) if _sep else 0
+                )
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
@@ -3235,7 +3257,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(render_tabla_html(df_lec, clickable=True), unsafe_allow_html=True)
+                _render_tabla_iframe(render_tabla_html(df_lec, clickable=True), nrows=len(df_lec))
             else:
                 st.info("No hay precios disponibles en este momento.")
 
@@ -3366,7 +3388,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(render_tabla_html(df_cer, clickable=True), unsafe_allow_html=True)
+                _render_tabla_iframe(render_tabla_html(df_cer, clickable=True), nrows=len(df_cer))
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
