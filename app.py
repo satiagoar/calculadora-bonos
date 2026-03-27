@@ -2835,10 +2835,23 @@ try:
         _remaining = max(1.0, _CYCLE - (_now - st.session_state.monitor_tick))
         _pidx      = st.session_state.monitor_panel
 
-        # Timer de rotación automática
-        st.components.v1.html(
-            f"<script>setTimeout(function(){{window.parent.location.reload();}},{int(_remaining*1000)});</script>",
-            height=0)
+        # Timer de rotación automática — click oculto para preservar session_state
+        _mon_tick_ms = int(_remaining * 1000)
+        st.markdown('<div style="height:0;overflow:hidden;position:absolute">', unsafe_allow_html=True)
+        if st.button("↺", key="mon_auto_tick"):
+            pass  # el click sólo dispara el rerun; la lógica de panel ya está arriba
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.components.v1.html(f"""<script>
+        setTimeout(function() {{
+            var els = window.parent.document.querySelectorAll('button p, button span');
+            for (var el of els) {{
+                if (el.textContent.trim() === '↺') {{
+                    el.closest('button').click();
+                    return;
+                }}
+            }}
+        }}, {_mon_tick_ms});
+        </script>""", height=0)
 
         # Fetch precios
         with st.spinner("Cargando datos..."):
