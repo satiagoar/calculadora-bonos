@@ -1467,13 +1467,10 @@ try:
             st.session_state.bono_seleccionado = None
         if 'calcular' not in st.session_state:
             st.session_state.calcular = False
-        _bono_idx = None
-        if st.session_state.get('bono_seleccionado') in nombres_bonos:
-            _bono_idx = nombres_bonos.index(st.session_state.bono_seleccionado)
         bono_seleccionado = st.selectbox(
-            "Elija un Bono",
+            "Elija un Bono", 
             nombres_bonos,
-            index=_bono_idx,
+            index=None,  # Ningún bono seleccionado por defecto
             placeholder="Seleccione un bono...",
             key="bono_selectbox"
         )
@@ -2808,15 +2805,13 @@ try:
         .bond-table tr:nth-child(even) td { background:#f7f7f7; }
         .bond-table tr:nth-child(odd) td { background:#ffffff; }
         .bond-table tr:hover td { background:#eef2ff; }
-        .bond-table tr[data-bono] { cursor: pointer; }
-        .bond-table tr[data-bono]:hover td { background:#dbeafe !important; }
         </style>
         """
 
         def _esc(v):
             return str(v).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
-        def render_tabla_html(df, titulo='', separadores=None, clickable=False):
+        def render_tabla_html(df, titulo='', separadores=None):
             # separadores: set of row indices before which to insert a visible separator row
             sep_set = set(separadores) if separadores else set()
             cols = list(df.columns)
@@ -2836,11 +2831,7 @@ try:
                         cells += f'<td style="color:{color};font-weight:600">{val_str}</td>'
                     else:
                         cells += f'<td>{val_str}</td>'
-                if clickable:
-                    bono_name = _esc(str(row[cols[0]]))
-                    rows += f'<tr data-bono="{bono_name}">{cells}</tr>'
-                else:
-                    rows += f'<tr>{cells}</tr>'
+                rows += f'<tr>{cells}</tr>'
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
@@ -3084,20 +3075,8 @@ try:
                 df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
-                _tabla_key = f"tabla_{tipo.lower().replace(' ', '_').replace('/', '_')}"
-                _ev = st.dataframe(
-                    df_tabla,
-                    on_select="rerun",
-                    selection_mode="single-row",
-                    use_container_width=True,
-                    hide_index=True,
-                    key=_tabla_key,
-                )
-                if _ev.selection.rows:
-                    _nombre = df_raw.iloc[_ev.selection.rows[0]]['Activo']
-                    st.session_state.bono_seleccionado = _nombre
-                    st.session_state.calcular = False
-                    st.rerun()
+                _sep = _sov_separadores if 'soberano' in tipo.lower() else None
+                st.markdown(render_tabla_html(df_tabla, separadores=_sep), unsafe_allow_html=True)
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
@@ -3222,15 +3201,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                _ev_lec = st.dataframe(
-                    df_lec, on_select="rerun", selection_mode="single-row",
-                    use_container_width=True, hide_index=True, key="tabla_lecaps",
-                )
-                if _ev_lec.selection.rows:
-                    _nombre = df_lec_raw.iloc[_ev_lec.selection.rows[0]]['Activo']
-                    st.session_state.bono_seleccionado = _nombre
-                    st.session_state.calcular = False
-                    st.rerun()
+                st.markdown(render_tabla_html(df_lec), unsafe_allow_html=True)
             else:
                 st.info("No hay precios disponibles en este momento.")
 
@@ -3361,19 +3332,10 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                _ev_cer = st.dataframe(
-                    df_cer, on_select="rerun", selection_mode="single-row",
-                    use_container_width=True, hide_index=True, key="tabla_cer",
-                )
-                if _ev_cer.selection.rows:
-                    _nombre = df_cer_raw.iloc[_ev_cer.selection.rows[0]]['Activo']
-                    st.session_state.bono_seleccionado = _nombre
-                    st.session_state.calcular = False
-                    st.rerun()
+                st.markdown(render_tabla_html(df_cer), unsafe_allow_html=True)
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
-
 
 
 except FileNotFoundError:
