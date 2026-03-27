@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import time
 import warnings
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -1572,9 +1573,20 @@ try:
                     if k in st.session_state:
                         del st.session_state[k]
                 st.rerun()
-    
-    
-    
+
+        # Monitor
+        st.markdown("---")
+        if 'monitor' not in st.session_state:
+            st.session_state.monitor = False
+        if st.button("Monitor", use_container_width=True, key="btn_monitor"):
+            st.session_state.monitor = True
+            st.session_state.bono_seleccionado = None
+            st.session_state.flujos_bonos_seleccionados = []
+            for _k in ('monitor_tick', 'monitor_panel'):
+                st.session_state.pop(_k, None)
+            st.rerun()
+
+
     # S2 (Calculadora de Flujos) - activo cuando hay bonos en la lista
     if st.session_state.get('flujos_bonos_seleccionados'):
         
@@ -2798,7 +2810,190 @@ try:
         # No mostrar nada cuando hay bono seleccionado pero no se ha calculado
         pass
     
-    if not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bonos_seleccionados'):
+    # ── MONITOR ──────────────────────────────────────────────────────────────
+    if (st.session_state.get('monitor')
+            and not st.session_state.get('bono_seleccionado')
+            and not st.session_state.get('flujos_bonos_seleccionados')):
+
+        st.markdown("""<style>
+        [data-testid="stSidebar"]{display:none!important}
+        [data-testid="stSidebarCollapseButton"]{display:none!important}
+        section[data-testid="stMain"]{margin-left:0!important;width:100vw!important;max-width:100vw!important}
+        </style>""", unsafe_allow_html=True)
+
+        _PANELES = ['Soberano USD', 'Lecaps & Boncaps']
+        _CYCLE   = 30
+        _now     = time.time()
+
+        if 'monitor_tick' not in st.session_state:
+            st.session_state.monitor_tick  = _now
+            st.session_state.monitor_panel = 0
+        if _now - st.session_state.monitor_tick >= _CYCLE:
+            st.session_state.monitor_panel = (st.session_state.monitor_panel + 1) % len(_PANELES)
+            st.session_state.monitor_tick  = _now
+
+        _remaining = max(1.0, _CYCLE - (_now - st.session_state.monitor_tick))
+        _pidx      = st.session_state.monitor_panel
+
+        # Barra de control
+        _ca, _cb, _cc, _cd = st.columns([1, 5, 1, 2])
+        with _ca:
+            if st.button("◀", use_container_width=True, key="mon_prev"):
+                st.session_state.monitor_panel = (_pidx - 1) % len(_PANELES)
+                st.session_state.monitor_tick  = _now
+                st.rerun()
+        with _cb:
+            st.markdown(f"<h2 style='text-align:center;margin:4px 0'>{_PANELES[_pidx]}</h2>",
+                        unsafe_allow_html=True)
+            st.progress(1.0 - _remaining / _CYCLE, text=f"Próximo panel en {int(_remaining)}s")
+        with _cc:
+            if st.button("▶", use_container_width=True, key="mon_next"):
+                st.session_state.monitor_panel = (_pidx + 1) % len(_PANELES)
+                st.session_state.monitor_tick  = _now
+                st.rerun()
+        with _cd:
+            if st.button("Salir del Monitor", type="secondary", use_container_width=True, key="mon_exit"):
+                st.session_state.monitor = False
+                for _k in ('monitor_tick', 'monitor_panel'):
+                    st.session_state.pop(_k, None)
+                st.rerun()
+
+        st.divider()
+
+        # Timer de rotación automática
+        st.components.v1.html(
+            f"<script>setTimeout(function(){{window.parent.location.reload();}},{int(_remaining*1000)});</script>",
+            height=0)
+
+        # Fetch precios (una sola vez, para ambos paneles)
+        with st.spinner("Cargando datos..."):
+            _mf = get_next_business_day()
+            _mp = {**obtener_precios_data912('arg_bonds'),
+                   **obtener_precios_data912('arg_corp'),
+                   **obtener_precios_data912('arg_notes')}
+
+        # ── Panel 0: Soberano USD ─────────────────────────────────────────
+        if _pidx == 0:
+            _filas = []
+            for _b in bonos:
+                if _b.get('tipo_bono') != 'Soberano USD': continue
+                _tk = _b.get('ticker', '').strip().upper()
+                if not _tk: continue
+                _tkapi = (_tk + 'D') if len(_tk) == 4 else _tk
+                _pd = _mp.get(_tkapi)
+                if not _pd or not _pd.get('c') or _pd['c'] <= 0: continue
+                _precio = _pd['c']; _pct = _pd.get('pct_change')
+                try:
+                    _fl = [f['total'] for f in _b['flujos'] if f['fecha'] > _mf]
+                    _fe = [f['fecha']  for f in _b['flujos'] if f['fecha'] > _mf]
+                    if not _fl: continue
+                    _ytm  = calcular_ytm(_fl, _fe, _precio, _mf, _b['base_calculo'])
+                    _tirs = _b['periodicidad'] * ((1 + _ytm) ** (1 / _b['periodicidad']) - 1)
+                    _mac  = calcular_duracion_macaulay(_fl, _fe, _mf, _ytm, _b['base_calculo'])
+                    _ytma = _b['periodicidad'] * ((1 + _ytm) ** (1 / _b['periodicidad']) - 1)
+                    _dur  = calcular_duracion_modificada(_mac, _ytma / _b['periodicidad'], _b['periodicidad'])
+                    _vcto = encontrar_fecha_vencimiento(_b['flujos'])
+                    _filas.append({
+                        'Activo': _b['nombre'],
+                        'Vencimiento': _vcto.strftime('%d/%m/%Y') if _vcto else '-',
+                        'Precio': f"{_precio:.2f}",
+                        'TIR Semestral': f"{_tirs*100:.2f}%",
+                        'Dur. Mod.': f"{_dur:.2f}",
+                        'Var. %': f"{_pct:+.2f}%" if _pct is not None and not pd.isna(_pct) else '-',
+                        '_tir': _tirs * 100, '_dur': _dur,
+                    })
+                except: continue
+            if _filas:
+                _df = pd.DataFrame(_filas)
+                _sc = _df[['Activo', '_dur', '_tir']].dropna()
+                _sc = _sc[_sc['_dur'] > 0]
+                if len(_sc) >= 3:
+                    _x, _y = _sc['_dur'].values, _sc['_tir'].values
+                    _c  = np.polyfit(np.log(_x), _y, 1)
+                    _xl = np.linspace(_x.min(), _x.max(), 100)
+                    _fig = go.Figure()
+                    _fig.add_trace(go.Scatter(
+                        x=_x, y=_y, mode='markers+text',
+                        text=_sc['Activo'], textposition='top center',
+                        textfont=dict(size=10, color='#1a237e'),
+                        marker=dict(size=9, color='#1a237e'),
+                        hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
+                    _fig.add_trace(go.Scatter(
+                        x=_xl, y=_c[0]*np.log(_xl)+_c[1], mode='lines',
+                        line=dict(color='#42a5f5', width=2, dash='dash'),
+                        hoverinfo='skip', showlegend=False))
+                    _fig.update_layout(
+                        title='Cueva de Rendimientos — Soberano USD',
+                        xaxis_title='Duración Modificada', yaxis_title='TIR Semestral (%)',
+                        plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=400,
+                        margin=dict(t=50, b=40, l=60, r=20),
+                        xaxis=dict(showgrid=True, gridcolor='#cccccc'),
+                        yaxis=dict(showgrid=True, gridcolor='#cccccc'))
+                    st.plotly_chart(_fig, use_container_width=True)
+                st.dataframe(
+                    _df[['Activo','Vencimiento','Precio','TIR Semestral','Dur. Mod.','Var. %']],
+                    use_container_width=True, hide_index=True)
+            else:
+                st.info("No hay precios disponibles para Soberano USD.")
+
+        # ── Panel 1: Lecaps & Boncaps ─────────────────────────────────────
+        else:
+            _lf    = _mf.date() if hasattr(_mf, 'date') else _mf
+            _filas = []
+            for _b in bonos:
+                if _b.get('tipo_bono') != 'Lecaps & Boncaps': continue
+                _tk = _b.get('ticker', '').strip().upper()
+                if not _tk: continue
+                _pd = _mp.get(_tk)
+                if not _pd or not _pd.get('c') or _pd['c'] <= 0: continue
+                _precio = _pd['c']; _pct = _pd.get('pct_change')
+                _mat  = _b.get('maturity')
+                if not _mat: continue
+                _matd = _mat.date() if hasattr(_mat, 'date') else _mat
+                _dr   = max((_matd - _lf).days, 0)
+                if _dr == 0: continue
+                _vf  = _b.get('valor_final', 0) or 0
+                _tna = (_vf - _precio) / _precio / _dr * 365 if _precio > 0 else None
+                _tea = (1 + (_vf - _precio) / _precio) ** (365.0 / _dr) - 1 if _precio > 0 else None
+                _tem = (1 + _tea) ** (1/12) - 1 if _tea is not None else None
+                _filas.append({
+                    'Activo': _b['nombre'],
+                    'Vencimiento': _matd.strftime('%d/%m/%Y'),
+                    'Días Rem.': _dr,
+                    'Precio': f"{_precio:.2f}",
+                    'TNA': f"{_tna*100:.2f}%" if _tna is not None else '-',
+                    'TEM': f"{_tem*100:.2f}%" if _tem is not None else '-',
+                    'Var. %': f"{_pct:+.2f}%" if _pct is not None and not pd.isna(_pct) else '-',
+                    '_tna': _tna * 100 if _tna else None, '_dr': float(_dr),
+                })
+            if _filas:
+                _df = pd.DataFrame(_filas).sort_values('Días Rem.').reset_index(drop=True)
+                _lc = _df[['Activo', '_dr', '_tna']].dropna()
+                _lc = _lc[_lc['_tna'] > 0]
+                if len(_lc) >= 2:
+                    _fig = go.Figure()
+                    _fig.add_trace(go.Scatter(
+                        x=_lc['_dr'].values, y=_lc['_tna'].values,
+                        mode='markers+text', text=_lc['Activo'], textposition='top center',
+                        textfont=dict(size=10, color='#1a237e'),
+                        marker=dict(size=9, color='#1a237e'),
+                        hovertemplate='<b>%{text}</b><br>Días: %{x:.0f}<br>TNA: %{y:.2f}%<extra></extra>'))
+                    _fig.update_layout(
+                        title='Cueva de Rendimientos — Lecaps & Boncaps',
+                        xaxis_title='Días al Vencimiento', yaxis_title='TNA (%)',
+                        plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=400,
+                        margin=dict(t=50, b=40, l=60, r=20),
+                        xaxis=dict(showgrid=True, gridcolor='#cccccc'),
+                        yaxis=dict(showgrid=True, gridcolor='#cccccc'))
+                    st.plotly_chart(_fig, use_container_width=True)
+                st.dataframe(
+                    _df[['Activo','Vencimiento','Días Rem.','Precio','TNA','TEM','Var. %']],
+                    use_container_width=True, hide_index=True)
+            else:
+                st.info("No hay precios disponibles para Lecaps & Boncaps.")
+
+    # ── S0: Tablas de mercado ─────────────────────────────────────────────
+    if not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('monitor'):
         # Auto-refresh cada 10 minutos (con guard para evitar timers acumulados)
         st.components.v1.html("""<script>
         if (!window._autoRefreshSet) {
