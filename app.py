@@ -3030,9 +3030,9 @@ try:
                     _dc = _df[['Activo', 'Ticker', '_grupo', '_dur', '_tir']].dropna()
                     _dc = _dc[_dc['_dur'] > 0]
                     _fig = go.Figure()
-                    for _gs, _cp, _cl, _nm, _lbl in [
-                        ('GD', '#1a237e', '#42a5f5', 'Globales',  'Globales'),
-                        ('AL', '#1565c0', '#90caf9', 'Bonares',   'Bonares'),
+                    for _gs, _cp, _cl, _nm in [
+                        ('GD', '#1a237e', '#42a5f5', 'Globales'),
+                        ('AL', '#1565c0', '#90caf9', 'Bonares'),
                     ]:
                         _ds = _dc[_dc['_grupo'] == _gs]
                         if len(_ds) < 2: continue
@@ -3041,12 +3041,11 @@ try:
                         _xl = np.linspace(_xg.min(), _xg.max(), 200)
                         _fig.add_trace(go.Scatter(
                             x=_xg, y=_yg, mode='markers+text',
-                            text=[_lbl] * len(_xg), textposition='top center',
+                            text=_ds['Activo'], textposition='top center',
                             textfont=dict(size=14, color=_cp),
                             marker=dict(size=10, color=_cp),
                             name=_nm,
-                            customdata=_ds['Activo'].values,
-                            hovertemplate='<b>%{customdata}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
+                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
                         _fig.add_trace(go.Scatter(
                             x=_xl, y=_coeffs[0]*np.log(_xl)+_coeffs[1], mode='lines',
                             line=dict(color=_cl, width=2, dash='dash'),
@@ -3055,12 +3054,11 @@ try:
                     if len(_db) > 0:
                         _fig.add_trace(go.Scatter(
                             x=_db['_dur'].values, y=_db['_tir'].values,
-                            mode='markers+text', text=['Bopreal'] * len(_db), textposition='top center',
+                            mode='markers+text', text=_db['Activo'], textposition='top center',
                             textfont=dict(size=14, color='#6a1b9a'),
                             marker=dict(size=10, color='#6a1b9a'),
                             name='Bopreal',
-                            customdata=_db['Activo'].values,
-                            hovertemplate='<b>%{customdata}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
+                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
                     _fig.update_layout(
                         title='Cueva de Rendimientos — Soberano USD',
                         xaxis_title='Duración Modificada', yaxis_title='TIR Semestral (%)',
