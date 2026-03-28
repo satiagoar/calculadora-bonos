@@ -2971,9 +2971,18 @@ try:
             _rows = ''
             for _i, _r in df[cols].iterrows():
                 _bg = '#ffffff' if _i % 2 == 0 else '#f7f9fc'
-                _rows += '<tr style="background:' + _bg + '">' + ''.join(
-                    f'<td style="padding:9px 14px;border-bottom:1px solid #e8e8e8;font-size:16px;text-align:{"left" if c == "Activo" else "center"}">{_r[c]}</td>'
-                    for c in cols) + '</tr>'
+                _cells = ''
+                for c in cols:
+                    val = _r[c]
+                    style = f'padding:9px 14px;border-bottom:1px solid #e8e8e8;font-size:16px;text-align:{"left" if c == "Activo" else "center"}'
+                    if c == 'Var. %' and isinstance(val, str) and val != '-':
+                        try:
+                            num = float(val.replace('%','').replace('+',''))
+                            style += ';color:' + ('#2e7d32' if num > 0 else '#c62828' if num < 0 else '#333')
+                            style += ';font-weight:600'
+                        except: pass
+                    _cells += f'<td style="{style}">{val}</td>'
+                _rows += f'<tr style="background:{_bg}">{_cells}</tr>'
             st.markdown(f'<div style="border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;margin-top:8px"><table style="width:100%;border-collapse:collapse">{_hdr}{_rows}</table></div>', unsafe_allow_html=True)
 
         st.markdown(f"<h2 style='text-align:center;margin:8px 0 16px'>{_tipo}</h2>", unsafe_allow_html=True)
@@ -3101,11 +3110,10 @@ try:
                 if _modo == 'grafico':
                     if len(_lc) >= 2:
                         _x_lec, _y_lec = _lc['_dr'].values, _lc['_tna'].values
-                        _etiq_lec = [f"{a}\n{v:.1f}%" for a, v in zip(_lc['Activo'], _lc['_tna'])]
                         _fig = go.Figure()
                         _fig.add_trace(go.Scatter(
                             x=_x_lec, y=_y_lec,
-                            mode='markers+text', text=_etiq_lec, textposition='top center',
+                            mode='markers+text', text=_lc['Activo'], textposition='top center',
                             textfont=dict(size=14, color='#1a237e'),
                             marker=dict(size=10, color='#1a237e'),
                             hovertemplate='<b>%{text}</b><br>Días: %{x:.0f}<br>TNA: %{y:.2f}%<extra></extra>'))
@@ -3176,11 +3184,10 @@ try:
                 if _modo == 'grafico':
                     if len(_cc) >= 2:
                         _x_cer, _y_cer = _cc['_dur_m'].values, _cc['_tir_a'].values
-                        _etiq_cer = [f"{a}\n{v:.1f}%" for a, v in zip(_cc['Activo'], _cc['_tir_a'])]
                         _fig = go.Figure()
                         _fig.add_trace(go.Scatter(
                             x=_x_cer, y=_y_cer,
-                            mode='markers+text', text=_etiq_cer, textposition='top center',
+                            mode='markers+text', text=_cc['Activo'], textposition='top center',
                             textfont=dict(size=14, color='#1a237e'),
                             marker=dict(size=10, color='#1a237e'),
                             hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Anual: %{y:.2f}%<extra></extra>'))
