@@ -854,7 +854,7 @@ def get_next_business_day():
     d = datetime.now().date() + timedelta(days=1)
     while not es_dia_habil(d):
         d += timedelta(days=1)
-    return d
+    return datetime(d.year, d.month, d.day)
 
 def n_dias_habiles_antes(fecha, n):
     """Devuelve la fecha que cae n días hábiles antes de la fecha dada."""
