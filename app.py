@@ -826,18 +826,112 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# Función para calcular el próximo día hábil
+# ── Feriados Argentina 2025-2026 ─────────────────────────────────────────────
+import datetime as _dt
+FERIADOS_ARGENTINA = {
+    # 2025
+    _dt.date(2025,  1,  1), _dt.date(2025,  3,  3), _dt.date(2025,  3,  4),
+    _dt.date(2025,  3, 24), _dt.date(2025,  4,  2), _dt.date(2025,  4, 18),
+    _dt.date(2025,  5,  1), _dt.date(2025,  5, 25), _dt.date(2025,  6, 20),
+    _dt.date(2025,  7,  9), _dt.date(2025,  8, 18), _dt.date(2025, 10, 13),
+    _dt.date(2025, 11, 24), _dt.date(2025, 12,  8), _dt.date(2025, 12, 25),
+    # 2026
+    _dt.date(2026,  1,  1), _dt.date(2026,  2, 16), _dt.date(2026,  2, 17),
+    _dt.date(2026,  3, 24), _dt.date(2026,  4,  2), _dt.date(2026,  4,  3),
+    _dt.date(2026,  5,  1), _dt.date(2026,  5, 25), _dt.date(2026,  6, 20),
+    _dt.date(2026,  7,  9), _dt.date(2026,  8, 17), _dt.date(2026, 10, 12),
+    _dt.date(2026, 11, 23), _dt.date(2026, 12,  8), _dt.date(2026, 12, 25),
+}
+
+def es_dia_habil(fecha):
+    """Devuelve True si la fecha es día hábil (no fin de semana ni feriado)."""
+    if hasattr(fecha, 'date'):
+        fecha = fecha.date()
+    return fecha.weekday() < 5 and fecha not in FERIADOS_ARGENTINA
+
 def get_next_business_day():
-    today = datetime.now()
-    next_day = today + timedelta(days=1)
-    
-    # Si es sábado (5) o domingo (6), ir al lunes
-    if next_day.weekday() == 5:  # Sábado
-        next_day += timedelta(days=2)
-    elif next_day.weekday() == 6:  # Domingo
-        next_day += timedelta(days=1)
-    
-    return next_day
+    """Devuelve el próximo día hábil desde hoy, considerando feriados."""
+    d = datetime.now().date() + timedelta(days=1)
+    while not es_dia_habil(d):
+        d += timedelta(days=1)
+    return d
+
+def n_dias_habiles_antes(fecha, n):
+    """Devuelve la fecha que cae n días hábiles antes de la fecha dada."""
+    if hasattr(fecha, 'date'):
+        fecha = fecha.date()
+    d = fecha - timedelta(days=1)
+    count = 0
+    while count < n:
+        if es_dia_habil(d):
+            count += 1
+        if count < n:
+            d -= timedelta(days=1)
+    return d
+
+# ── CER desde BCRA ────────────────────────────────────────────────────────────
+def _cer_periodo_actual():
+    """
+    Clave de período que cambia solo el día 15 de cada mes,
+    que es cuando el BCRA publica el nuevo XLS con los valores del mes.
+    Antes del 15: clave = mes anterior. A partir del 15: clave = mes actual.
+    """
+    hoy = datetime.now().date()
+    if hoy.day >= 15:
+        return (hoy.year, hoy.month)
+    else:
+        primer_dia_mes = hoy.replace(day=1)
+        mes_anterior = primer_dia_mes - timedelta(days=1)
+        return (mes_anterior.year, mes_anterior.month)
+
+@st.cache_data
+def obtener_cer_bcra(periodo=None):
+    """
+    Descarga los valores diarios de CER desde los XLS anuales del BCRA.
+    URL: https://www.bcra.gob.ar/pdfs/PublicacionesEstadisticas/cerYYYY.xls
+    El parámetro `periodo` actúa como cache key: solo cambia el día 15 de cada
+    mes, por lo que el XLS se descarga una sola vez por período mensual.
+    Retorna dict {datetime.date: float}.
+    """
+    try:
+        import xlrd, ssl
+        ctx = ssl._create_unverified_context()
+    except ImportError:
+        return {}
+
+    cer_dict = {}
+    current_year = datetime.now().year
+    for year in [current_year - 1, current_year]:
+        url = f"https://www.bcra.gob.ar/pdfs/PublicacionesEstadisticas/cer{year}.xls"
+        try:
+            import urllib.request
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
+                data = r.read()
+            wb = xlrd.open_workbook(file_contents=data)
+            sh = wb.sheets()[0]
+            for i in range(sh.nrows):
+                if sh.cell_type(i, 4) == 2 and sh.cell_type(i, 5) == 2:
+                    fecha_str = str(int(sh.cell_value(i, 4)))
+                    if len(fecha_str) == 8:
+                        fecha = _dt.date(int(fecha_str[:4]), int(fecha_str[4:6]), int(fecha_str[6:8]))
+                        cer_dict[fecha] = sh.cell_value(i, 5)
+        except Exception:
+            pass
+    return cer_dict
+
+def obtener_cer_settlement(fecha_liquidacion):
+    """
+    Retorna (valor_cer, fecha_cer) donde fecha_cer es el 10° día hábil
+    anterior a fecha_liquidacion, según la convención de bonos CER.
+    """
+    cer_data = obtener_cer_bcra(periodo=_cer_periodo_actual())
+    if not cer_data:
+        return None, None
+    if hasattr(fecha_liquidacion, 'date'):
+        fecha_liquidacion = fecha_liquidacion.date()
+    fecha_cer = n_dias_habiles_antes(fecha_liquidacion, 10)
+    return cer_data.get(fecha_cer), fecha_cer
 
 # Función para calcular días entre fechas según base de cálculo
 def calcular_dias(fecha1, fecha2, base_calculo):
@@ -2271,23 +2365,17 @@ try:
                 </div>
                 """, unsafe_allow_html=True)
             with col2_cer:
-                # Obtener último valor CER desde API datos.gob.ar
-                try:
-                    import requests as _req_cer
-                    _cer_resp = _req_cer.get(
-                        'https://apis.datos.gob.ar/series/api/series/?ids=94.2_CD_D_0_0_10&last=1&format=json',
-                        timeout=5
-                    ).json()
-                    _cer_settlement = _cer_resp['data'][0][1]
-                    _cer_settlement_fecha = _cer_resp['data'][0][0]
-                except Exception:
-                    _cer_settlement = None
-                    _cer_settlement_fecha = ''
-                _cer_settl_str = f"{formatear_numero(_cer_settlement, 4)}<br><span style='font-size:0.7rem;color:#888'>({_cer_settlement_fecha})</span>" if _cer_settlement else "-"
+                # Obtener CER de liquidación desde BCRA (10° día hábil anterior)
+                _fecha_liq_cer = st.session_state.get('fecha_liq_cer', get_next_business_day())
+                _cer_settlement, _cer_settlement_fecha = obtener_cer_settlement(_fecha_liq_cer)
+                _cer_settl_str = (
+                    f"{formatear_numero(_cer_settlement, 4)}"
+                    f"<br><span style='font-size:0.7rem;color:#888'>({_cer_settlement_fecha.strftime('%d/%m/%Y') if _cer_settlement_fecha else ''})"
+                    f"<br>10° día hábil anterior</span>"
+                ) if _cer_settlement else "-"
 
                 # Cálculos para TIR Real
                 _precio_cer = st.session_state.get(f"precio_cer_{bono_actual['nombre']}", 0.0) or 0.0
-                _fecha_liq_cer = st.session_state.get('fecha_liq_cer', get_next_business_day())
                 _mat_cer2 = bono_actual.get('maturity')
                 if _mat_cer2 and _fecha_liq_cer:
                     _mat_date_cer = _mat_cer2.date() if hasattr(_mat_cer2, 'date') else _mat_cer2
@@ -3001,16 +3089,8 @@ try:
         else:
             st.markdown("<h2 style='text-align:center;margin:8px 0 16px'>Bonos CER</h2>", unsafe_allow_html=True)
             _lf = _mf.date() if hasattr(_mf, 'date') else _mf
-            # Obtener CER de liquidación
-            _cer_mon = None
-            try:
-                import requests as _req
-                _cr = _req.get(
-                    'https://apis.datos.gob.ar/series/api/series/?ids=94.2_CD_D_0_0_10&last=1&format=json',
-                    timeout=5).json()
-                _cer_mon = _cr['data'][0][1]
-            except Exception:
-                pass
+            # Obtener CER de liquidación desde BCRA (10° día hábil anterior a _mf)
+            _cer_mon, _ = obtener_cer_settlement(_mf)
             _filas = []
             for _b in bonos:
                 if _b.get('tipo_bono') != 'Bonos CER': continue
@@ -3515,16 +3595,8 @@ try:
             # --- Tabla Bonos CER ---
             st.markdown("<div style='margin-top:2.5rem'></div>", unsafe_allow_html=True)
 
-            # Obtener CER settlement una sola vez para toda la tabla
-            try:
-                import requests as _rcer_tab
-                _cer_resp_tab = _rcer_tab.get(
-                    'https://apis.datos.gob.ar/series/api/series/?ids=94.2_CD_D_0_0_10&last=1&format=json',
-                    timeout=5
-                ).json()
-                _cer_settl_tab = _cer_resp_tab['data'][0][1]
-            except Exception:
-                _cer_settl_tab = None
+            # Obtener CER settlement desde BCRA (10° día hábil anterior a fecha_hoy_p)
+            _cer_settl_tab, _ = obtener_cer_settlement(fecha_hoy_p)
 
             bonos_cer = [b for b in bonos if b.get('tipo_bono') == 'Bonos CER']
             filas_cer = []
