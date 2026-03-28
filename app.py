@@ -3261,8 +3261,21 @@ try:
                 st.rerun()
         # Botón hidden que el timer JS clickea para disparar rerun
         with _bce:
-            if st.button("\u23f2montick", key="mon_tick_hidden", use_container_width=False):
-                pass  # el rerun lo dispara el click del timer
+            if st.button("\u23f2montick", key="mon_tick_hidden"):
+                pass
+        # Ocultar el botón tick via JS (CSS no puede seleccionar por texto)
+        st.components.v1.html("""<script>
+        (function hide() {
+            var els = window.parent.document.querySelectorAll('button p, button span');
+            for (var i = 0; i < els.length; i++) {
+                if (els[i].textContent.trim() === '\u23f2montick') {
+                    els[i].closest('button').style.display = 'none';
+                    return;
+                }
+            }
+            setTimeout(hide, 100);
+        })();
+        </script>""", height=0)
 
     # ── S0: Tablas de mercado ─────────────────────────────────────────────
     if not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('monitor'):
