@@ -2917,19 +2917,28 @@ try:
         [data-testid="stMainBlockContainer"]{padding-left:15vw!important;padding-right:15vw!important;max-width:100vw!important}
         </style>""", unsafe_allow_html=True)
 
-        _PANELES = ['Soberano USD', 'Lecaps & Boncaps', 'Bonos CER']
-        _CYCLE   = 30
-        _now     = time.time()
+        # 6 estados: gráfico + tabla por cada tipo
+        _ESTADOS = [
+            ('Soberano USD',     'grafico'),
+            ('Soberano USD',     'tabla'),
+            ('Lecaps & Boncaps', 'grafico'),
+            ('Lecaps & Boncaps', 'tabla'),
+            ('Bonos CER',        'grafico'),
+            ('Bonos CER',        'tabla'),
+        ]
+        _CYCLE = 30
+        _now   = time.time()
 
         if 'monitor_tick' not in st.session_state:
             st.session_state.monitor_tick  = _now
             st.session_state.monitor_panel = 0
         if _now - st.session_state.monitor_tick >= _CYCLE:
-            st.session_state.monitor_panel = (st.session_state.monitor_panel + 1) % len(_PANELES)
+            st.session_state.monitor_panel = (st.session_state.monitor_panel + 1) % len(_ESTADOS)
             st.session_state.monitor_tick  = _now
 
         _remaining = max(1.0, _CYCLE - (_now - st.session_state.monitor_tick))
         _pidx      = st.session_state.monitor_panel
+        _tipo, _modo = _ESTADOS[_pidx]
 
         # Timer de rotación automática
         _mon_tick_ms = int(_remaining * 1000)
@@ -2965,9 +2974,10 @@ try:
                     for c in cols) + '</tr>'
             st.markdown(f'<div style="border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;margin-top:8px"><table style="width:100%;border-collapse:collapse">{_hdr}{_rows}</table></div>', unsafe_allow_html=True)
 
-        # ── Panel 0: Soberano USD ─────────────────────────────────────────
-        if _pidx == 0:
-            st.markdown("<h2 style='text-align:center;margin:8px 0 16px'>Soberano USD</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align:center;margin:8px 0 16px'>{_tipo}</h2>", unsafe_allow_html=True)
+
+        # ── Soberano USD ──────────────────────────────────────────────────
+        if _tipo == 'Soberano USD':
             _filas = []
             for _b in bonos:
                 if _b.get('tipo_bono') != 'Soberano USD': continue
@@ -3001,36 +3011,39 @@ try:
                 _df = pd.DataFrame(_filas)
                 _sc = _df[['Activo', '_dur', '_tir']].dropna()
                 _sc = _sc[_sc['_dur'] > 0]
-                if len(_sc) >= 3:
-                    _x, _y = _sc['_dur'].values, _sc['_tir'].values
-                    _c  = np.polyfit(np.log(_x), _y, 1)
-                    _xl = np.linspace(_x.min(), _x.max(), 100)
-                    _fig = go.Figure()
-                    _fig.add_trace(go.Scatter(
-                        x=_x, y=_y, mode='markers+text',
-                        text=_sc['Activo'], textposition='top center',
-                        textfont=dict(size=10, color='#1a237e'),
-                        marker=dict(size=9, color='#1a237e'),
-                        hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
-                    _fig.add_trace(go.Scatter(
-                        x=_xl, y=_c[0]*np.log(_xl)+_c[1], mode='lines',
-                        line=dict(color='#42a5f5', width=2, dash='dash'),
-                        hoverinfo='skip', showlegend=False))
-                    _fig.update_layout(
-                        title='Cueva de Rendimientos — Soberano USD',
-                        xaxis_title='Duración Modificada', yaxis_title='TIR Semestral (%)',
-                        plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=400,
-                        margin=dict(t=50, b=40, l=60, r=20),
-                        xaxis=dict(showgrid=True, gridcolor='#cccccc'),
-                        yaxis=dict(showgrid=True, gridcolor='#cccccc'))
-                    st.plotly_chart(_fig, use_container_width=True)
-                _mon_tabla(['Activo','Vencimiento','Precio','TIR Semestral','Dur. Mod.','Var. %'], _df)
+                if _modo == 'grafico':
+                    if len(_sc) >= 3:
+                        _x, _y = _sc['_dur'].values, _sc['_tir'].values
+                        _c  = np.polyfit(np.log(_x), _y, 1)
+                        _xl = np.linspace(_x.min(), _x.max(), 100)
+                        _fig = go.Figure()
+                        _fig.add_trace(go.Scatter(
+                            x=_x, y=_y, mode='markers+text',
+                            text=_sc['Activo'], textposition='top center',
+                            textfont=dict(size=10, color='#1a237e'),
+                            marker=dict(size=9, color='#1a237e'),
+                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
+                        _fig.add_trace(go.Scatter(
+                            x=_xl, y=_c[0]*np.log(_xl)+_c[1], mode='lines',
+                            line=dict(color='#42a5f5', width=2, dash='dash'),
+                            hoverinfo='skip', showlegend=False))
+                        _fig.update_layout(
+                            title='Cueva de Rendimientos — Soberano USD',
+                            xaxis_title='Duración Modificada', yaxis_title='TIR Semestral (%)',
+                            plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=500,
+                            margin=dict(t=50, b=40, l=60, r=20),
+                            xaxis=dict(showgrid=True, gridcolor='#cccccc'),
+                            yaxis=dict(showgrid=True, gridcolor='#cccccc'))
+                        st.plotly_chart(_fig, use_container_width=True)
+                    else:
+                        st.info("No hay suficientes datos para el gráfico.")
+                else:
+                    _mon_tabla(['Activo','Vencimiento','Precio','TIR Semestral','Dur. Mod.','Var. %'], _df)
             else:
                 st.info("No hay precios disponibles para Soberano USD.")
 
-        # ── Panel 1: Lecaps & Boncaps ─────────────────────────────────────
-        elif _pidx == 1:
-            st.markdown("<h2 style='text-align:center;margin:8px 0 16px'>Lecaps & Boncaps</h2>", unsafe_allow_html=True)
+        # ── Lecaps & Boncaps ──────────────────────────────────────────────
+        elif _tipo == 'Lecaps & Boncaps':
             _lf    = _mf.date() if hasattr(_mf, 'date') else _mf
             _filas = []
             for _b in bonos:
@@ -3063,39 +3076,41 @@ try:
                 _df = pd.DataFrame(_filas).sort_values('Días Rem.').reset_index(drop=True)
                 _lc = _df[['Activo', '_dr', '_tna']].dropna()
                 _lc = _lc[_lc['_tna'] > 0]
-                if len(_lc) >= 2:
-                    _x_lec, _y_lec = _lc['_dr'].values, _lc['_tna'].values
-                    _fig = go.Figure()
-                    _fig.add_trace(go.Scatter(
-                        x=_x_lec, y=_y_lec,
-                        mode='markers+text', text=_lc['Activo'], textposition='top center',
-                        textfont=dict(size=10, color='#1a237e'),
-                        marker=dict(size=9, color='#1a237e'),
-                        hovertemplate='<b>%{text}</b><br>Días: %{x:.0f}<br>TNA: %{y:.2f}%<extra></extra>'))
-                    if len(_lc) >= 3:
-                        _cl = np.polyfit(np.log(_x_lec), _y_lec, 1)
-                        _xll = np.linspace(_x_lec.min(), _x_lec.max(), 100)
+                if _modo == 'grafico':
+                    if len(_lc) >= 2:
+                        _x_lec, _y_lec = _lc['_dr'].values, _lc['_tna'].values
+                        _fig = go.Figure()
                         _fig.add_trace(go.Scatter(
-                            x=_xll, y=_cl[0]*np.log(_xll)+_cl[1], mode='lines',
-                            line=dict(color='#42a5f5', width=2, dash='dash'),
-                            hoverinfo='skip', showlegend=False))
-                    _fig.update_layout(
-                        title='Cueva de Rendimientos — Lecaps & Boncaps',
-                        xaxis_title='Días al Vencimiento', yaxis_title='TNA (%)',
-                        plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=400,
-                        margin=dict(t=50, b=40, l=60, r=20),
-                        xaxis=dict(showgrid=True, gridcolor='#cccccc'),
-                        yaxis=dict(showgrid=True, gridcolor='#cccccc'))
-                    st.plotly_chart(_fig, use_container_width=True)
-                _mon_tabla(['Activo','Vencimiento','Días Rem.','Precio','TNA','TEM','Var. %'], _df)
+                            x=_x_lec, y=_y_lec,
+                            mode='markers+text', text=_lc['Activo'], textposition='top center',
+                            textfont=dict(size=10, color='#1a237e'),
+                            marker=dict(size=9, color='#1a237e'),
+                            hovertemplate='<b>%{text}</b><br>Días: %{x:.0f}<br>TNA: %{y:.2f}%<extra></extra>'))
+                        if len(_lc) >= 3:
+                            _cl = np.polyfit(np.log(_x_lec), _y_lec, 1)
+                            _xll = np.linspace(_x_lec.min(), _x_lec.max(), 100)
+                            _fig.add_trace(go.Scatter(
+                                x=_xll, y=_cl[0]*np.log(_xll)+_cl[1], mode='lines',
+                                line=dict(color='#42a5f5', width=2, dash='dash'),
+                                hoverinfo='skip', showlegend=False))
+                        _fig.update_layout(
+                            title='Cueva de Rendimientos — Lecaps & Boncaps',
+                            xaxis_title='Días al Vencimiento', yaxis_title='TNA (%)',
+                            plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=500,
+                            margin=dict(t=50, b=40, l=60, r=20),
+                            xaxis=dict(showgrid=True, gridcolor='#cccccc'),
+                            yaxis=dict(showgrid=True, gridcolor='#cccccc'))
+                        st.plotly_chart(_fig, use_container_width=True)
+                    else:
+                        st.info("No hay suficientes datos para el gráfico.")
+                else:
+                    _mon_tabla(['Activo','Vencimiento','Días Rem.','Precio','TNA','TEM','Var. %'], _df)
             else:
                 st.info("No hay precios disponibles para Lecaps & Boncaps.")
 
-        # ── Panel 2: Bonos CER ────────────────────────────────────────────
+        # ── Bonos CER ─────────────────────────────────────────────────────
         else:
-            st.markdown("<h2 style='text-align:center;margin:8px 0 16px'>Bonos CER</h2>", unsafe_allow_html=True)
             _lf = _mf.date() if hasattr(_mf, 'date') else _mf
-            # Obtener CER de liquidación desde BCRA (10° día hábil anterior a _mf)
             _cer_mon, _ = obtener_cer_settlement(_mf)
             _filas = []
             for _b in bonos:
@@ -3135,31 +3150,35 @@ try:
                 _df = pd.DataFrame(_filas).sort_values('Días Rem.').reset_index(drop=True)
                 _cc = _df[['Activo', '_dur_m', '_tir_a']].dropna()
                 _cc = _cc[_cc['_dur_m'] > 0]
-                if len(_cc) >= 2:
-                    _x_cer, _y_cer = _cc['_dur_m'].values, _cc['_tir_a'].values
-                    _fig = go.Figure()
-                    _fig.add_trace(go.Scatter(
-                        x=_x_cer, y=_y_cer,
-                        mode='markers+text', text=_cc['Activo'], textposition='top center',
-                        textfont=dict(size=10, color='#1a237e'),
-                        marker=dict(size=9, color='#1a237e'),
-                        hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Anual: %{y:.2f}%<extra></extra>'))
-                    if len(_cc) >= 3:
-                        _cc2 = np.polyfit(np.log(_x_cer), _y_cer, 1)
-                        _xlc = np.linspace(_x_cer.min(), _x_cer.max(), 100)
+                if _modo == 'grafico':
+                    if len(_cc) >= 2:
+                        _x_cer, _y_cer = _cc['_dur_m'].values, _cc['_tir_a'].values
+                        _fig = go.Figure()
                         _fig.add_trace(go.Scatter(
-                            x=_xlc, y=_cc2[0]*np.log(_xlc)+_cc2[1], mode='lines',
-                            line=dict(color='#42a5f5', width=2, dash='dash'),
-                            hoverinfo='skip', showlegend=False))
-                    _fig.update_layout(
-                        title='Cueva de Rendimientos — Bonos CER',
-                        xaxis_title='Duración Modificada', yaxis_title='TIR Anual (%)',
-                        plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=400,
-                        margin=dict(t=50, b=40, l=60, r=20),
-                        xaxis=dict(showgrid=True, gridcolor='#cccccc'),
-                        yaxis=dict(showgrid=True, gridcolor='#cccccc'))
-                    st.plotly_chart(_fig, use_container_width=True)
-                _mon_tabla(['Activo','Vencimiento','Días Rem.','Precio','TIR Anual','TIR Mensual','Dur. Mod.','Var. %'], _df)
+                            x=_x_cer, y=_y_cer,
+                            mode='markers+text', text=_cc['Activo'], textposition='top center',
+                            textfont=dict(size=10, color='#1a237e'),
+                            marker=dict(size=9, color='#1a237e'),
+                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Anual: %{y:.2f}%<extra></extra>'))
+                        if len(_cc) >= 3:
+                            _cc2 = np.polyfit(np.log(_x_cer), _y_cer, 1)
+                            _xlc = np.linspace(_x_cer.min(), _x_cer.max(), 100)
+                            _fig.add_trace(go.Scatter(
+                                x=_xlc, y=_cc2[0]*np.log(_xlc)+_cc2[1], mode='lines',
+                                line=dict(color='#42a5f5', width=2, dash='dash'),
+                                hoverinfo='skip', showlegend=False))
+                        _fig.update_layout(
+                            title='Cueva de Rendimientos — Bonos CER',
+                            xaxis_title='Duración Modificada', yaxis_title='TIR Anual (%)',
+                            plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=500,
+                            margin=dict(t=50, b=40, l=60, r=20),
+                            xaxis=dict(showgrid=True, gridcolor='#cccccc'),
+                            yaxis=dict(showgrid=True, gridcolor='#cccccc'))
+                        st.plotly_chart(_fig, use_container_width=True)
+                    else:
+                        st.info("No hay suficientes datos para el gráfico.")
+                else:
+                    _mon_tabla(['Activo','Vencimiento','Días Rem.','Precio','TIR Anual','TIR Mensual','Dur. Mod.','Var. %'], _df)
             else:
                 st.info("No hay precios disponibles para Bonos CER.")
 
