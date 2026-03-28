@@ -3030,9 +3030,9 @@ try:
                     _dc = _df[['Activo', 'Ticker', '_grupo', '_dur', '_tir']].dropna()
                     _dc = _dc[_dc['_dur'] > 0]
                     _fig = go.Figure()
-                    for _gs, _cp, _cl, _nm in [
-                        ('GD', '#1a237e', '#42a5f5', 'GD (Ley NY)'),
-                        ('AL', '#1565c0', '#90caf9', 'AL / AO / AN (Ley ARG)'),
+                    for _gs, _cp, _cl, _nm, _lbl in [
+                        ('GD', '#1a237e', '#42a5f5', 'Globales',  'Globales'),
+                        ('AL', '#1565c0', '#90caf9', 'Bonares',   'Bonares'),
                     ]:
                         _ds = _dc[_dc['_grupo'] == _gs]
                         if len(_ds) < 2: continue
@@ -3041,11 +3041,12 @@ try:
                         _xl = np.linspace(_xg.min(), _xg.max(), 200)
                         _fig.add_trace(go.Scatter(
                             x=_xg, y=_yg, mode='markers+text',
-                            text=_ds['Activo'], textposition='top center',
+                            text=[_lbl] * len(_xg), textposition='top center',
                             textfont=dict(size=14, color=_cp),
                             marker=dict(size=10, color=_cp),
                             name=_nm,
-                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
+                            customdata=_ds['Activo'].values,
+                            hovertemplate='<b>%{customdata}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
                         _fig.add_trace(go.Scatter(
                             x=_xl, y=_coeffs[0]*np.log(_xl)+_coeffs[1], mode='lines',
                             line=dict(color=_cl, width=2, dash='dash'),
@@ -3054,11 +3055,12 @@ try:
                     if len(_db) > 0:
                         _fig.add_trace(go.Scatter(
                             x=_db['_dur'].values, y=_db['_tir'].values,
-                            mode='markers+text', text=_db['Activo'], textposition='top center',
+                            mode='markers+text', text=['Bopreal'] * len(_db), textposition='top center',
                             textfont=dict(size=14, color='#6a1b9a'),
                             marker=dict(size=10, color='#6a1b9a'),
-                            name='Bonares (B)',
-                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
+                            name='Bopreal',
+                            customdata=_db['Activo'].values,
+                            hovertemplate='<b>%{customdata}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
                     _fig.update_layout(
                         title='Cueva de Rendimientos — Soberano USD',
                         xaxis_title='Duración Modificada', yaxis_title='TIR Semestral (%)',
@@ -3213,13 +3215,20 @@ try:
             else:
                 st.info("No hay precios disponibles para Bonos CER.")
 
-        # Botones al final
-        st.markdown("<div style='margin-top:24px'></div>", unsafe_allow_html=True)
-        _bca, _bcb, _bcc = st.columns([1, 1, 4])
+        # Botones al final — margen grande para quedar fuera de la vista
+        st.markdown("<div style='margin-top:120px'></div>", unsafe_allow_html=True)
+        _bca, _bcb, _bcc, _bcd = st.columns([1, 1, 1, 3])
         with _bca:
-            if st.button("↺", key="mon_auto_tick", use_container_width=True):
-                pass  # dispara rerun; la lógica de panel ya está arriba
+            if st.button("← Anterior", key="mon_prev", use_container_width=True):
+                st.session_state.monitor_panel = (st.session_state.monitor_panel - 1) % len(_ESTADOS)
+                st.session_state.monitor_tick  = time.time()
+                st.rerun()
         with _bcb:
+            if st.button("Siguiente →", key="mon_next", use_container_width=True):
+                st.session_state.monitor_panel = (st.session_state.monitor_panel + 1) % len(_ESTADOS)
+                st.session_state.monitor_tick  = time.time()
+                st.rerun()
+        with _bcc:
             if st.button("Salir del Monitor", type="secondary", use_container_width=True, key="mon_exit"):
                 st.session_state.monitor = False
                 st.session_state.bono_seleccionado        = st.session_state.pop('monitor_prev_bono', None)
