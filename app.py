@@ -1673,6 +1673,8 @@ try:
         if 'monitor' not in st.session_state:
             st.session_state.monitor = False
         if st.button("Monitor", use_container_width=True, key="btn_monitor"):
+            st.session_state.monitor_prev_bono   = st.session_state.get('bono_seleccionado')
+            st.session_state.monitor_prev_flujos = st.session_state.get('flujos_bonos_seleccionados', [])
             st.session_state.monitor = True
             st.session_state.bono_seleccionado = None
             st.session_state.flujos_bonos_seleccionados = []
@@ -2979,6 +2981,11 @@ try:
         # ── Soberano USD ──────────────────────────────────────────────────
         if _tipo == 'Soberano USD':
             _filas = []
+            def _mon_grupo_sov(ticker):
+                t = ticker.upper()
+                if t.startswith('GD'): return 'GD'
+                elif t.startswith('B'): return 'B'
+                else: return 'AL'
             for _b in bonos:
                 if _b.get('tipo_bono') != 'Soberano USD': continue
                 _tk = _b.get('ticker', '').strip().upper()
@@ -2998,45 +3005,60 @@ try:
                     _dur  = calcular_duracion_modificada(_mac, _ytma / _b['periodicidad'], _b['periodicidad'])
                     _vcto = encontrar_fecha_vencimiento(_b['flujos'])
                     _filas.append({
-                        'Activo': _b['nombre'],
+                        'Activo': _b['nombre'], 'Ticker': _tk,
                         'Vencimiento': _vcto.strftime('%d/%m/%Y') if _vcto else '-',
                         'Precio': f"{_precio:.2f}",
                         'TIR Semestral': f"{_tirs*100:.2f}%",
                         'Dur. Mod.': f"{_dur:.2f}",
                         'Var. %': f"{_pct:+.2f}%" if _pct is not None and not pd.isna(_pct) else '-',
                         '_tir': _tirs * 100, '_dur': _dur,
+                        '_grupo': _mon_grupo_sov(_tk),
                     })
                 except: continue
             if _filas:
                 _df = pd.DataFrame(_filas)
-                _sc = _df[['Activo', '_dur', '_tir']].dropna()
-                _sc = _sc[_sc['_dur'] > 0]
                 if _modo == 'grafico':
-                    if len(_sc) >= 3:
-                        _x, _y = _sc['_dur'].values, _sc['_tir'].values
-                        _c  = np.polyfit(np.log(_x), _y, 1)
-                        _xl = np.linspace(_x.min(), _x.max(), 100)
-                        _fig = go.Figure()
+                    _dc = _df[['Activo', 'Ticker', '_grupo', '_dur', '_tir']].dropna()
+                    _dc = _dc[_dc['_dur'] > 0]
+                    _fig = go.Figure()
+                    for _gs, _cp, _cl, _nm in [
+                        ('GD', '#1a237e', '#42a5f5', 'GD (Ley NY)'),
+                        ('AL', '#1565c0', '#90caf9', 'AL / AO / AN (Ley ARG)'),
+                    ]:
+                        _ds = _dc[_dc['_grupo'] == _gs]
+                        if len(_ds) < 2: continue
+                        _xg, _yg = _ds['_dur'].values, _ds['_tir'].values
+                        _coeffs = np.polyfit(np.log(_xg), _yg, 1)
+                        _xl = np.linspace(_xg.min(), _xg.max(), 200)
                         _fig.add_trace(go.Scatter(
-                            x=_x, y=_y, mode='markers+text',
-                            text=_sc['Activo'], textposition='top center',
-                            textfont=dict(size=10, color='#1a237e'),
-                            marker=dict(size=9, color='#1a237e'),
+                            x=_xg, y=_yg, mode='markers+text',
+                            text=_ds['Activo'], textposition='top center',
+                            textfont=dict(size=14, color=_cp),
+                            marker=dict(size=10, color=_cp),
+                            name=_nm,
                             hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
                         _fig.add_trace(go.Scatter(
-                            x=_xl, y=_c[0]*np.log(_xl)+_c[1], mode='lines',
-                            line=dict(color='#42a5f5', width=2, dash='dash'),
+                            x=_xl, y=_coeffs[0]*np.log(_xl)+_coeffs[1], mode='lines',
+                            line=dict(color=_cl, width=2, dash='dash'),
                             hoverinfo='skip', showlegend=False))
-                        _fig.update_layout(
-                            title='Cueva de Rendimientos — Soberano USD',
-                            xaxis_title='Duración Modificada', yaxis_title='TIR Semestral (%)',
-                            plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=500,
-                            margin=dict(t=50, b=40, l=60, r=20),
-                            xaxis=dict(showgrid=True, gridcolor='#cccccc'),
-                            yaxis=dict(showgrid=True, gridcolor='#cccccc'))
-                        st.plotly_chart(_fig, use_container_width=True)
-                    else:
-                        st.info("No hay suficientes datos para el gráfico.")
+                    _db = _dc[_dc['_grupo'] == 'B']
+                    if len(_db) > 0:
+                        _fig.add_trace(go.Scatter(
+                            x=_db['_dur'].values, y=_db['_tir'].values,
+                            mode='markers+text', text=_db['Activo'], textposition='top center',
+                            textfont=dict(size=14, color='#6a1b9a'),
+                            marker=dict(size=10, color='#6a1b9a'),
+                            name='Bonares (B)',
+                            hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Sem.: %{y:.2f}%<extra></extra>'))
+                    _fig.update_layout(
+                        title='Cueva de Rendimientos — Soberano USD',
+                        xaxis_title='Duración Modificada', yaxis_title='TIR Semestral (%)',
+                        plot_bgcolor='#f4f6fb', paper_bgcolor='#f4f6fb', height=500,
+                        margin=dict(t=60, b=40, l=60, r=20),
+                        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+                        xaxis=dict(showgrid=True, gridcolor='#cccccc'),
+                        yaxis=dict(showgrid=True, gridcolor='#cccccc'))
+                    st.plotly_chart(_fig, use_container_width=True)
                 else:
                     _mon_tabla(['Activo','Vencimiento','Precio','TIR Semestral','Dur. Mod.','Var. %'], _df)
             else:
@@ -3079,12 +3101,13 @@ try:
                 if _modo == 'grafico':
                     if len(_lc) >= 2:
                         _x_lec, _y_lec = _lc['_dr'].values, _lc['_tna'].values
+                        _etiq_lec = [f"{a}\n{v:.1f}%" for a, v in zip(_lc['Activo'], _lc['_tna'])]
                         _fig = go.Figure()
                         _fig.add_trace(go.Scatter(
                             x=_x_lec, y=_y_lec,
-                            mode='markers+text', text=_lc['Activo'], textposition='top center',
-                            textfont=dict(size=10, color='#1a237e'),
-                            marker=dict(size=9, color='#1a237e'),
+                            mode='markers+text', text=_etiq_lec, textposition='top center',
+                            textfont=dict(size=14, color='#1a237e'),
+                            marker=dict(size=10, color='#1a237e'),
                             hovertemplate='<b>%{text}</b><br>Días: %{x:.0f}<br>TNA: %{y:.2f}%<extra></extra>'))
                         if len(_lc) >= 3:
                             _cl = np.polyfit(np.log(_x_lec), _y_lec, 1)
@@ -3153,12 +3176,13 @@ try:
                 if _modo == 'grafico':
                     if len(_cc) >= 2:
                         _x_cer, _y_cer = _cc['_dur_m'].values, _cc['_tir_a'].values
+                        _etiq_cer = [f"{a}\n{v:.1f}%" for a, v in zip(_cc['Activo'], _cc['_tir_a'])]
                         _fig = go.Figure()
                         _fig.add_trace(go.Scatter(
                             x=_x_cer, y=_y_cer,
-                            mode='markers+text', text=_cc['Activo'], textposition='top center',
-                            textfont=dict(size=10, color='#1a237e'),
-                            marker=dict(size=9, color='#1a237e'),
+                            mode='markers+text', text=_etiq_cer, textposition='top center',
+                            textfont=dict(size=14, color='#1a237e'),
+                            marker=dict(size=10, color='#1a237e'),
                             hovertemplate='<b>%{text}</b><br>Dur. Mod.: %{x:.2f}<br>TIR Anual: %{y:.2f}%<extra></extra>'))
                         if len(_cc) >= 3:
                             _cc2 = np.polyfit(np.log(_x_cer), _y_cer, 1)
@@ -3191,6 +3215,8 @@ try:
         with _bcb:
             if st.button("Salir del Monitor", type="secondary", use_container_width=True, key="mon_exit"):
                 st.session_state.monitor = False
+                st.session_state.bono_seleccionado        = st.session_state.pop('monitor_prev_bono', None)
+                st.session_state.flujos_bonos_seleccionados = st.session_state.pop('monitor_prev_flujos', [])
                 for _k in ('monitor_tick', 'monitor_panel'):
                     st.session_state.pop(_k, None)
                 st.rerun()
