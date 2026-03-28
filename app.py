@@ -2931,10 +2931,15 @@ try:
         _CYCLE = 30
         _now   = time.time()
 
-        if 'monitor_tick' not in st.session_state:
+        if 'monitor_tick'  not in st.session_state:
             st.session_state.monitor_tick  = _now
             st.session_state.monitor_panel = 0
-        if _now - st.session_state.monitor_tick >= _CYCLE:
+        if 'monitor_auto'  not in st.session_state:
+            st.session_state.monitor_auto  = True
+
+        _auto = st.session_state.monitor_auto
+
+        if _auto and (_now - st.session_state.monitor_tick >= _CYCLE):
             st.session_state.monitor_panel = (st.session_state.monitor_panel + 1) % len(_ESTADOS)
             st.session_state.monitor_tick  = _now
 
@@ -2942,19 +2947,33 @@ try:
         _pidx      = st.session_state.monitor_panel
         _tipo, _modo = _ESTADOS[_pidx]
 
-        # Timer de rotación automática
+        # Timer de rotación automática — guard en window.parent para evitar acumulación
         _mon_tick_ms = int(_remaining * 1000)
+        _ts = int(_now * 1000)
         st.components.v1.html(f"""<script>
-        /* panel={_pidx} ts={int(_now * 1000)} */
-        setTimeout(function() {{
-            var els = window.parent.document.querySelectorAll('button p, button span');
-            for (var el of els) {{
-                if (el.textContent.trim() === '\u21ba') {{
-                    el.closest('button').click();
-                    return;
-                }}
+        (function() {{
+            var ts = {_ts};
+            var auto = {'true' if _auto else 'false'};
+            // Cancelar timer anterior si existe
+            if (window.parent._monTimer) {{
+                clearTimeout(window.parent._monTimer);
+                window.parent._monTimer = null;
             }}
-        }}, {_mon_tick_ms});
+            if (!auto) return;
+            // Evitar registrar el mismo tick dos veces
+            if (window.parent._monLastTs === ts) return;
+            window.parent._monLastTs = ts;
+            window.parent._monTimer = setTimeout(function() {{
+                window.parent._monTimer = null;
+                var els = window.parent.document.querySelectorAll('button p, button span');
+                for (var i = 0; i < els.length; i++) {{
+                    if (els[i].textContent.trim() === '\u23f2montick') {{
+                        els[i].closest('button').click();
+                        return;
+                    }}
+                }}
+            }}, {_mon_tick_ms});
+        }})();
         </script>""", height=0)
 
         # Fetch precios
@@ -3215,7 +3234,7 @@ try:
 
         # Botones al final — margen grande para quedar fuera de la vista
         st.markdown("<div style='margin-top:120px'></div>", unsafe_allow_html=True)
-        _bca, _bcb, _bcc, _bcd = st.columns([1, 1, 1, 3])
+        _bca, _bcb, _bcc, _bcd, _bce = st.columns([1, 1, 1, 1, 2])
         with _bca:
             if st.button("← Anterior", key="mon_prev", use_container_width=True):
                 st.session_state.monitor_panel = (st.session_state.monitor_panel - 1) % len(_ESTADOS)
@@ -3227,13 +3246,23 @@ try:
                 st.session_state.monitor_tick  = time.time()
                 st.rerun()
         with _bcc:
+            _lbl_auto = "⏸ Pausar" if _auto else "▶ Reanudar"
+            if st.button(_lbl_auto, key="mon_auto_toggle", use_container_width=True):
+                st.session_state.monitor_auto = not _auto
+                st.session_state.monitor_tick = time.time()
+                st.rerun()
+        with _bcd:
             if st.button("Salir del Monitor", type="secondary", use_container_width=True, key="mon_exit"):
                 st.session_state.monitor = False
                 st.session_state.bono_seleccionado        = st.session_state.pop('monitor_prev_bono', None)
                 st.session_state.flujos_bonos_seleccionados = st.session_state.pop('monitor_prev_flujos', [])
-                for _k in ('monitor_tick', 'monitor_panel'):
+                for _k in ('monitor_tick', 'monitor_panel', 'monitor_auto'):
                     st.session_state.pop(_k, None)
                 st.rerun()
+        # Botón hidden que el timer JS clickea para disparar rerun
+        with _bce:
+            if st.button("\u23f2montick", key="mon_tick_hidden", use_container_width=False):
+                pass  # el rerun lo dispara el click del timer
 
     # ── S0: Tablas de mercado ─────────────────────────────────────────────
     if not st.session_state.get('bono_seleccionado') and not st.session_state.get('flujos_bonos_seleccionados') and not st.session_state.get('monitor'):
