@@ -2368,11 +2368,17 @@ try:
                 # Obtener CER de liquidación desde BCRA (10° día hábil anterior)
                 _fecha_liq_cer = st.session_state.get('fecha_liq_cer', get_next_business_day())
                 _cer_settlement, _cer_settlement_fecha = obtener_cer_settlement(_fecha_liq_cer)
-                _cer_settl_str = (
-                    f"{formatear_numero(_cer_settlement, 4)}"
-                    f"<br><span style='font-size:0.7rem;color:#888'>({_cer_settlement_fecha.strftime('%d/%m/%Y') if _cer_settlement_fecha else ''})"
-                    f"<br>10° día hábil anterior</span>"
-                ) if _cer_settlement else "-"
+                if _cer_settlement:
+                    _cer_settl_str = (
+                        f"{formatear_numero(_cer_settlement, 4)}"
+                        f"<br><span style='font-size:0.7rem;color:#888'>({_cer_settlement_fecha.strftime('%d/%m/%Y') if _cer_settlement_fecha else ''})</span>"
+                    )
+                else:
+                    _cer_fecha_req = n_dias_habiles_antes(_fecha_liq_cer, 10) if _fecha_liq_cer else None
+                    _cer_settl_str = (
+                        f"-<br><span style='font-size:0.7rem;color:#e65100;'>⚠ Sin dato para "
+                        f"{_cer_fecha_req.strftime('%d/%m/%Y') if _cer_fecha_req else '?'}</span>"
+                    )
 
                 # Cálculos para TIR Real
                 _precio_cer = st.session_state.get(f"precio_cer_{bono_actual['nombre']}", 0.0) or 0.0
