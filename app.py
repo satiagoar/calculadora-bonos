@@ -837,7 +837,7 @@ FERIADOS_ARGENTINA = {
     _dt.date(2025, 11, 24), _dt.date(2025, 12,  8), _dt.date(2025, 12, 25),
     # 2026
     _dt.date(2026,  1,  1), _dt.date(2026,  2, 16), _dt.date(2026,  2, 17),
-    _dt.date(2026,  3, 24), _dt.date(2026,  4,  2), _dt.date(2026,  4,  3),
+    _dt.date(2026,  3, 23), _dt.date(2026,  3, 24), _dt.date(2026,  4,  2), _dt.date(2026,  4,  3),
     _dt.date(2026,  5,  1), _dt.date(2026,  5, 25), _dt.date(2026,  6, 20),
     _dt.date(2026,  7,  9), _dt.date(2026,  8, 17), _dt.date(2026, 10, 12),
     _dt.date(2026, 11, 23), _dt.date(2026, 12,  8), _dt.date(2026, 12, 25),
