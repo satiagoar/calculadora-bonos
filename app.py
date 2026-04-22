@@ -3471,7 +3471,7 @@ try:
                     suppressMenu=True,
                 )
                 gb.configure_grid_options(
-                    domLayout='autoHeight',
+                    domLayout='normal',
                     ensureDomOrder=True,
                     suppressMovableColumns=True,
                     headerHeight=38,
@@ -3532,7 +3532,7 @@ try:
                     gridOptions=gb.build(),
                     key=key,
                     height=table_height,
-                    theme='light',
+                    theme='streamlit',
                     allow_unsafe_jscode=False,
                     update_mode=GridUpdateMode.VALUE_CHANGED,
                     data_return_mode='AS_INPUT',
@@ -3548,10 +3548,6 @@ try:
                             "font-family": "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
                             "font-size": "13px",
                         },
-                        ".ag-header": {
-                            "background-color": "#fafafa",
-                            "border-bottom": "2px solid #e0e0e0",
-                        },
                         ".ag-header-cell": {
                             "padding-left": "8px",
                             "padding-right": "8px",
@@ -3564,7 +3560,6 @@ try:
                             "padding-right": "8px",
                             "display": "flex",
                             "align-items": "center",
-                            "border-color": "#e2e8f0",
                         },
                         ".ag-header-center .ag-header-cell-label": {
                             "justify-content": "center",
