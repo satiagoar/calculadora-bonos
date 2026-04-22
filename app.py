@@ -3371,6 +3371,28 @@ try:
             background: #ffffff !important;
             border-color: #dbe3f0 !important;
         }
+        div[data-testid="stDataEditor"] table th,
+        div[data-testid="stDataEditor"] table td {
+            text-align: right !important;
+        }
+        div[data-testid="stDataEditor"] table th:first-child,
+        div[data-testid="stDataEditor"] table td:first-child {
+            text-align: left !important;
+        }
+        div[data-testid="stDataEditor"] table th:nth-last-child(2),
+        div[data-testid="stDataEditor"] table td:nth-last-child(2) {
+            text-align: center !important;
+        }
+        div[data-testid="stDataEditor"] table th:last-child,
+        div[data-testid="stDataEditor"] table td:last-child {
+            text-align: right !important;
+        }
+        div[data-testid="stDataEditor"] table th:nth-child(2),
+        div[data-testid="stDataEditor"] table td:nth-child(2),
+        div[data-testid="stDataEditor"] table th:nth-child(3),
+        div[data-testid="stDataEditor"] table td:nth-child(3) {
+            text-align: center !important;
+        }
         </style>
         """
 
