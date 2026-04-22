@@ -3375,8 +3375,7 @@ try:
                 for col in cols:
                     val = row[col]
                     if col == '_manual_control':
-                        dot_color = '#2e7d32' if str(val).strip() == '●' else '#9aa5b1'
-                        cells += f'<td style="text-align:center;color:{dot_color};font-size:16px">{val}</td>'
+                        cells += f'<td style="text-align:center">{val}</td>'
                         continue
                     val_str = _esc(val)
                     if col == 'Var. Diaria %' and val != '-':
@@ -3398,19 +3397,73 @@ try:
         def _obtener_precio_manual_tabla(tabla_id, row_id):
             return normalizar_precio_manual_monitor(st.session_state.get(_manual_price_state_key(tabla_id, row_id)))
 
+        def _manual_control_html(tabla_id, activo):
+            activo = str(activo)
+            is_active = _obtener_precio_manual_tabla(tabla_id, activo) is not None
+            action = "reset" if is_active else "edit"
+            symbol = "●" if is_active else "○"
+            color = "#2e7d32" if is_active else "#9aa5b1"
+            event_value = json.dumps(f"{action}:{activo}")
+            selector = json.dumps(f'input[placeholder="__manual_event__{tabla_id}"]')
+            return (
+                f'<a href="#" onclick="(function(){{'
+                f'var s={selector};'
+                f'var input=document.querySelector(s)||(window.parent&&window.parent.document?window.parent.document.querySelector(s):null);'
+                f'if(!input) return false;'
+                f'var setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, \'value\').set;'
+                f'setter.call(input, {event_value});'
+                f'input.dispatchEvent(new Event(\'input\', {{bubbles:true}}));'
+                f'input.dispatchEvent(new Event(\'change\', {{bubbles:true}}));'
+                f'return false;'
+                f'}})(); return false;" '
+                f'style="text-decoration:none;font-size:16px;color:{color};cursor:pointer">{symbol}</a>'
+            )
+
         def _render_manual_price_editor(tabla_id_param, df_source):
             if df_source.empty or 'Activo' not in df_source.columns or '_precio_mercado' not in df_source.columns:
                 return
             activos = df_source['Activo'].tolist()
+            event_key = f"{tabla_id_param}__manual_event"
             selected_key = f"{tabla_id_param}__editor_activo"
             input_key = f"{tabla_id_param}__editor_precio"
             source_key = f"{tabla_id_param}__editor_source"
 
-            if selected_key not in st.session_state or st.session_state[selected_key] not in activos:
-                activo_manual = next((activo for activo in activos if _obtener_precio_manual_tabla(tabla_id_param, activo) is not None), activos[0])
-                st.session_state[selected_key] = activo_manual
+            st.markdown(f"""
+            <style>
+            div[data-testid="stTextInput"]:has(input[placeholder="__manual_event__{tabla_id_param}"]) {{
+                display: none;
+            }}
+            </style>
+            """, unsafe_allow_html=True)
+            st.text_input(
+                "",
+                key=event_key,
+                placeholder=f"__manual_event__{tabla_id_param}",
+                label_visibility="collapsed",
+            )
 
-            activo = st.session_state[selected_key]
+            event_value = st.session_state.get(event_key, "")
+            if event_value:
+                action, _, activo_evento = event_value.partition(":")
+                if activo_evento in activos:
+                    if action == "reset":
+                        _guardar_precio_manual_monitor(tabla_id_param, activo_evento, None)
+                        if st.session_state.get(selected_key) == activo_evento:
+                            st.session_state.pop(selected_key, None)
+                        st.session_state[source_key] = None
+                    else:
+                        st.session_state[selected_key] = activo_evento
+                        st.session_state[source_key] = None
+                st.session_state[event_key] = ""
+                st.rerun()
+
+            if selected_key not in st.session_state or st.session_state[selected_key] not in activos:
+                st.session_state[selected_key] = None
+
+            activo = st.session_state.get(selected_key)
+            if not activo:
+                return
+
             fila = df_source.loc[df_source['Activo'] == activo].iloc[0]
             precio_mercado = float(fila['_precio_mercado'])
             precio_manual = _obtener_precio_manual_tabla(tabla_id_param, activo)
@@ -3479,6 +3532,7 @@ try:
             if reset_clicked:
                 _guardar_precio_manual_monitor(tabla_id_param, activo, None)
                 st.session_state[source_key] = None
+                st.session_state.pop(selected_key, None)
                 st.rerun()
 
         if any(k in st.query_params for k in ("manual_table", "manual_toggle", "manual_market", "manual_action")):
@@ -3723,7 +3777,7 @@ try:
                 tabla_id = _tabla_manual_id(tipo)
                 _render_manual_price_editor(tabla_id, df_tabla)
                 df_tabla_display['_manual_control'] = df_tabla['Activo'].apply(
-                    lambda activo: '●' if _obtener_precio_manual_tabla(tabla_id, activo) is not None else '○'
+                    lambda activo: _manual_control_html(tabla_id, activo)
                 )
                 df_tabla_display['Precio'] = df_tabla_display['Precio'].map('{:.2f}'.format)
                 df_tabla_display['Int. Corridos'] = df_tabla_display['Int. Corridos'].map('{:.4f}'.format)
@@ -3858,7 +3912,7 @@ try:
                 tabla_id_lec = _tabla_manual_id('Lecaps & Boncaps')
                 _render_manual_price_editor(tabla_id_lec, df_lec)
                 df_lec_display['_manual_control'] = df_lec['Activo'].apply(
-                    lambda activo: '●' if _obtener_precio_manual_tabla(tabla_id_lec, activo) is not None else '○'
+                    lambda activo: _manual_control_html(tabla_id_lec, activo)
                 )
                 df_lec_display['Precio'] = df_lec_display['Precio'].map('{:.2f}'.format)
                 df_lec_display['TNA'] = df_lec_display['TNA'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
@@ -3990,7 +4044,7 @@ try:
                 tabla_id_cer = _tabla_manual_id('Bonos CER')
                 _render_manual_price_editor(tabla_id_cer, df_cer)
                 df_cer_display['_manual_control'] = df_cer['Activo'].apply(
-                    lambda activo: '●' if _obtener_precio_manual_tabla(tabla_id_cer, activo) is not None else '○'
+                    lambda activo: _manual_control_html(tabla_id_cer, activo)
                 )
                 df_cer_display['Factor CER'] = df_cer_display['Factor CER'].apply(lambda v: f'{v:.4f}' if v is not None else '-')
                 df_cer_display['Precio'] = df_cer_display['Precio'].map('{:.2f}'.format)
