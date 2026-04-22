@@ -3403,19 +3403,9 @@ try:
             action = "reset" if is_active else "edit"
             symbol = "●" if is_active else "○"
             color = "#2e7d32" if is_active else "#9aa5b1"
-            event_value = json.dumps(f"{action}:{activo}")
-            selector = json.dumps(f'input[placeholder="__manual_event__{tabla_id}"]')
             return (
-                f'<a href="#" onclick="(function(){{'
-                f'var s={selector};'
-                f'var input=document.querySelector(s)||(window.parent&&window.parent.document?window.parent.document.querySelector(s):null);'
-                f'if(!input) return false;'
-                f'var setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, \'value\').set;'
-                f'setter.call(input, {event_value});'
-                f'input.dispatchEvent(new Event(\'input\', {{bubbles:true}}));'
-                f'input.dispatchEvent(new Event(\'change\', {{bubbles:true}}));'
-                f'return false;'
-                f'}})(); return false;" '
+                f'<a href="?manual_table={tabla_id}&manual_toggle={activo}&manual_action={action}" '
+                'target="_self" '
                 f'style="text-decoration:none;font-size:16px;color:{color};cursor:pointer">{symbol}</a>'
             )
 
@@ -3423,55 +3413,14 @@ try:
             if df_source.empty or 'Activo' not in df_source.columns or '_precio_mercado' not in df_source.columns:
                 return
             activos = df_source['Activo'].tolist()
-            event_key = f"{tabla_id_param}__manual_event"
             selected_key = f"{tabla_id_param}__editor_activo"
             input_key = f"{tabla_id_param}__editor_precio"
             source_key = f"{tabla_id_param}__editor_source"
-
-            st.markdown(f"""
-            <style>
-            div[data-testid="stTextInput"]:has(input[placeholder="__manual_event__{tabla_id_param}"]) {{
-                display: none;
-            }}
-            </style>
-            """, unsafe_allow_html=True)
-            st.text_input(
-                "",
-                key=event_key,
-                placeholder=f"__manual_event__{tabla_id_param}",
-                label_visibility="collapsed",
-            )
-
-            event_value = st.session_state.get(event_key, "")
-            if event_value:
-                action, _, activo_evento = event_value.partition(":")
-                if activo_evento in activos:
-                    if action == "reset":
-                        _guardar_precio_manual_monitor(tabla_id_param, activo_evento, None)
-                        if st.session_state.get(selected_key) == activo_evento:
-                            st.session_state.pop(selected_key, None)
-                        st.session_state[source_key] = None
-                    else:
-                        st.session_state[selected_key] = activo_evento
-                        st.session_state[source_key] = None
-                st.session_state[event_key] = ""
-                st.rerun()
 
             if selected_key not in st.session_state or st.session_state[selected_key] not in activos:
                 st.session_state[selected_key] = None
 
             activo = st.session_state.get(selected_key)
-            if not activo:
-                return
-
-            fila = df_source.loc[df_source['Activo'] == activo].iloc[0]
-            precio_mercado = float(fila['_precio_mercado'])
-            precio_manual = _obtener_precio_manual_tabla(tabla_id_param, activo)
-            precio_editor = float(precio_manual if precio_manual is not None else precio_mercado)
-            source_token = f"{activo}:{precio_editor:.6f}"
-            if st.session_state.get(source_key) != source_token:
-                st.session_state[input_key] = precio_editor
-                st.session_state[source_key] = source_token
 
             st.markdown("""
             <style>
@@ -3497,31 +3446,70 @@ try:
                 select_col, input_col, apply_col, reset_col = st.columns([3, 2, 1, 1])
                 with select_col:
                     st.markdown('<div class="manual-editor-label">Activo</div>', unsafe_allow_html=True)
-                    st.selectbox(
-                        "",
-                        activos,
-                        key=selected_key,
-                        label_visibility="collapsed",
-                    )
+                    if activo:
+                        st.selectbox(
+                            "",
+                            activos,
+                            key=selected_key,
+                            label_visibility="collapsed",
+                        )
+                    else:
+                        st.text_input(
+                            "",
+                            value="",
+                            placeholder="Click en un punto para editar",
+                            disabled=True,
+                            key=f"{tabla_id_param}__editor_placeholder",
+                            label_visibility="collapsed",
+                        )
                 with input_col:
                     st.markdown('<div class="manual-editor-label">Precio Manual</div>', unsafe_allow_html=True)
-                    st.number_input(
-                        "",
-                        min_value=0.0,
-                        step=0.01,
-                        format="%.2f",
-                        key=input_key,
-                        label_visibility="collapsed",
-                    )
+                    if activo:
+                        fila = df_source.loc[df_source['Activo'] == activo].iloc[0]
+                        precio_mercado = float(fila['_precio_mercado'])
+                        precio_manual = _obtener_precio_manual_tabla(tabla_id_param, activo)
+                        precio_editor = float(precio_manual if precio_manual is not None else precio_mercado)
+                        source_token = f"{activo}:{precio_editor:.6f}"
+                        if st.session_state.get(source_key) != source_token:
+                            st.session_state[input_key] = precio_editor
+                            st.session_state[source_key] = source_token
+                        st.number_input(
+                            "",
+                            min_value=0.0,
+                            step=0.01,
+                            format="%.2f",
+                            key=input_key,
+                            label_visibility="collapsed",
+                        )
+                    else:
+                        st.number_input(
+                            "",
+                            min_value=0.0,
+                            value=0.0,
+                            step=0.01,
+                            format="%.2f",
+                            key=f"{tabla_id_param}__editor_placeholder_precio",
+                            label_visibility="collapsed",
+                            disabled=True,
+                        )
                 with apply_col:
                     st.markdown('<div class="manual-editor-label">&nbsp;</div>', unsafe_allow_html=True)
-                    apply_clicked = st.button("OK", key=f"{tabla_id_param}__editor_apply", use_container_width=True)
+                    apply_clicked = st.button(
+                        "OK",
+                        key=f"{tabla_id_param}__editor_apply",
+                        use_container_width=True,
+                        disabled=not bool(activo),
+                    )
                 with reset_col:
                     st.markdown('<div class="manual-editor-label">&nbsp;</div>', unsafe_allow_html=True)
-                    reset_clicked = st.button("Reset", key=f"{tabla_id_param}__editor_reset", use_container_width=True)
+                    reset_clicked = st.button(
+                        "Reset",
+                        key=f"{tabla_id_param}__editor_reset",
+                        use_container_width=True,
+                        disabled=not bool(activo),
+                    )
 
-            activo = st.session_state[selected_key]
-            if apply_clicked:
+            if activo and apply_clicked:
                 _guardar_precio_manual_monitor(
                     tabla_id_param,
                     activo,
@@ -3529,13 +3517,28 @@ try:
                 )
                 st.session_state[source_key] = None
                 st.rerun()
-            if reset_clicked:
+            if activo and reset_clicked:
                 _guardar_precio_manual_monitor(tabla_id_param, activo, None)
                 st.session_state[source_key] = None
                 st.session_state.pop(selected_key, None)
                 st.rerun()
 
-        if any(k in st.query_params for k in ("manual_table", "manual_toggle", "manual_market", "manual_action")):
+        qp_toggle = st.query_params.get("manual_toggle")
+        qp_table = st.query_params.get("manual_table")
+        qp_action = st.query_params.get("manual_action")
+        if qp_toggle and qp_table:
+            tabla_id_qp = qp_table if isinstance(qp_table, str) else qp_table[-1]
+            activo_qp = qp_toggle if isinstance(qp_toggle, str) else qp_toggle[-1]
+            action_qp = qp_action if isinstance(qp_action, str) else (qp_action[-1] if qp_action else "edit")
+            selected_key_qp = f"{tabla_id_qp}__editor_activo"
+            source_key_qp = f"{tabla_id_qp}__editor_source"
+            if action_qp == "reset":
+                _guardar_precio_manual_monitor(tabla_id_qp, activo_qp, None)
+                if st.session_state.get(selected_key_qp) == activo_qp:
+                    st.session_state.pop(selected_key_qp, None)
+            else:
+                st.session_state[selected_key_qp] = activo_qp
+            st.session_state[source_key_qp] = None
             st.query_params.clear()
 
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
