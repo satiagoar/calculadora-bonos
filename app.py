@@ -3397,37 +3397,30 @@ try:
         def _obtener_precio_manual_tabla(tabla_id, row_id):
             return normalizar_precio_manual_monitor(st.session_state.get(_manual_price_state_key(tabla_id, row_id)))
 
-        def _close_manual_dialog():
-            st.session_state.pop("monitor_manual_dialog_table", None)
-            st.session_state.pop("monitor_manual_dialog_activo", None)
-            st.session_state.pop("monitor_manual_dialog_precio_mercado", None)
-            st.session_state.pop("monitor_manual_dialog_commit", None)
+        def _render_manual_price_editor(tabla_id_param, df_source):
+            if df_source.empty or 'Activo' not in df_source.columns or '_precio_mercado' not in df_source.columns:
+                return
+            activos = df_source['Activo'].tolist()
+            selected_key = f"{tabla_id_param}__editor_activo"
+            input_key = f"{tabla_id_param}__editor_precio"
+            source_key = f"{tabla_id_param}__editor_source"
 
-        def _render_manual_price_editor(tabla_id_param):
-            tabla_id = st.session_state.get("monitor_manual_dialog_table")
-            activo = st.session_state.get("monitor_manual_dialog_activo")
-            if tabla_id != tabla_id_param or not activo:
-                return
-            precio_mercado = float(st.session_state.get("monitor_manual_dialog_precio_mercado", 0.0) or 0.0)
-            precio_manual = _obtener_precio_manual_tabla(tabla_id, activo) if tabla_id and activo else None
-            if not tabla_id:
-                return
-            input_key = "monitor_manual_dialog_input"
-            activo_key = "monitor_manual_dialog_input_activo"
-            if st.session_state.get(activo_key) != f"{tabla_id}:{activo}":
-                st.session_state[input_key] = float(precio_manual if precio_manual is not None else precio_mercado)
-                st.session_state[activo_key] = f"{tabla_id}:{activo}"
+            if selected_key not in st.session_state or st.session_state[selected_key] not in activos:
+                activo_manual = next((activo for activo in activos if _obtener_precio_manual_tabla(tabla_id_param, activo) is not None), activos[0])
+                st.session_state[selected_key] = activo_manual
+
+            activo = st.session_state[selected_key]
+            fila = df_source.loc[df_source['Activo'] == activo].iloc[0]
+            precio_mercado = float(fila['_precio_mercado'])
+            precio_manual = _obtener_precio_manual_tabla(tabla_id_param, activo)
+            precio_editor = float(precio_manual if precio_manual is not None else precio_mercado)
+            source_token = f"{activo}:{precio_editor:.6f}"
+            if st.session_state.get(source_key) != source_token:
+                st.session_state[input_key] = precio_editor
+                st.session_state[source_key] = source_token
 
             st.markdown("""
             <style>
-            .manual-editor-card {
-                border: 1px solid #dbe3f0;
-                border-radius: 10px;
-                background: #ffffff;
-                padding: 10px 12px 12px 12px;
-                margin: 0.5rem 0 1rem 0;
-                box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-            }
             .manual-editor-label {
                 font-size: 0.78rem;
                 color: #586174;
@@ -3447,54 +3440,47 @@ try:
             """, unsafe_allow_html=True)
 
             with st.container(border=True):
-                st.markdown(f'<div class="manual-editor-label">{_esc(activo)}</div>', unsafe_allow_html=True)
-                with st.form(f"monitor_manual_editor_form__{tabla_id}"):
-                    input_col, submit_col, close_col = st.columns([6, 1, 1])
-                    with input_col:
-                        st.number_input(
-                            "",
-                            min_value=0.0,
-                            step=0.01,
-                            format="%.2f",
-                            key=input_key,
-                            label_visibility="collapsed",
-                        )
-                    with submit_col:
-                        submitted = st.form_submit_button("OK", use_container_width=True)
-                    with close_col:
-                        dismissed = st.form_submit_button("✕", use_container_width=True)
+                select_col, input_col, apply_col, reset_col = st.columns([3, 2, 1, 1])
+                with select_col:
+                    st.markdown('<div class="manual-editor-label">Activo</div>', unsafe_allow_html=True)
+                    st.selectbox(
+                        "",
+                        activos,
+                        key=selected_key,
+                        label_visibility="collapsed",
+                    )
+                with input_col:
+                    st.markdown('<div class="manual-editor-label">Precio Manual</div>', unsafe_allow_html=True)
+                    st.number_input(
+                        "",
+                        min_value=0.0,
+                        step=0.01,
+                        format="%.2f",
+                        key=input_key,
+                        label_visibility="collapsed",
+                    )
+                with apply_col:
+                    st.markdown('<div class="manual-editor-label">&nbsp;</div>', unsafe_allow_html=True)
+                    apply_clicked = st.button("OK", key=f"{tabla_id_param}__editor_apply", use_container_width=True)
+                with reset_col:
+                    st.markdown('<div class="manual-editor-label">&nbsp;</div>', unsafe_allow_html=True)
+                    reset_clicked = st.button("Reset", key=f"{tabla_id_param}__editor_reset", use_container_width=True)
 
-            if submitted:
+            activo = st.session_state[selected_key]
+            if apply_clicked:
                 _guardar_precio_manual_monitor(
-                    tabla_id,
+                    tabla_id_param,
                     activo,
                     normalizar_precio_manual_monitor(st.session_state.get(input_key))
                 )
-                _close_manual_dialog()
+                st.session_state[source_key] = None
                 st.rerun()
-            if dismissed:
-                _close_manual_dialog()
+            if reset_clicked:
+                _guardar_precio_manual_monitor(tabla_id_param, activo, None)
+                st.session_state[source_key] = None
                 st.rerun()
 
-        qp_toggle = st.query_params.get("manual_toggle")
-        qp_table = st.query_params.get("manual_table")
-        qp_market = st.query_params.get("manual_market")
-        qp_action = st.query_params.get("manual_action")
-        if qp_toggle and qp_table:
-            tabla_id_qp = qp_table if isinstance(qp_table, str) else qp_table[-1]
-            activo_qp = qp_toggle if isinstance(qp_toggle, str) else qp_toggle[-1]
-            precio_market_qp = qp_market if isinstance(qp_market, str) else (qp_market[-1] if qp_market else "0")
-            action_qp = qp_action if isinstance(qp_action, str) else (qp_action[-1] if qp_action else "")
-            if action_qp == "reset":
-                _guardar_precio_manual_monitor(tabla_id_qp, activo_qp, None)
-                _close_manual_dialog()
-            else:
-                st.session_state["monitor_manual_dialog_table"] = tabla_id_qp
-                st.session_state["monitor_manual_dialog_activo"] = activo_qp
-                try:
-                    st.session_state["monitor_manual_dialog_precio_mercado"] = float(precio_market_qp)
-                except (TypeError, ValueError):
-                    st.session_state["monitor_manual_dialog_precio_mercado"] = 0.0
+        if any(k in st.query_params for k in ("manual_table", "manual_toggle", "manual_market", "manual_action")):
             st.query_params.clear()
 
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
@@ -3734,18 +3720,12 @@ try:
                 row_ids = df_tabla['Activo'].tolist()
                 df_tabla_display = df_tabla.drop(columns=['_precio_mercado'], errors='ignore').copy()
                 tabla_id = _tabla_manual_id(tipo)
-                _render_manual_price_editor(tabla_id)
+                _render_manual_price_editor(tabla_id, df_tabla)
                 df_tabla_display['_manual_control'] = df_tabla['Activo'].apply(
                     lambda activo: (
-                        f'<a href="?manual_table={tabla_id}&manual_toggle={activo}&manual_market='
-                        f'{float(df_tabla.loc[df_tabla["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=reset" '
-                        'target="_self" '
-                        'style="text-decoration:none;font-size:16px;color:#2e7d32">●</a>'
+                        '<span style="font-size:16px;color:#2e7d32">●</span>'
                         if _obtener_precio_manual_tabla(tabla_id, activo) is not None else
-                        f'<a href="?manual_table={tabla_id}&manual_toggle={activo}&manual_market='
-                        f'{float(df_tabla.loc[df_tabla["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=edit" '
-                        'target="_self" '
-                        'style="text-decoration:none;font-size:16px;color:#9aa5b1">○</a>'
+                        '<span style="font-size:16px;color:#9aa5b1">○</span>'
                     )
                 )
                 df_tabla_display['Precio'] = df_tabla_display['Precio'].map('{:.2f}'.format)
@@ -3879,18 +3859,12 @@ try:
                 df_lec = df_lec.sort_values('Días Rem.').reset_index(drop=True)
                 df_lec_display = df_lec.drop(columns=['_precio_mercado'], errors='ignore').copy()
                 tabla_id_lec = _tabla_manual_id('Lecaps & Boncaps')
-                _render_manual_price_editor(tabla_id_lec)
+                _render_manual_price_editor(tabla_id_lec, df_lec)
                 df_lec_display['_manual_control'] = df_lec['Activo'].apply(
                     lambda activo: (
-                        f'<a href="?manual_table={tabla_id_lec}&manual_toggle={activo}&manual_market='
-                        f'{float(df_lec.loc[df_lec["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=reset" '
-                        'target="_self" '
-                        'style="text-decoration:none;font-size:16px;color:#2e7d32">●</a>'
+                        '<span style="font-size:16px;color:#2e7d32">●</span>'
                         if _obtener_precio_manual_tabla(tabla_id_lec, activo) is not None else
-                        f'<a href="?manual_table={tabla_id_lec}&manual_toggle={activo}&manual_market='
-                        f'{float(df_lec.loc[df_lec["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=edit" '
-                        'target="_self" '
-                        'style="text-decoration:none;font-size:16px;color:#9aa5b1">○</a>'
+                        '<span style="font-size:16px;color:#9aa5b1">○</span>'
                     )
                 )
                 df_lec_display['Precio'] = df_lec_display['Precio'].map('{:.2f}'.format)
@@ -4021,18 +3995,12 @@ try:
                 df_cer = df_cer.sort_values('Dur. Modificada').reset_index(drop=True)
                 df_cer_display = df_cer.drop(columns=['_precio_mercado'], errors='ignore').copy()
                 tabla_id_cer = _tabla_manual_id('Bonos CER')
-                _render_manual_price_editor(tabla_id_cer)
+                _render_manual_price_editor(tabla_id_cer, df_cer)
                 df_cer_display['_manual_control'] = df_cer['Activo'].apply(
                     lambda activo: (
-                        f'<a href="?manual_table={tabla_id_cer}&manual_toggle={activo}&manual_market='
-                        f'{float(df_cer.loc[df_cer["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=reset" '
-                        'target="_self" '
-                        'style="text-decoration:none;font-size:16px;color:#2e7d32">●</a>'
+                        '<span style="font-size:16px;color:#2e7d32">●</span>'
                         if _obtener_precio_manual_tabla(tabla_id_cer, activo) is not None else
-                        f'<a href="?manual_table={tabla_id_cer}&manual_toggle={activo}&manual_market='
-                        f'{float(df_cer.loc[df_cer["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=edit" '
-                        'target="_self" '
-                        'style="text-decoration:none;font-size:16px;color:#9aa5b1">○</a>'
+                        '<span style="font-size:16px;color:#9aa5b1">○</span>'
                     )
                 )
                 df_cer_display['Factor CER'] = df_cer_display['Factor CER'].apply(lambda v: f'{v:.4f}' if v is not None else '-')
