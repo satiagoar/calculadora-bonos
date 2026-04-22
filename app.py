@@ -3375,7 +3375,8 @@ try:
                 for col in cols:
                     val = row[col]
                     if col == '_manual_control':
-                        cells += f'<td style="text-align:center">{val}</td>'
+                        dot_color = '#2e7d32' if str(val).strip() == '●' else '#9aa5b1'
+                        cells += f'<td style="text-align:center;color:{dot_color};font-size:16px">{val}</td>'
                         continue
                     val_str = _esc(val)
                     if col == 'Var. Diaria %' and val != '-':
@@ -3722,11 +3723,7 @@ try:
                 tabla_id = _tabla_manual_id(tipo)
                 _render_manual_price_editor(tabla_id, df_tabla)
                 df_tabla_display['_manual_control'] = df_tabla['Activo'].apply(
-                    lambda activo: (
-                        '<span style="font-size:16px;color:#2e7d32">●</span>'
-                        if _obtener_precio_manual_tabla(tabla_id, activo) is not None else
-                        '<span style="font-size:16px;color:#9aa5b1">○</span>'
-                    )
+                    lambda activo: '●' if _obtener_precio_manual_tabla(tabla_id, activo) is not None else '○'
                 )
                 df_tabla_display['Precio'] = df_tabla_display['Precio'].map('{:.2f}'.format)
                 df_tabla_display['Int. Corridos'] = df_tabla_display['Int. Corridos'].map('{:.4f}'.format)
@@ -3861,11 +3858,7 @@ try:
                 tabla_id_lec = _tabla_manual_id('Lecaps & Boncaps')
                 _render_manual_price_editor(tabla_id_lec, df_lec)
                 df_lec_display['_manual_control'] = df_lec['Activo'].apply(
-                    lambda activo: (
-                        '<span style="font-size:16px;color:#2e7d32">●</span>'
-                        if _obtener_precio_manual_tabla(tabla_id_lec, activo) is not None else
-                        '<span style="font-size:16px;color:#9aa5b1">○</span>'
-                    )
+                    lambda activo: '●' if _obtener_precio_manual_tabla(tabla_id_lec, activo) is not None else '○'
                 )
                 df_lec_display['Precio'] = df_lec_display['Precio'].map('{:.2f}'.format)
                 df_lec_display['TNA'] = df_lec_display['TNA'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
@@ -3997,11 +3990,7 @@ try:
                 tabla_id_cer = _tabla_manual_id('Bonos CER')
                 _render_manual_price_editor(tabla_id_cer, df_cer)
                 df_cer_display['_manual_control'] = df_cer['Activo'].apply(
-                    lambda activo: (
-                        '<span style="font-size:16px;color:#2e7d32">●</span>'
-                        if _obtener_precio_manual_tabla(tabla_id_cer, activo) is not None else
-                        '<span style="font-size:16px;color:#9aa5b1">○</span>'
-                    )
+                    lambda activo: '●' if _obtener_precio_manual_tabla(tabla_id_cer, activo) is not None else '○'
                 )
                 df_cer_display['Factor CER'] = df_cer_display['Factor CER'].apply(lambda v: f'{v:.4f}' if v is not None else '-')
                 df_cer_display['Precio'] = df_cer_display['Precio'].map('{:.2f}'.format)
