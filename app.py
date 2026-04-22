@@ -3400,14 +3400,9 @@ try:
         def _manual_control_html(tabla_id, activo):
             activo = str(activo)
             is_active = _obtener_precio_manual_tabla(tabla_id, activo) is not None
-            action = "reset" if is_active else "edit"
             symbol = "●" if is_active else "○"
             color = "#2e7d32" if is_active else "#9aa5b1"
-            return (
-                f'<a href="?manual_table={tabla_id}&manual_toggle={activo}&manual_action={action}" '
-                'target="_self" '
-                f'style="text-decoration:none;font-size:16px;color:{color};cursor:pointer">{symbol}</a>'
-            )
+            return f'<span style="font-size:16px;color:{color}">{symbol}</span>'
 
         def _render_manual_price_editor(tabla_id_param, df_source):
             if df_source.empty or 'Activo' not in df_source.columns or '_precio_mercado' not in df_source.columns:
@@ -3416,11 +3411,16 @@ try:
             selected_key = f"{tabla_id_param}__editor_activo"
             input_key = f"{tabla_id_param}__editor_precio"
             source_key = f"{tabla_id_param}__editor_source"
+            opciones_activo = [""] + activos
 
-            if selected_key not in st.session_state or st.session_state[selected_key] not in activos:
-                st.session_state[selected_key] = None
+            activo_manual = next(
+                (activo for activo in activos if _obtener_precio_manual_tabla(tabla_id_param, activo) is not None),
+                ""
+            )
+            if selected_key not in st.session_state or st.session_state[selected_key] not in opciones_activo:
+                st.session_state[selected_key] = activo_manual
 
-            activo = st.session_state.get(selected_key)
+            activo = st.session_state.get(selected_key) or ""
 
             st.markdown("""
             <style>
@@ -3446,22 +3446,13 @@ try:
                 select_col, input_col, apply_col, reset_col = st.columns([3, 2, 1, 1])
                 with select_col:
                     st.markdown('<div class="manual-editor-label">Activo</div>', unsafe_allow_html=True)
-                    if activo:
-                        st.selectbox(
-                            "",
-                            activos,
-                            key=selected_key,
-                            label_visibility="collapsed",
-                        )
-                    else:
-                        st.text_input(
-                            "",
-                            value="",
-                            placeholder="Click en un punto para editar",
-                            disabled=True,
-                            key=f"{tabla_id_param}__editor_placeholder",
-                            label_visibility="collapsed",
-                        )
+                    st.selectbox(
+                        "",
+                        opciones_activo,
+                        key=selected_key,
+                        label_visibility="collapsed",
+                        format_func=lambda v: "Seleccionar activo" if v == "" else v,
+                    )
                 with input_col:
                     st.markdown('<div class="manual-editor-label">Precio Manual</div>', unsafe_allow_html=True)
                     if activo:
@@ -3498,7 +3489,7 @@ try:
                         "OK",
                         key=f"{tabla_id_param}__editor_apply",
                         use_container_width=True,
-                        disabled=not bool(activo),
+                        disabled=(activo == ""),
                     )
                 with reset_col:
                     st.markdown('<div class="manual-editor-label">&nbsp;</div>', unsafe_allow_html=True)
@@ -3506,7 +3497,7 @@ try:
                         "Reset",
                         key=f"{tabla_id_param}__editor_reset",
                         use_container_width=True,
-                        disabled=not bool(activo),
+                        disabled=(activo == ""),
                     )
 
             if activo and apply_clicked:
@@ -3520,26 +3511,7 @@ try:
             if activo and reset_clicked:
                 _guardar_precio_manual_monitor(tabla_id_param, activo, None)
                 st.session_state[source_key] = None
-                st.session_state.pop(selected_key, None)
                 st.rerun()
-
-        qp_toggle = st.query_params.get("manual_toggle")
-        qp_table = st.query_params.get("manual_table")
-        qp_action = st.query_params.get("manual_action")
-        if qp_toggle and qp_table:
-            tabla_id_qp = qp_table if isinstance(qp_table, str) else qp_table[-1]
-            activo_qp = qp_toggle if isinstance(qp_toggle, str) else qp_toggle[-1]
-            action_qp = qp_action if isinstance(qp_action, str) else (qp_action[-1] if qp_action else "edit")
-            selected_key_qp = f"{tabla_id_qp}__editor_activo"
-            source_key_qp = f"{tabla_id_qp}__editor_source"
-            if action_qp == "reset":
-                _guardar_precio_manual_monitor(tabla_id_qp, activo_qp, None)
-                if st.session_state.get(selected_key_qp) == activo_qp:
-                    st.session_state.pop(selected_key_qp, None)
-            else:
-                st.session_state[selected_key_qp] = activo_qp
-            st.session_state[source_key_qp] = None
-            st.query_params.clear()
 
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
         with st.spinner("Cargando precios y calculando métricas..."):
