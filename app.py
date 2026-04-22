@@ -3400,6 +3400,7 @@ try:
         def _close_manual_dialog():
             st.session_state.pop("monitor_manual_dialog_table", None)
             st.session_state.pop("monitor_manual_dialog_activo", None)
+            st.session_state.pop("monitor_manual_dialog_precio_mercado", None)
 
         @st.dialog(" ", width="small", dismissible=True, on_dismiss=_close_manual_dialog)
         def _manual_price_dialog():
@@ -3422,6 +3423,7 @@ try:
                     normalizar_precio_manual_monitor(st.session_state.get(input_key))
                 )
                 _close_manual_dialog()
+                st.session_state["monitor_manual_dialog_commit"] = True
 
             st.number_input(
                 "",
@@ -3454,6 +3456,8 @@ try:
 
         if st.session_state.get("monitor_manual_dialog_table") and st.session_state.get("monitor_manual_dialog_activo"):
             _manual_price_dialog()
+        if st.session_state.pop("monitor_manual_dialog_commit", False):
+            st.rerun()
 
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
         with st.spinner("Cargando precios y calculando métricas..."):
