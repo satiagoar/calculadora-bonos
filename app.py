@@ -3423,6 +3423,7 @@ try:
                 column_config=column_config,
                 row_height=38,
                 height=table_height,
+                placeholder="",
             )
             if _sync_manual_prices_from_editor(edited_df, tabla_id):
                 st.rerun()
