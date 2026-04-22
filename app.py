@@ -3723,10 +3723,12 @@ try:
                     lambda activo: (
                         f'<a href="?manual_table={tabla_id}&manual_toggle={activo}&manual_market='
                         f'{float(df_tabla.loc[df_tabla["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=reset" '
+                        'target="_self" '
                         'style="text-decoration:none;font-size:16px;color:#2e7d32">●</a>'
                         if _obtener_precio_manual_tabla(tabla_id, activo) is not None else
                         f'<a href="?manual_table={tabla_id}&manual_toggle={activo}&manual_market='
                         f'{float(df_tabla.loc[df_tabla["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=edit" '
+                        'target="_self" '
                         'style="text-decoration:none;font-size:16px;color:#9aa5b1">○</a>'
                     )
                 )
@@ -3865,10 +3867,12 @@ try:
                     lambda activo: (
                         f'<a href="?manual_table={tabla_id_lec}&manual_toggle={activo}&manual_market='
                         f'{float(df_lec.loc[df_lec["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=reset" '
+                        'target="_self" '
                         'style="text-decoration:none;font-size:16px;color:#2e7d32">●</a>'
                         if _obtener_precio_manual_tabla(tabla_id_lec, activo) is not None else
                         f'<a href="?manual_table={tabla_id_lec}&manual_toggle={activo}&manual_market='
                         f'{float(df_lec.loc[df_lec["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=edit" '
+                        'target="_self" '
                         'style="text-decoration:none;font-size:16px;color:#9aa5b1">○</a>'
                     )
                 )
@@ -4004,10 +4008,12 @@ try:
                     lambda activo: (
                         f'<a href="?manual_table={tabla_id_cer}&manual_toggle={activo}&manual_market='
                         f'{float(df_cer.loc[df_cer["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=reset" '
+                        'target="_self" '
                         'style="text-decoration:none;font-size:16px;color:#2e7d32">●</a>'
                         if _obtener_precio_manual_tabla(tabla_id_cer, activo) is not None else
                         f'<a href="?manual_table={tabla_id_cer}&manual_toggle={activo}&manual_market='
                         f'{float(df_cer.loc[df_cer["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=edit" '
+                        'target="_self" '
                         'style="text-decoration:none;font-size:16px;color:#9aa5b1">○</a>'
                     )
                 )
