@@ -3361,6 +3361,33 @@ try:
 
         def _render_tabla_editable(df_tabla, tabla_id, row_ids, settlement_fecha):
             cols_editables = list(df_tabla.columns)
+            column_config = {
+                'Activo': st.column_config.TextColumn('Activo', width='medium'),
+                'Ticker': st.column_config.TextColumn('Ticker', width='small'),
+                'Vencimiento': st.column_config.TextColumn('Vencimiento', width='small'),
+                'Precio': st.column_config.NumberColumn('Precio', format='%.2f'),
+                'Precio Manual': st.column_config.NumberColumn(
+                    'Precio Manual',
+                    help='Opcional. Si se completa, las métricas se recalculan con ese precio usando settlement T+1.',
+                    min_value=0.0,
+                    step=0.01,
+                    format='%.2f',
+                ),
+                'Int. Corridos': st.column_config.NumberColumn('Int. Corridos', format='%.4f'),
+                'Cap. Residual': st.column_config.NumberColumn('Cap. Residual', format='%.2f'),
+                'Cupón Vigente': st.column_config.NumberColumn('Cupón Vigente', format='%.4f%%'),
+                'TIR Semestral': st.column_config.NumberColumn('TIR Semestral', format='%.2f%%'),
+                'Dur. Modificada': st.column_config.NumberColumn('Dur. Modificada', format='%.2f'),
+                'Var. Diaria %': st.column_config.NumberColumn('Var. Diaria %', format='%.2f%%'),
+                'TNA': st.column_config.NumberColumn('TNA', format='%.2f%%'),
+                'TEM': st.column_config.NumberColumn('TEM', format='%.2f%%'),
+                'Vida Media': st.column_config.NumberColumn('Vida Media', format='%.2f'),
+                'Días Rem.': st.column_config.NumberColumn('Días Rem.', format='%d'),
+                'Valor Final': st.column_config.NumberColumn('Valor Final', format='%.4f'),
+                'Factor CER': st.column_config.NumberColumn('Factor CER', format='%.4f'),
+                'TIR Anual': st.column_config.NumberColumn('TIR Anual', format='%.2f%%'),
+                'TIR Mensual': st.column_config.NumberColumn('TIR Mensual', format='%.2f%%'),
+            }
             edited_df = st.data_editor(
                 df_tabla,
                 key=f"editor_{tabla_id}",
@@ -3368,15 +3395,7 @@ try:
                 use_container_width=True,
                 num_rows="fixed",
                 disabled=[c for c in cols_editables if c != 'Precio Manual'],
-                column_config={
-                    'Precio Manual': st.column_config.NumberColumn(
-                        'Precio Manual',
-                        help='Opcional. Si se completa, las métricas se recalculan con ese precio usando settlement T+1.',
-                        min_value=0.0,
-                        step=0.01,
-                        format='%.2f',
-                    ),
-                },
+                column_config={k: v for k, v in column_config.items() if k in cols_editables},
             )
             cambios = False
             for idx, (_, row) in enumerate(edited_df.iterrows()):
@@ -3633,18 +3652,6 @@ try:
 
                 # Tabla
                 row_ids = df_tabla['Activo'].tolist()
-                df_tabla['Precio'] = df_tabla['Precio'].map('{:.2f}'.format)
-                df_tabla['Precio Manual'] = df_tabla['Precio Manual'].apply(
-                    lambda v: round(v, 2) if v is not None and not pd.isna(v) else None
-                )
-                df_tabla['Int. Corridos'] = df_tabla['Int. Corridos'].map('{:.4f}'.format)
-                df_tabla['Cap. Residual'] = df_tabla['Cap. Residual'].map('{:.2f}'.format)
-                df_tabla['Cupón Vigente'] = df_tabla['Cupón Vigente'].map('{:.4f}%'.format)
-                df_tabla['TIR Semestral'] = df_tabla['TIR Semestral'].map('{:.2f}%'.format)
-                df_tabla['Dur. Modificada'] = df_tabla['Dur. Modificada'].map('{:.2f}'.format)
-                df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
-                    lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
-                )
                 _render_tabla_editable(df_tabla, _tabla_manual_id(tipo), row_ids, fecha_hoy)
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
@@ -3766,17 +3773,6 @@ try:
                 # Tabla
                 df_lec = df_lec.sort_values('Días Rem.').reset_index(drop=True)
                 row_ids_lec = df_lec['Activo'].tolist()
-                df_lec['Precio'] = df_lec['Precio'].map('{:.2f}'.format)
-                df_lec['Precio Manual'] = df_lec['Precio Manual'].apply(
-                    lambda v: round(v, 2) if v is not None and not pd.isna(v) else None
-                )
-                df_lec['TNA'] = df_lec['TNA'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
-                df_lec['TEM'] = df_lec['TEM'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
-                df_lec['Vida Media'] = df_lec['Vida Media'].map('{:.2f}'.format)
-                df_lec['Valor Final'] = df_lec['Valor Final'].map('{:.4f}'.format)
-                df_lec['Var. Diaria %'] = df_lec['Var. Diaria %'].apply(
-                    lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
-                )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
                 _render_tabla_editable(df_lec, tabla_id_lec, row_ids_lec, fecha_hoy_p)
             else:
@@ -3896,18 +3892,7 @@ try:
 
                 # Tabla
                 df_cer = df_cer.sort_values('Dur. Modificada').reset_index(drop=True)
-                df_cer['Factor CER'] = df_cer['Factor CER'].apply(lambda v: f'{v:.4f}' if v is not None else '-')
                 row_ids_cer = df_cer['Activo'].tolist()
-                df_cer['Precio'] = df_cer['Precio'].map('{:.2f}'.format)
-                df_cer['Precio Manual'] = df_cer['Precio Manual'].apply(
-                    lambda v: round(v, 2) if v is not None and not pd.isna(v) else None
-                )
-                df_cer['TIR Anual'] = df_cer['TIR Anual'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
-                df_cer['TIR Mensual'] = df_cer['TIR Mensual'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
-                df_cer['Dur. Modificada'] = df_cer['Dur. Modificada'].apply(lambda v: f'{v:.2f}' if v is not None else '-')
-                df_cer['Var. Diaria %'] = df_cer['Var. Diaria %'].apply(
-                    lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
-                )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
                 _render_tabla_editable(df_cer, tabla_id_cer, row_ids_cer, fecha_hoy_p)
             else:
