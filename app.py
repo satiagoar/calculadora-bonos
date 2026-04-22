@@ -3423,22 +3423,31 @@ try:
                 border: 0;
                 padding: 0;
             }
-            div[data-testid="stDialog"] div[data-testid="stForm"] button {
-                display: none;
+            div[data-testid="stDialog"] div[data-testid="stFormSubmitButton"] > button {
+                min-height: 2.2rem;
+                height: 2.2rem;
+                padding: 0 0.55rem;
+                min-width: 2.2rem;
+                border-radius: 0.5rem;
+                font-size: 0.75rem;
+                line-height: 1;
             }
             </style>
             """, unsafe_allow_html=True)
 
             with st.form("monitor_manual_dialog_form"):
-                st.number_input(
-                    "",
-                    min_value=0.0,
-                    step=0.01,
-                    format="%.2f",
-                    key=input_key,
-                    label_visibility="collapsed",
-                )
-                submitted = st.form_submit_button("Aplicar")
+                input_col, submit_col = st.columns([5, 1])
+                with input_col:
+                    st.number_input(
+                        "",
+                        min_value=0.0,
+                        step=0.01,
+                        format="%.2f",
+                        key=input_key,
+                        label_visibility="collapsed",
+                    )
+                with submit_col:
+                    submitted = st.form_submit_button("OK", use_container_width=True)
 
             if submitted:
                 _guardar_precio_manual_monitor(
