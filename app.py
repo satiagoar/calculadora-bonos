@@ -3329,6 +3329,74 @@ try:
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
+        def _slugify_tabla(valor):
+            return ''.join(ch.lower() if ch.isalnum() else '_' for ch in str(valor)).strip('_')
+
+        def _tabla_manual_id(tipo_bono):
+            return f"tabla_{_slugify_tabla(tipo_bono)}"
+
+        def _manual_price_state_key(tabla_id, row_id):
+            return f"{tabla_id}__precio_manual__{_slugify_tabla(row_id)}"
+
+        def _normalizar_precio_manual(valor):
+            if valor is None:
+                return None
+            try:
+                if pd.isna(valor):
+                    return None
+            except TypeError:
+                pass
+            if isinstance(valor, str):
+                valor = valor.strip().replace(',', '.')
+                if not valor:
+                    return None
+            try:
+                precio = float(valor)
+            except (TypeError, ValueError):
+                return None
+            return round(precio, 6) if precio > 0 else None
+
+        def _obtener_precio_manual(tabla_id, row_id):
+            return _normalizar_precio_manual(st.session_state.get(_manual_price_state_key(tabla_id, row_id)))
+
+        def _render_tabla_editable(df_tabla, tabla_id, row_ids, settlement_fecha):
+            cols_editables = list(df_tabla.columns)
+            edited_df = st.data_editor(
+                df_tabla,
+                key=f"editor_{tabla_id}",
+                hide_index=True,
+                use_container_width=True,
+                num_rows="fixed",
+                disabled=[c for c in cols_editables if c != 'Precio Manual'],
+                column_config={
+                    'Precio Manual': st.column_config.NumberColumn(
+                        'Precio Manual',
+                        help='Opcional. Si se completa, las métricas se recalculan con ese precio usando settlement T+1.',
+                        min_value=0.0,
+                        step=0.01,
+                        format='%.2f',
+                    ),
+                },
+            )
+            cambios = False
+            for idx, (_, row) in enumerate(edited_df.iterrows()):
+                row_id = row.get('Activo') or row_ids[idx]
+                nuevo = _normalizar_precio_manual(row.get('Precio Manual'))
+                state_key = _manual_price_state_key(tabla_id, row_id)
+                anterior = _normalizar_precio_manual(st.session_state.get(state_key))
+                if nuevo != anterior:
+                    cambios = True
+                    if nuevo is None:
+                        st.session_state.pop(state_key, None)
+                    else:
+                        st.session_state[state_key] = nuevo
+            st.caption(
+                f"Settlement usado para los cálculos: T+1 ({settlement_fecha.strftime('%d/%m/%Y')}). "
+                "Si `Precio Manual` queda vacío, se usa `Precio`."
+            )
+            if cambios:
+                st.rerun()
+
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
         with st.spinner("Cargando precios y calculando métricas..."):
             fecha_hoy = get_next_business_day()
@@ -3355,6 +3423,9 @@ try:
                     continue
 
                 try:
+                    tabla_id = _tabla_manual_id(bono.get('tipo_bono', 'otros'))
+                    precio_manual = _obtener_precio_manual(tabla_id, bono['nombre'])
+                    precio_calculo = precio_manual if precio_manual is not None else precio
                     flujos = []
                     fechas = []
                     for flujo in bono['flujos']:
@@ -3379,7 +3450,7 @@ try:
                         )
 
                     ytm_efectiva = calcular_ytm(
-                        precio, flujos, fechas, fecha_hoy,
+                        precio_calculo, flujos, fechas, fecha_hoy,
                         bono['base_calculo'], bono['periodicidad']
                     )
                     if (1 + ytm_efectiva) <= 0:
@@ -3405,6 +3476,7 @@ try:
                         'Ticker': ticker,
                         'Vencimiento': fecha_vcto.strftime('%d/%m/%Y') if fecha_vcto else '-',
                         'Precio': precio,
+                        'Precio Manual': precio_manual,
                         'Int. Corridos': round(intereses_corridos, 4),
                         'Cap. Residual': round(capital_residual, 2),
                         'Cupón Vigente': round(cupon_vigente * 100, 4),
@@ -3560,7 +3632,11 @@ try:
                         st.plotly_chart(fig_corp, use_container_width=True)
 
                 # Tabla
+                row_ids = df_tabla['Activo'].tolist()
                 df_tabla['Precio'] = df_tabla['Precio'].map('{:.2f}'.format)
+                df_tabla['Precio Manual'] = df_tabla['Precio Manual'].apply(
+                    lambda v: round(v, 2) if v is not None and not pd.isna(v) else None
+                )
                 df_tabla['Int. Corridos'] = df_tabla['Int. Corridos'].map('{:.4f}'.format)
                 df_tabla['Cap. Residual'] = df_tabla['Cap. Residual'].map('{:.2f}'.format)
                 df_tabla['Cupón Vigente'] = df_tabla['Cupón Vigente'].map('{:.4f}%'.format)
@@ -3569,8 +3645,7 @@ try:
                 df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
-                _sep = _sov_separadores if 'soberano' in tipo.lower() else None
-                st.markdown(render_tabla_html(df_tabla, separadores=_sep), unsafe_allow_html=True)
+                _render_tabla_editable(df_tabla, _tabla_manual_id(tipo), row_ids, fecha_hoy)
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
@@ -3591,6 +3666,7 @@ try:
 
                 lecaps = [b for b in bonos if b.get('tipo_bono') == 'Lecaps & Boncaps']
                 filas_lecap = []
+                tabla_id_lec = _tabla_manual_id('Lecaps & Boncaps')
                 for bono in lecaps:
                     ticker = bono.get('ticker', '').strip().upper()
                     if not ticker:
@@ -3602,6 +3678,8 @@ try:
                     pct_change = precio_data.get('pct_change')
                     if not precio or precio <= 0:
                         continue
+                    precio_manual = _obtener_precio_manual(tabla_id_lec, bono['nombre'])
+                    precio_calculo = precio_manual if precio_manual is not None else precio
                     mat = bono.get('maturity')
                     if not mat:
                         continue
@@ -3610,8 +3688,8 @@ try:
                     if dr == 0:
                         continue
                     vf = bono.get('valor_final', 0) or 0
-                    tna = (vf - precio) / precio / dr * 365 if precio > 0 else None
-                    tea = (1 + (vf - precio) / precio) ** (365.0 / dr) - 1 if precio > 0 and dr > 0 else None
+                    tna = (vf - precio_calculo) / precio_calculo / dr * 365 if precio_calculo > 0 else None
+                    tea = (1 + (vf - precio_calculo) / precio_calculo) ** (365.0 / dr) - 1 if precio_calculo > 0 and dr > 0 else None
                     tem = (1 + tea) ** (1 / 12) - 1 if tea is not None else None
                     vm = dr / 365.0
 
@@ -3624,6 +3702,7 @@ try:
                         'Activo': bono['nombre'],
                         'Vencimiento': mat_date.strftime('%d/%m/%Y'),
                         'Precio': precio,
+                        'Precio Manual': precio_manual,
                         'TNA': round(tna * 100, 2) if tna is not None else None,
                         'TEM': round(tem * 100, 2) if tem is not None else None,
                         'Vida Media': round(vm, 2),
@@ -3686,7 +3765,11 @@ try:
 
                 # Tabla
                 df_lec = df_lec.sort_values('Días Rem.').reset_index(drop=True)
+                row_ids_lec = df_lec['Activo'].tolist()
                 df_lec['Precio'] = df_lec['Precio'].map('{:.2f}'.format)
+                df_lec['Precio Manual'] = df_lec['Precio Manual'].apply(
+                    lambda v: round(v, 2) if v is not None and not pd.isna(v) else None
+                )
                 df_lec['TNA'] = df_lec['TNA'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
                 df_lec['TEM'] = df_lec['TEM'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
                 df_lec['Vida Media'] = df_lec['Vida Media'].map('{:.2f}'.format)
@@ -3695,7 +3778,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(render_tabla_html(df_lec), unsafe_allow_html=True)
+                _render_tabla_editable(df_lec, tabla_id_lec, row_ids_lec, fecha_hoy_p)
             else:
                 st.info("No hay precios disponibles en este momento.")
 
@@ -3707,6 +3790,7 @@ try:
 
             bonos_cer = [b for b in bonos if b.get('tipo_bono') == 'Bonos CER']
             filas_cer = []
+            tabla_id_cer = _tabla_manual_id('Bonos CER')
             for bono in bonos_cer:
                 ticker = bono.get('ticker', '').strip().upper()
                 if not ticker:
@@ -3718,6 +3802,8 @@ try:
                 pct_change = precio_data.get('pct_change')
                 if not precio or precio <= 0:
                     continue
+                precio_manual = _obtener_precio_manual(tabla_id_cer, bono['nombre'])
+                precio_calculo = precio_manual if precio_manual is not None else precio
                 mat = bono.get('maturity')
                 if not mat:
                     continue
@@ -3731,8 +3817,8 @@ try:
                 factor_cer_vivo = round(_cer_settl_tab / _cb, 4) if (_cer_settl_tab and _cb) else None
 
                 # TIR Anual y TIR Mensual
-                if factor_cer_vivo and precio > 0 and dr > 0:
-                    tir_anual = (factor_cer_vivo * 100 / precio) ** (365.0 / dr) - 1
+                if factor_cer_vivo and precio_calculo > 0 and dr > 0:
+                    tir_anual = (factor_cer_vivo * 100 / precio_calculo) ** (365.0 / dr) - 1
                     tir_mensual = (1 + tir_anual) ** (30 / 360) - 1
                 else:
                     tir_anual = None
@@ -3752,6 +3838,7 @@ try:
                     'Vencimiento': mat_date.strftime('%d/%m/%Y'),
                     'Factor CER': factor_cer_vivo,
                     'Precio': precio,
+                    'Precio Manual': precio_manual,
                     'TIR Anual': round(tir_anual * 100, 2) if tir_anual is not None else None,
                     'TIR Mensual': round(tir_mensual * 100, 2) if tir_mensual is not None else None,
                     'Dur. Modificada': round(dur_mod, 2) if dur_mod is not None else None,
@@ -3810,7 +3897,11 @@ try:
                 # Tabla
                 df_cer = df_cer.sort_values('Dur. Modificada').reset_index(drop=True)
                 df_cer['Factor CER'] = df_cer['Factor CER'].apply(lambda v: f'{v:.4f}' if v is not None else '-')
+                row_ids_cer = df_cer['Activo'].tolist()
                 df_cer['Precio'] = df_cer['Precio'].map('{:.2f}'.format)
+                df_cer['Precio Manual'] = df_cer['Precio Manual'].apply(
+                    lambda v: round(v, 2) if v is not None and not pd.isna(v) else None
+                )
                 df_cer['TIR Anual'] = df_cer['TIR Anual'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
                 df_cer['TIR Mensual'] = df_cer['TIR Mensual'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
                 df_cer['Dur. Modificada'] = df_cer['Dur. Modificada'].apply(lambda v: f'{v:.2f}' if v is not None else '-')
@@ -3818,7 +3909,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(render_tabla_html(df_cer), unsafe_allow_html=True)
+                _render_tabla_editable(df_cer, tabla_id_cer, row_ids_cer, fecha_hoy_p)
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
