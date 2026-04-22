@@ -3402,7 +3402,38 @@ try:
                     changed = True
             return changed
 
-        def _render_monitor_data_editor(df_source, tabla_id, key, column_order, column_config):
+        def _build_editor_styler(editor_df, center_cols=None, right_cols=None, center_headers=None, right_headers=None):
+            center_cols = center_cols or []
+            right_cols = right_cols or []
+            center_headers = center_headers or []
+            right_headers = right_headers or []
+
+            styler = editor_df.style
+            if center_cols:
+                styler = styler.set_properties(subset=center_cols, **{"text-align": "center"})
+            if right_cols:
+                styler = styler.set_properties(subset=right_cols, **{"text-align": "right"})
+
+            header_styles = []
+            for idx, col in enumerate(editor_df.columns):
+                if col in center_headers:
+                    header_styles.append({
+                        "selector": f"th.col_heading.level0.col{idx}",
+                        "props": [("text-align", "center")],
+                    })
+                elif col in right_headers:
+                    header_styles.append({
+                        "selector": f"th.col_heading.level0.col{idx}",
+                        "props": [("text-align", "right")],
+                    })
+            if header_styles:
+                styler = styler.set_table_styles(header_styles, overwrite=False)
+            return styler
+
+        def _render_monitor_data_editor(
+            df_source, tabla_id, key, column_order, column_config,
+            center_cols=None, right_cols=None, center_headers=None, right_headers=None
+        ):
             if df_source.empty:
                 return
             editor_df = df_source.copy()
@@ -3414,8 +3445,15 @@ try:
             )
             editor_df = editor_df[column_order].copy()
             table_height = 44 + (len(editor_df) + 1) * 38
-            edited_df = st.data_editor(
+            editor_input = _build_editor_styler(
                 editor_df,
+                center_cols=center_cols,
+                right_cols=right_cols,
+                center_headers=center_headers,
+                right_headers=right_headers,
+            )
+            edited_df = st.data_editor(
+                editor_input,
                 key=key,
                 hide_index=True,
                 use_container_width=True,
@@ -3677,7 +3715,23 @@ try:
                     'M': st.column_config.TextColumn('M', width='small', help='● indica precio manual activo'),
                     'Precio Manual': st.column_config.NumberColumn('Px Manual', format='%.2f', width='small'),
                 }
-                _render_monitor_data_editor(df_tabla, tabla_id, f"editor_{tabla_id}", usd_column_order, usd_column_config)
+                _render_monitor_data_editor(
+                    df_tabla,
+                    tabla_id,
+                    f"editor_{tabla_id}",
+                    usd_column_order,
+                    usd_column_config,
+                    center_cols=['Vencimiento', 'M'],
+                    right_cols=[
+                        'Precio', 'Int. Corridos', 'Cap. Residual', 'Cupón Vigente',
+                        'TIR Semestral', 'Dur. Modificada', 'Var. Diaria %'
+                    ],
+                    center_headers=['Vencimiento', 'M'],
+                    right_headers=[
+                        'Precio', 'Int. Corridos', 'Cap. Residual', 'Cupón Vigente',
+                        'TIR Semestral', 'Dur. Modificada', 'Var. Diaria %', 'Precio Manual'
+                    ],
+                )
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
@@ -3814,7 +3868,17 @@ try:
                     'M': st.column_config.TextColumn('M', width='small', help='● indica precio manual activo'),
                     'Precio Manual': st.column_config.NumberColumn('Px Manual', format='%.2f', width='small'),
                 }
-                _render_monitor_data_editor(df_lec, tabla_id_lec, f"editor_{tabla_id_lec}", lec_column_order, lec_column_config)
+                _render_monitor_data_editor(
+                    df_lec,
+                    tabla_id_lec,
+                    f"editor_{tabla_id_lec}",
+                    lec_column_order,
+                    lec_column_config,
+                    center_cols=['Vencimiento', 'M'],
+                    right_cols=['Precio', 'TNA', 'TEM', 'Vida Media', 'Días Rem.', 'Valor Final', 'Var. Diaria %'],
+                    center_headers=['Vencimiento', 'M'],
+                    right_headers=['Precio', 'TNA', 'TEM', 'Vida Media', 'Días Rem.', 'Valor Final', 'Var. Diaria %', 'Precio Manual'],
+                )
             else:
                 st.info("No hay precios disponibles en este momento.")
 
@@ -3948,7 +4012,17 @@ try:
                     'M': st.column_config.TextColumn('M', width='small', help='● indica precio manual activo'),
                     'Precio Manual': st.column_config.NumberColumn('Px Manual', format='%.2f', width='small'),
                 }
-                _render_monitor_data_editor(df_cer, tabla_id_cer, f"editor_{tabla_id_cer}", cer_column_order, cer_column_config)
+                _render_monitor_data_editor(
+                    df_cer,
+                    tabla_id_cer,
+                    f"editor_{tabla_id_cer}",
+                    cer_column_order,
+                    cer_column_config,
+                    center_cols=['Vencimiento', 'M'],
+                    right_cols=['Precio', 'TIR Anual', 'TIR Mensual', 'Dur. Modificada', 'Var. Diaria %'],
+                    center_headers=['Vencimiento', 'M'],
+                    right_headers=['Precio', 'TIR Anual', 'TIR Mensual', 'Dur. Modificada', 'Var. Diaria %', 'Precio Manual'],
+                )
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
