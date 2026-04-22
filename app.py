@@ -10,6 +10,11 @@ import json
 import requests
 import re
 import subprocess
+try:
+    from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+    AGGRID_AVAILABLE = True
+except ImportError:
+    AGGRID_AVAILABLE = False
 warnings.filterwarnings('ignore')
 
 def formatear_numero(numero, decimales=2, usar_separador_miles=True):
@@ -3425,34 +3430,6 @@ try:
                     changed = True
             return changed
 
-        def _build_editor_styler(editor_df, center_cols=None, right_cols=None, center_headers=None, right_headers=None):
-            center_cols = center_cols or []
-            right_cols = right_cols or []
-            center_headers = center_headers or []
-            right_headers = right_headers or []
-
-            styler = editor_df.style
-            if center_cols:
-                styler = styler.set_properties(subset=center_cols, **{"text-align": "center"})
-            if right_cols:
-                styler = styler.set_properties(subset=right_cols, **{"text-align": "right"})
-
-            header_styles = []
-            for idx, col in enumerate(editor_df.columns):
-                if col in center_headers:
-                    header_styles.append({
-                        "selector": f"th.col_heading.level0.col{idx}",
-                        "props": [("text-align", "center")],
-                    })
-                elif col in right_headers:
-                    header_styles.append({
-                        "selector": f"th.col_heading.level0.col{idx}",
-                        "props": [("text-align", "right")],
-                    })
-            if header_styles:
-                styler = styler.set_table_styles(header_styles, overwrite=False)
-            return styler
-
         @st.cache_data(show_spinner=False)
         def _obtener_commit_monitor_ui():
             try:
@@ -3479,24 +3456,140 @@ try:
             )
             editor_df = editor_df[column_order].copy()
             table_height = 44 + (len(editor_df) + 1) * 38
-            editor_input = _build_editor_styler(
-                editor_df,
-                center_cols=center_cols,
-                right_cols=right_cols,
-                center_headers=center_headers,
-                right_headers=right_headers,
-            )
-            edited_df = st.data_editor(
-                editor_input,
-                key=key,
-                hide_index=True,
-                use_container_width=True,
-                disabled=[col for col in editor_df.columns if col != 'Precio Manual'],
-                column_config=column_config,
-                row_height=38,
-                height=table_height,
-                placeholder="",
-            )
+            if AGGRID_AVAILABLE:
+                center_cols = center_cols or []
+                right_cols = right_cols or []
+                center_headers = center_headers or []
+                right_headers = right_headers or []
+
+                gb = GridOptionsBuilder.from_dataframe(editor_df)
+                gb.configure_default_column(
+                    editable=False,
+                    sortable=False,
+                    filter=False,
+                    resizable=True,
+                    suppressMenu=True,
+                )
+                gb.configure_grid_options(
+                    domLayout='autoHeight',
+                    ensureDomOrder=True,
+                    suppressMovableColumns=True,
+                    headerHeight=38,
+                    rowHeight=38,
+                    suppressCellFocus=False,
+                )
+
+                def _header_class_for(col_name):
+                    if col_name in center_headers:
+                        return 'ag-header-center'
+                    if col_name in right_headers:
+                        return 'ag-header-right'
+                    return 'ag-header-left'
+
+                for col in editor_df.columns:
+                    cell_style = {"textAlign": "left", "justifyContent": "flex-start"}
+                    if col in center_cols:
+                        cell_style = {"textAlign": "center", "justifyContent": "center"}
+                    elif col in right_cols or col == 'Precio Manual':
+                        cell_style = {"textAlign": "right", "justifyContent": "flex-end"}
+
+                    configure_args = dict(
+                        headerClass=_header_class_for(col),
+                        cellStyle=cell_style,
+                    )
+
+                    config = column_config.get(col)
+                    if col == 'Precio Manual':
+                        configure_args.update(
+                            editable=True,
+                            type=["numericColumn"],
+                            precision=2,
+                        )
+                    elif col in right_cols:
+                        configure_args.update(type=["numericColumn"])
+
+                    if config is not None:
+                        label = getattr(config, "label", None)
+                        if label:
+                            configure_args["header_name"] = label
+                        width = getattr(config, "width", None)
+                        if width == 'small':
+                            configure_args["width"] = 88
+                        elif width == 'medium':
+                            configure_args["width"] = 130
+                        elif width == 'large':
+                            configure_args["width"] = 170
+
+                    if col == 'M':
+                        configure_args.update(width=48, maxWidth=48, minWidth=48)
+                    elif col == 'Precio Manual':
+                        configure_args.update(width=108, minWidth=108)
+
+                    gb.configure_column(col, **configure_args)
+
+                grid_response = AgGrid(
+                    editor_df,
+                    gridOptions=gb.build(),
+                    key=key,
+                    height=table_height,
+                    theme='light',
+                    allow_unsafe_jscode=False,
+                    update_mode=GridUpdateMode.VALUE_CHANGED,
+                    data_return_mode='AS_INPUT',
+                    fit_columns_on_grid_load=False,
+                    show_toolbar=False,
+                    show_search=False,
+                    show_download_button=False,
+                    custom_css={
+                        ".ag-root-wrapper": {
+                            "border": "1px solid #e0e0e0",
+                            "border-top": "0",
+                            "border-radius": "0 0 10px 10px",
+                            "font-family": "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+                            "font-size": "13px",
+                        },
+                        ".ag-header": {
+                            "background-color": "#fafafa",
+                            "border-bottom": "2px solid #e0e0e0",
+                        },
+                        ".ag-header-cell": {
+                            "padding-left": "8px",
+                            "padding-right": "8px",
+                        },
+                        ".ag-header-cell-label": {
+                            "width": "100%",
+                        },
+                        ".ag-cell": {
+                            "padding-left": "8px",
+                            "padding-right": "8px",
+                            "display": "flex",
+                            "align-items": "center",
+                            "border-color": "#e2e8f0",
+                        },
+                        ".ag-header-center .ag-header-cell-label": {
+                            "justify-content": "center",
+                        },
+                        ".ag-header-right .ag-header-cell-label": {
+                            "justify-content": "flex-end",
+                        },
+                        ".ag-header-left .ag-header-cell-label": {
+                            "justify-content": "flex-start",
+                        },
+                    },
+                )
+                edited_df = grid_response["data"]
+            else:
+                edited_df = st.data_editor(
+                    editor_df,
+                    key=key,
+                    hide_index=True,
+                    use_container_width=True,
+                    disabled=[col for col in editor_df.columns if col != 'Precio Manual'],
+                    column_config=column_config,
+                    row_height=38,
+                    height=table_height,
+                    placeholder="",
+                )
             st.caption(f"Monitor UI commit: `{_obtener_commit_monitor_ui()}`")
             if _sync_manual_prices_from_editor(edited_df, tabla_id):
                 st.rerun()
