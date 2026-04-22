@@ -3422,7 +3422,6 @@ try:
                     normalizar_precio_manual_monitor(st.session_state.get(input_key))
                 )
                 _close_manual_dialog()
-                st.rerun()
 
             st.number_input(
                 "",
