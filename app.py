@@ -3403,13 +3403,14 @@ try:
             st.session_state.pop("monitor_manual_dialog_precio_mercado", None)
             st.session_state.pop("monitor_manual_dialog_commit", None)
 
-        @st.dialog(" ", width="small", dismissible=True, on_dismiss=_close_manual_dialog)
-        def _manual_price_dialog():
+        def _render_manual_price_editor(tabla_id_param):
             tabla_id = st.session_state.get("monitor_manual_dialog_table")
             activo = st.session_state.get("monitor_manual_dialog_activo")
+            if tabla_id != tabla_id_param or not activo:
+                return
             precio_mercado = float(st.session_state.get("monitor_manual_dialog_precio_mercado", 0.0) or 0.0)
             precio_manual = _obtener_precio_manual_tabla(tabla_id, activo) if tabla_id and activo else None
-            if not tabla_id or not activo:
+            if not tabla_id:
                 return
             input_key = "monitor_manual_dialog_input"
             activo_key = "monitor_manual_dialog_input_activo"
@@ -3419,11 +3420,21 @@ try:
 
             st.markdown("""
             <style>
-            div[data-testid="stDialog"] div[data-testid="stForm"] {
-                border: 0;
-                padding: 0;
+            .manual-editor-card {
+                border: 1px solid #dbe3f0;
+                border-radius: 10px;
+                background: #ffffff;
+                padding: 10px 12px 12px 12px;
+                margin: 0.5rem 0 1rem 0;
+                box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
             }
-            div[data-testid="stDialog"] div[data-testid="stFormSubmitButton"] > button {
+            .manual-editor-label {
+                font-size: 0.78rem;
+                color: #586174;
+                font-weight: 600;
+                margin-bottom: 0.35rem;
+            }
+            div[data-testid="stFormSubmitButton"] > button {
                 min-height: 2.2rem;
                 height: 2.2rem;
                 padding: 0 0.55rem;
@@ -3435,19 +3446,23 @@ try:
             </style>
             """, unsafe_allow_html=True)
 
-            with st.form("monitor_manual_dialog_form"):
-                input_col, submit_col = st.columns([5, 1])
-                with input_col:
-                    st.number_input(
-                        "",
-                        min_value=0.0,
-                        step=0.01,
-                        format="%.2f",
-                        key=input_key,
-                        label_visibility="collapsed",
-                    )
-                with submit_col:
-                    submitted = st.form_submit_button("OK", use_container_width=True)
+            with st.container(border=True):
+                st.markdown(f'<div class="manual-editor-label">{_esc(activo)}</div>', unsafe_allow_html=True)
+                with st.form(f"monitor_manual_editor_form__{tabla_id}"):
+                    input_col, submit_col, close_col = st.columns([6, 1, 1])
+                    with input_col:
+                        st.number_input(
+                            "",
+                            min_value=0.0,
+                            step=0.01,
+                            format="%.2f",
+                            key=input_key,
+                            label_visibility="collapsed",
+                        )
+                    with submit_col:
+                        submitted = st.form_submit_button("OK", use_container_width=True)
+                    with close_col:
+                        dismissed = st.form_submit_button("✕", use_container_width=True)
 
             if submitted:
                 _guardar_precio_manual_monitor(
@@ -3455,6 +3470,9 @@ try:
                     activo,
                     normalizar_precio_manual_monitor(st.session_state.get(input_key))
                 )
+                _close_manual_dialog()
+                st.rerun()
+            if dismissed:
                 _close_manual_dialog()
                 st.rerun()
 
@@ -3478,9 +3496,6 @@ try:
                 except (TypeError, ValueError):
                     st.session_state["monitor_manual_dialog_precio_mercado"] = 0.0
             st.query_params.clear()
-
-        if st.session_state.get("monitor_manual_dialog_table") and st.session_state.get("monitor_manual_dialog_activo"):
-            _manual_price_dialog()
 
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
         with st.spinner("Cargando precios y calculando métricas..."):
@@ -3719,6 +3734,7 @@ try:
                 row_ids = df_tabla['Activo'].tolist()
                 df_tabla_display = df_tabla.drop(columns=['_precio_mercado'], errors='ignore').copy()
                 tabla_id = _tabla_manual_id(tipo)
+                _render_manual_price_editor(tabla_id)
                 df_tabla_display['_manual_control'] = df_tabla['Activo'].apply(
                     lambda activo: (
                         f'<a href="?manual_table={tabla_id}&manual_toggle={activo}&manual_market='
@@ -3863,6 +3879,7 @@ try:
                 df_lec = df_lec.sort_values('Días Rem.').reset_index(drop=True)
                 df_lec_display = df_lec.drop(columns=['_precio_mercado'], errors='ignore').copy()
                 tabla_id_lec = _tabla_manual_id('Lecaps & Boncaps')
+                _render_manual_price_editor(tabla_id_lec)
                 df_lec_display['_manual_control'] = df_lec['Activo'].apply(
                     lambda activo: (
                         f'<a href="?manual_table={tabla_id_lec}&manual_toggle={activo}&manual_market='
@@ -4004,6 +4021,7 @@ try:
                 df_cer = df_cer.sort_values('Dur. Modificada').reset_index(drop=True)
                 df_cer_display = df_cer.drop(columns=['_precio_mercado'], errors='ignore').copy()
                 tabla_id_cer = _tabla_manual_id('Bonos CER')
+                _render_manual_price_editor(tabla_id_cer)
                 df_cer_display['_manual_control'] = df_cer['Activo'].apply(
                     lambda activo: (
                         f'<a href="?manual_table={tabla_id_cer}&manual_toggle={activo}&manual_market='
