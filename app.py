@@ -3478,9 +3478,12 @@ try:
                     )
 
                 activo = row_raw['Activo']
-                precio_mercado = float(row_raw.get('Precio', 0.0) or 0.0)
+                precio_mercado = float(row_raw.get('_precio_mercado', row_raw.get('Precio', 0.0)) or 0.0)
                 precio_manual = _obtener_precio_manual_tabla(tabla_id, activo)
                 input_key = f"{tabla_id}__popover__{_slugify_monitor(activo)}"
+                reset_key = f"{input_key}__pending_reset"
+                if st.session_state.pop(reset_key, False):
+                    st.session_state[input_key] = float(precio_mercado)
                 if input_key not in st.session_state:
                     st.session_state[input_key] = float(precio_manual if precio_manual is not None else precio_mercado)
                 label = "Manual" if precio_manual is not None else "Editar"
@@ -3508,7 +3511,7 @@ try:
                         with pop_c2:
                             if st.button("Reset", key=f"{input_key}__reset", use_container_width=True):
                                 _guardar_precio_manual_monitor(tabla_id, activo, None)
-                                st.session_state[input_key] = float(precio_mercado)
+                                st.session_state[reset_key] = True
                                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -3589,7 +3592,8 @@ try:
                         'Activo': bono['nombre'],
                         'Ticker': ticker,
                         'Vencimiento': fecha_vcto.strftime('%d/%m/%Y') if fecha_vcto else '-',
-                        'Precio': precio,
+                        'Precio': precio_calculo,
+                        '_precio_mercado': precio,
                         'Int. Corridos': round(intereses_corridos, 4),
                         'Cap. Residual': round(capital_residual, 2),
                         'Cupón Vigente': round(cupon_vigente * 100, 4),
@@ -3757,7 +3761,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 _sep = _sov_separadores if 'soberano' in tipo.lower() else None
-                _render_tabla_interactiva(df_tabla_display, df_tabla[['Activo', 'Precio']].copy(), _tabla_manual_id(tipo), fecha_hoy, separadores=_sep)
+                _render_tabla_interactiva(df_tabla_display, df_tabla.copy(), _tabla_manual_id(tipo), fecha_hoy, separadores=_sep)
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
@@ -3812,7 +3816,8 @@ try:
                     filas_lecap.append({
                         'Activo': bono['nombre'],
                         'Vencimiento': mat_date.strftime('%d/%m/%Y'),
-                        'Precio': precio,
+                        'Precio': precio_calculo,
+                        '_precio_mercado': precio,
                         'TNA': round(tna * 100, 2) if tna is not None else None,
                         'TEM': round(tem * 100, 2) if tem is not None else None,
                         'Vida Media': round(vm, 2),
@@ -3886,7 +3891,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                _render_tabla_interactiva(df_lec_display, df_lec[['Activo', 'Precio']].copy(), _tabla_manual_id('Lecaps & Boncaps'), fecha_hoy_p)
+                _render_tabla_interactiva(df_lec_display, df_lec.copy(), _tabla_manual_id('Lecaps & Boncaps'), fecha_hoy_p)
             else:
                 st.info("No hay precios disponibles en este momento.")
 
@@ -3944,7 +3949,8 @@ try:
                     'Activo': bono['nombre'],
                     'Vencimiento': mat_date.strftime('%d/%m/%Y'),
                     'Factor CER': factor_cer_vivo,
-                    'Precio': precio,
+                    'Precio': precio_calculo,
+                    '_precio_mercado': precio,
                     'TIR Anual': round(tir_anual * 100, 2) if tir_anual is not None else None,
                     'TIR Mensual': round(tir_mensual * 100, 2) if tir_mensual is not None else None,
                     'Dur. Modificada': round(dur_mod, 2) if dur_mod is not None else None,
@@ -4013,7 +4019,7 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                _render_tabla_interactiva(df_cer_display, df_cer[['Activo', 'Precio']].copy(), _tabla_manual_id('Bonos CER'), fecha_hoy_p)
+                _render_tabla_interactiva(df_cer_display, df_cer.copy(), _tabla_manual_id('Bonos CER'), fecha_hoy_p)
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
