@@ -3391,64 +3391,78 @@ try:
         def _obtener_precio_manual_tabla(tabla_id, row_id):
             return normalizar_precio_manual_monitor(st.session_state.get(_manual_price_state_key(tabla_id, row_id)))
 
-        def _render_panel_precio_manual(tabla_id, row_ids, settlement_fecha, separadores=None):
-            st.markdown("""
-            <style>
-            .manual-price-panel {
-                border: 1px solid #e0e0e0;
-                border-radius: 10px;
-                overflow: hidden;
-                background: #ffffff;
-            }
-            .manual-price-header {
-                background: #fafafa;
-                color: #333;
-                font-weight: 700;
-                font-size: 14px;
-                padding: 11px 14px;
-                border-bottom: 2px solid #e0e0e0;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            }
-            .manual-price-body {
-                padding: 0 10px 8px 10px;
-            }
-            .manual-price-sep {
-                height: 2px;
-                background: #b0bec5;
-                margin: 0 -10px;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            st.markdown('<div class="manual-price-panel"><div class="manual-price-header">Precio Manual</div></div>', unsafe_allow_html=True)
-            cambios = False
-            sep_set = set(separadores) if separadores else set()
-            for idx, row_id in enumerate(row_ids):
-                if idx in sep_set:
-                    st.markdown('<div class="manual-price-sep"></div>', unsafe_allow_html=True)
-                state_key = _manual_price_state_key(tabla_id, row_id)
-                input_key = f"input_{state_key}"
-                anterior = _obtener_precio_manual_tabla(tabla_id, row_id)
-                if input_key not in st.session_state:
-                    st.session_state[input_key] = f"{anterior:.2f}" if anterior is not None else ""
-                valor_ingresado = st.text_input(
-                    row_id,
-                    key=input_key,
+        def _render_manual_price_controls(tabla_id, df_base, settlement_fecha):
+            if df_base.empty:
+                return
+
+            opciones = df_base['Activo'].tolist()
+            precios_mercado = dict(zip(df_base['Activo'], df_base['Precio']))
+            select_key = f"{tabla_id}__manual_selected"
+            input_key = f"{tabla_id}__manual_input"
+            input_asset_key = f"{tabla_id}__manual_input_asset"
+
+            if select_key not in st.session_state or st.session_state[select_key] not in opciones:
+                st.session_state[select_key] = opciones[0]
+
+            overrides_activos = []
+            for activo in opciones:
+                manual = _obtener_precio_manual_tabla(tabla_id, activo)
+                if manual is not None:
+                    overrides_activos.append({
+                        'Activo': activo,
+                        'Mercado': f"{precios_mercado.get(activo, 0):.2f}",
+                        'Manual': f"{manual:.2f}",
+                    })
+
+            with st.container(border=True):
+                st.markdown("**Precio Manual**")
+                st.caption(f"Settlement para recalcular: T+1 ({settlement_fecha.strftime('%d/%m/%Y')}).")
+
+                selected_activo = st.selectbox(
+                    "Activo",
+                    options=opciones,
+                    key=select_key,
                     label_visibility="collapsed",
-                    placeholder="Precio",
                 )
-                nuevo = normalizar_precio_manual_monitor(valor_ingresado)
-                if nuevo is None and isinstance(valor_ingresado, str) and valor_ingresado.strip() == "":
-                    pass
-                elif nuevo is None and valor_ingresado:
-                    continue
-                if nuevo != anterior:
-                    _guardar_precio_manual_monitor(tabla_id, row_id, nuevo)
-                    cambios = True
-            st.caption(
-                f"Settlement para recalcular: T+1 ({settlement_fecha.strftime('%d/%m/%Y')})."
-            )
-            if cambios:
-                st.rerun()
+
+                manual_actual = _obtener_precio_manual_tabla(tabla_id, selected_activo)
+                mercado_actual = float(precios_mercado.get(selected_activo, 0.0) or 0.0)
+                if st.session_state.get(input_asset_key) != selected_activo:
+                    st.session_state[input_key] = float(manual_actual if manual_actual is not None else mercado_actual)
+                    st.session_state[input_asset_key] = selected_activo
+
+                col_input, col_apply, col_reset = st.columns([3, 1.3, 1.3])
+                with col_input:
+                    st.number_input(
+                        "Precio Manual",
+                        min_value=0.0,
+                        step=0.01,
+                        format="%.2f",
+                        key=input_key,
+                        help=f"Precio de mercado actual: {mercado_actual:.2f}",
+                    )
+                with col_apply:
+                    aplicar = st.button("Aplicar", use_container_width=True, key=f"{tabla_id}__apply")
+                with col_reset:
+                    reset = st.button("Restablecer", use_container_width=True, key=f"{tabla_id}__reset")
+
+                if aplicar:
+                    _guardar_precio_manual_monitor(tabla_id, selected_activo, normalizar_precio_manual_monitor(st.session_state.get(input_key)))
+                    st.rerun()
+                if reset:
+                    _guardar_precio_manual_monitor(tabla_id, selected_activo, None)
+                    st.session_state[input_key] = mercado_actual
+                    st.rerun()
+
+                if overrides_activos:
+                    st.markdown("**Overrides activos**")
+                    st.dataframe(
+                        pd.DataFrame(overrides_activos),
+                        hide_index=True,
+                        use_container_width=True,
+                    )
+                else:
+                    st.caption("Sin precios manuales activos.")
 
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
         with st.spinner("Cargando precios y calculando métricas..."):
@@ -3695,11 +3709,8 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 _sep = _sov_separadores if 'soberano' in tipo.lower() else None
-                col_tabla, col_manual = st.columns([6, 2.6], gap='small')
-                with col_tabla:
-                    st.markdown(render_tabla_html(df_tabla_display, separadores=_sep), unsafe_allow_html=True)
-                with col_manual:
-                    _render_panel_precio_manual(_tabla_manual_id(tipo), row_ids, fecha_hoy, separadores=_sep)
+                _render_manual_price_controls(_tabla_manual_id(tipo), df_tabla[['Activo', 'Precio']].copy(), fecha_hoy)
+                st.markdown(render_tabla_html(df_tabla_display, separadores=_sep), unsafe_allow_html=True)
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
@@ -3828,11 +3839,8 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                col_lec_tabla, col_lec_manual = st.columns([6, 2.6], gap='small')
-                with col_lec_tabla:
-                    st.markdown(render_tabla_html(df_lec_display), unsafe_allow_html=True)
-                with col_lec_manual:
-                    _render_panel_precio_manual(_tabla_manual_id('Lecaps & Boncaps'), row_ids_lec, fecha_hoy_p)
+                _render_manual_price_controls(_tabla_manual_id('Lecaps & Boncaps'), df_lec[['Activo', 'Precio']].copy(), fecha_hoy_p)
+                st.markdown(render_tabla_html(df_lec_display), unsafe_allow_html=True)
             else:
                 st.info("No hay precios disponibles en este momento.")
 
@@ -3959,11 +3967,8 @@ try:
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                col_cer_tabla, col_cer_manual = st.columns([6, 2.6], gap='small')
-                with col_cer_tabla:
-                    st.markdown(render_tabla_html(df_cer_display), unsafe_allow_html=True)
-                with col_cer_manual:
-                    _render_panel_precio_manual(_tabla_manual_id('Bonos CER'), row_ids_cer, fecha_hoy_p)
+                _render_manual_price_controls(_tabla_manual_id('Bonos CER'), df_cer[['Activo', 'Precio']].copy(), fecha_hoy_p)
+                st.markdown(render_tabla_html(df_cer_display), unsafe_allow_html=True)
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
