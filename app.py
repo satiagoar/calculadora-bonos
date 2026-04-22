@@ -3430,6 +3430,8 @@ try:
                 styler = styler.set_table_styles(header_styles, overwrite=False)
             return styler
 
+        MONITOR_UI_COMMIT = "153185e"
+
         def _render_monitor_data_editor(
             df_source, tabla_id, key, column_order, column_config,
             center_cols=None, right_cols=None, center_headers=None, right_headers=None
@@ -3463,6 +3465,7 @@ try:
                 height=table_height,
                 placeholder="",
             )
+            st.caption(f"Monitor UI commit: `{MONITOR_UI_COMMIT}`")
             if _sync_manual_prices_from_editor(edited_df, tabla_id):
                 st.rerun()
 
