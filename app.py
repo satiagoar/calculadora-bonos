@@ -15,6 +15,7 @@ try:
     AGGRID_AVAILABLE = True
 except ImportError:
     AGGRID_AVAILABLE = False
+USE_AGGRID_MONITOR = False
 warnings.filterwarnings('ignore')
 
 def formatear_numero(numero, decimales=2, usar_separador_miles=True):
@@ -3456,7 +3457,7 @@ try:
             )
             editor_df = editor_df[column_order].copy()
             table_height = 44 + (len(editor_df) + 1) * 38
-            if AGGRID_AVAILABLE:
+            if AGGRID_AVAILABLE and USE_AGGRID_MONITOR:
                 center_cols = center_cols or []
                 right_cols = right_cols or []
                 center_headers = center_headers or []
