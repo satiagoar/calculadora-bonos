@@ -3391,37 +3391,56 @@ try:
         def _obtener_precio_manual_tabla(tabla_id, row_id):
             return normalizar_precio_manual_monitor(st.session_state.get(_manual_price_state_key(tabla_id, row_id)))
 
-        def _render_panel_precio_manual(tabla_id, row_ids, settlement_fecha):
-            df_editor = pd.DataFrame({
-                'Activo': row_ids,
-                'Precio Manual': [
-                    _obtener_precio_manual_tabla(tabla_id, row_id)
-                    for row_id in row_ids
-                ]
-            })
-            edited_df = st.data_editor(
-                df_editor,
-                key=f"editor_{tabla_id}",
-                hide_index=True,
-                use_container_width=True,
-                num_rows="fixed",
-                disabled=['Activo'],
-                column_config={
-                    'Activo': st.column_config.TextColumn('Activo', width='medium'),
-                    'Precio Manual': st.column_config.NumberColumn(
-                        'Precio Manual',
-                        min_value=0.0,
-                        step=0.01,
-                        format='%.2f',
-                        help='Si se completa, este precio se usa para recalcular la tabla y como valor inicial de la calculadora.'
-                    ),
-                },
-            )
+        def _render_panel_precio_manual(tabla_id, row_ids, settlement_fecha, separadores=None):
+            st.markdown("""
+            <style>
+            .manual-price-panel {
+                border: 1px solid #e0e0e0;
+                border-radius: 10px;
+                overflow: hidden;
+                background: #ffffff;
+            }
+            .manual-price-header {
+                background: #fafafa;
+                color: #333;
+                font-weight: 700;
+                font-size: 14px;
+                padding: 11px 14px;
+                border-bottom: 2px solid #e0e0e0;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            }
+            .manual-price-body {
+                padding: 0 10px 8px 10px;
+            }
+            .manual-price-sep {
+                height: 2px;
+                background: #b0bec5;
+                margin: 0 -10px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            st.markdown('<div class="manual-price-panel"><div class="manual-price-header">Precio Manual</div></div>', unsafe_allow_html=True)
             cambios = False
-            for _, row in edited_df.iterrows():
-                row_id = row['Activo']
-                nuevo = normalizar_precio_manual_monitor(row.get('Precio Manual'))
+            sep_set = set(separadores) if separadores else set()
+            for idx, row_id in enumerate(row_ids):
+                if idx in sep_set:
+                    st.markdown('<div class="manual-price-sep"></div>', unsafe_allow_html=True)
+                state_key = _manual_price_state_key(tabla_id, row_id)
+                input_key = f"input_{state_key}"
                 anterior = _obtener_precio_manual_tabla(tabla_id, row_id)
+                if input_key not in st.session_state:
+                    st.session_state[input_key] = f"{anterior:.2f}" if anterior is not None else ""
+                valor_ingresado = st.text_input(
+                    row_id,
+                    key=input_key,
+                    label_visibility="collapsed",
+                    placeholder="Precio",
+                )
+                nuevo = normalizar_precio_manual_monitor(valor_ingresado)
+                if nuevo is None and isinstance(valor_ingresado, str) and valor_ingresado.strip() == "":
+                    pass
+                elif nuevo is None and valor_ingresado:
+                    continue
                 if nuevo != anterior:
                     _guardar_precio_manual_monitor(tabla_id, row_id, nuevo)
                     cambios = True
@@ -3680,11 +3699,7 @@ try:
                 with col_tabla:
                     st.markdown(render_tabla_html(df_tabla_display, separadores=_sep), unsafe_allow_html=True)
                 with col_manual:
-                    st.markdown(
-                        '<div class="bond-wrap"><div class="bond-title">Precio Manual</div></div>',
-                        unsafe_allow_html=True
-                    )
-                    _render_panel_precio_manual(_tabla_manual_id(tipo), row_ids, fecha_hoy)
+                    _render_panel_precio_manual(_tabla_manual_id(tipo), row_ids, fecha_hoy, separadores=_sep)
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
@@ -3817,10 +3832,6 @@ try:
                 with col_lec_tabla:
                     st.markdown(render_tabla_html(df_lec_display), unsafe_allow_html=True)
                 with col_lec_manual:
-                    st.markdown(
-                        '<div class="bond-wrap"><div class="bond-title">Precio Manual</div></div>',
-                        unsafe_allow_html=True
-                    )
                     _render_panel_precio_manual(_tabla_manual_id('Lecaps & Boncaps'), row_ids_lec, fecha_hoy_p)
             else:
                 st.info("No hay precios disponibles en este momento.")
@@ -3952,10 +3963,6 @@ try:
                 with col_cer_tabla:
                     st.markdown(render_tabla_html(df_cer_display), unsafe_allow_html=True)
                 with col_cer_manual:
-                    st.markdown(
-                        '<div class="bond-wrap"><div class="bond-title">Precio Manual</div></div>',
-                        unsafe_allow_html=True
-                    )
                     _render_panel_precio_manual(_tabla_manual_id('Bonos CER'), row_ids_cer, fecha_hoy_p)
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
