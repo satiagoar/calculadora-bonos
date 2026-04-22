@@ -1248,6 +1248,42 @@ def obtener_tipo_cambio_implicito_data912(tipo_cambio='Tipo de Cambio MEP'):
     return None
 
 
+def _slugify_monitor(valor):
+    return ''.join(ch.lower() if ch.isalnum() else '_' for ch in str(valor)).strip('_')
+
+
+def _tabla_manual_id(tipo_bono):
+    return f"tabla_{_slugify_monitor(tipo_bono)}"
+
+
+def _manual_price_state_key(tabla_id, row_id):
+    return f"{tabla_id}__precio_manual__{_slugify_monitor(row_id)}"
+
+
+def normalizar_precio_manual_monitor(valor):
+    if valor is None:
+        return None
+    try:
+        if pd.isna(valor):
+            return None
+    except TypeError:
+        pass
+    if isinstance(valor, str):
+        valor = valor.strip().replace(',', '.')
+        if not valor:
+            return None
+    try:
+        precio = float(valor)
+    except (TypeError, ValueError):
+        return None
+    return round(precio, 6) if precio > 0 else None
+
+
+def obtener_precio_manual_monitor(tipo_bono, row_id):
+    tabla_id = _tabla_manual_id(tipo_bono)
+    return normalizar_precio_manual_monitor(st.session_state.get(_manual_price_state_key(tabla_id, row_id)))
+
+
 # Cargar datos del Excel
 try:
     import openpyxl as _openpyxl
@@ -2216,18 +2252,23 @@ try:
                 st.markdown("<div class='inline-field-label'>Precio Dirty</div>", unsafe_allow_html=True)
                 _key_lec = f"precio_lecap_{bono_actual['nombre']}"
                 _precio_lec_default = st.session_state.get(_key_lec, 0.0) or 0.0
+                _precio_manual_monitor_lec = obtener_precio_manual_monitor(bono_actual.get('tipo_bono'), bono_actual['nombre'])
                 if _key_lec not in st.session_state:
-                    try:
-                        _pd_lec = {**obtener_precios_data912('arg_bonds'),
-                                   **obtener_precios_data912('arg_corp'),
-                                   **obtener_precios_data912('arg_notes')}
-                        _tk_lec = bono_actual.get('ticker', '').strip().upper()
-                        _pm_lec = _pd_lec.get(_tk_lec)
-                        if _pm_lec and _pm_lec.get('c', 0) > 0:
-                            _precio_lec_default = float(_pm_lec['c'])
-                            st.session_state[_key_lec] = _precio_lec_default
-                    except Exception:
-                        pass
+                    if _precio_manual_monitor_lec is not None:
+                        _precio_lec_default = float(_precio_manual_monitor_lec)
+                        st.session_state[_key_lec] = _precio_lec_default
+                    else:
+                        try:
+                            _pd_lec = {**obtener_precios_data912('arg_bonds'),
+                                       **obtener_precios_data912('arg_corp'),
+                                       **obtener_precios_data912('arg_notes')}
+                            _tk_lec = bono_actual.get('ticker', '').strip().upper()
+                            _pm_lec = _pd_lec.get(_tk_lec)
+                            if _pm_lec and _pm_lec.get('c', 0) > 0:
+                                _precio_lec_default = float(_pm_lec['c'])
+                                st.session_state[_key_lec] = _precio_lec_default
+                        except Exception:
+                            pass
                 st.number_input("", min_value=0.0, value=_precio_lec_default, step=0.01, format="%.2f",
                                 key=_key_lec, label_visibility="collapsed")
                 col_calc_lec, col_vol_lec = st.columns(2)
@@ -2323,17 +2364,22 @@ try:
                               key="fecha_liq_cer", label_visibility="collapsed")
                 st.markdown("<div class='inline-field-label'>Precio Dirty</div>", unsafe_allow_html=True)
                 _precio_cer_default = st.session_state.get(f"precio_cer_{bono_actual['nombre']}", 0.0) or 0.0
+                _precio_manual_monitor_cer = obtener_precio_manual_monitor(bono_actual.get('tipo_bono'), bono_actual['nombre'])
                 if f"precio_cer_{bono_actual['nombre']}" not in st.session_state:
-                    # Intentar obtener precio de la API si no viene de la tabla
-                    try:
-                        import requests as _rcer
-                        _pd = {**obtener_precios_data912('arg_bonds'), **obtener_precios_data912('arg_notes')}
-                        _pm = _pd.get(bono_actual['ticker'].upper())
-                        if _pm and _pm['c'] > 0:
-                            _precio_cer_default = float(_pm['c'])
-                            st.session_state[f"precio_cer_{bono_actual['nombre']}"] = _precio_cer_default
-                    except Exception:
-                        pass
+                    if _precio_manual_monitor_cer is not None:
+                        _precio_cer_default = float(_precio_manual_monitor_cer)
+                        st.session_state[f"precio_cer_{bono_actual['nombre']}"] = _precio_cer_default
+                    else:
+                        # Intentar obtener precio de la API si no viene de la tabla
+                        try:
+                            import requests as _rcer
+                            _pd = {**obtener_precios_data912('arg_bonds'), **obtener_precios_data912('arg_notes')}
+                            _pm = _pd.get(bono_actual['ticker'].upper())
+                            if _pm and _pm['c'] > 0:
+                                _precio_cer_default = float(_pm['c'])
+                                st.session_state[f"precio_cer_{bono_actual['nombre']}"] = _precio_cer_default
+                        except Exception:
+                            pass
                 st.number_input("", min_value=0.0, value=_precio_cer_default, step=0.01, format="%.2f",
                                 key=f"precio_cer_{bono_actual['nombre']}", label_visibility="collapsed")
                 col_calc_cer, col_vol_cer = st.columns(2)
@@ -2452,8 +2498,14 @@ try:
                 if precio_init_key not in st.session_state:
                     ticker = bono_actual_main.get('ticker', '').strip()
                     precio_inicial = None
+                    precio_manual_monitor = obtener_precio_manual_monitor(
+                        bono_actual_main.get('tipo_bono'),
+                        bono_actual_main['nombre']
+                    )
 
-                    if ticker and ticker != '' and ticker != 'SPX500':
+                    if precio_manual_monitor is not None:
+                        precio_inicial = float(precio_manual_monitor)
+                    elif ticker and ticker != '' and ticker != 'SPX500':
                         precio_inicial = obtener_precio_data912(ticker)
 
                     st.session_state[precio_key_main] = float(precio_inicial) if precio_inicial and precio_inicial > 0 else 0.0
@@ -3329,6 +3381,56 @@ try:
             title_html = f'<div class="bond-title">{_esc(titulo)}</div>' if titulo else ''
             return f'<div class="bond-wrap">{title_html}<table class="bond-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table></div>'
 
+        def _guardar_precio_manual_monitor(tabla_id, row_id, precio):
+            state_key = _manual_price_state_key(tabla_id, row_id)
+            if precio is None:
+                st.session_state.pop(state_key, None)
+            else:
+                st.session_state[state_key] = precio
+
+        def _obtener_precio_manual_tabla(tabla_id, row_id):
+            return normalizar_precio_manual_monitor(st.session_state.get(_manual_price_state_key(tabla_id, row_id)))
+
+        def _render_panel_precio_manual(tabla_id, row_ids, settlement_fecha):
+            df_editor = pd.DataFrame({
+                'Activo': row_ids,
+                'Precio Manual': [
+                    _obtener_precio_manual_tabla(tabla_id, row_id)
+                    for row_id in row_ids
+                ]
+            })
+            edited_df = st.data_editor(
+                df_editor,
+                key=f"editor_{tabla_id}",
+                hide_index=True,
+                use_container_width=True,
+                num_rows="fixed",
+                disabled=['Activo'],
+                column_config={
+                    'Activo': st.column_config.TextColumn('Activo', width='medium'),
+                    'Precio Manual': st.column_config.NumberColumn(
+                        'Precio Manual',
+                        min_value=0.0,
+                        step=0.01,
+                        format='%.2f',
+                        help='Si se completa, este precio se usa para recalcular la tabla y como valor inicial de la calculadora.'
+                    ),
+                },
+            )
+            cambios = False
+            for _, row in edited_df.iterrows():
+                row_id = row['Activo']
+                nuevo = normalizar_precio_manual_monitor(row.get('Precio Manual'))
+                anterior = _obtener_precio_manual_tabla(tabla_id, row_id)
+                if nuevo != anterior:
+                    _guardar_precio_manual_monitor(tabla_id, row_id, nuevo)
+                    cambios = True
+            st.caption(
+                f"Settlement para recalcular: T+1 ({settlement_fecha.strftime('%d/%m/%Y')})."
+            )
+            if cambios:
+                st.rerun()
+
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
         with st.spinner("Cargando precios y calculando métricas..."):
             fecha_hoy = get_next_business_day()
@@ -3355,6 +3457,8 @@ try:
                     continue
 
                 try:
+                    precio_manual = obtener_precio_manual_monitor(bono.get('tipo_bono', 'Otros'), bono['nombre'])
+                    precio_calculo = precio_manual if precio_manual is not None else precio
                     flujos = []
                     fechas = []
                     for flujo in bono['flujos']:
@@ -3379,7 +3483,7 @@ try:
                         )
 
                     ytm_efectiva = calcular_ytm(
-                        precio, flujos, fechas, fecha_hoy,
+                        precio_calculo, flujos, fechas, fecha_hoy,
                         bono['base_calculo'], bono['periodicidad']
                     )
                     if (1 + ytm_efectiva) <= 0:
@@ -3560,17 +3664,27 @@ try:
                         st.plotly_chart(fig_corp, use_container_width=True)
 
                 # Tabla
-                df_tabla['Precio'] = df_tabla['Precio'].map('{:.2f}'.format)
-                df_tabla['Int. Corridos'] = df_tabla['Int. Corridos'].map('{:.4f}'.format)
-                df_tabla['Cap. Residual'] = df_tabla['Cap. Residual'].map('{:.2f}'.format)
-                df_tabla['Cupón Vigente'] = df_tabla['Cupón Vigente'].map('{:.4f}%'.format)
-                df_tabla['TIR Semestral'] = df_tabla['TIR Semestral'].map('{:.2f}%'.format)
-                df_tabla['Dur. Modificada'] = df_tabla['Dur. Modificada'].map('{:.2f}'.format)
-                df_tabla['Var. Diaria %'] = df_tabla['Var. Diaria %'].apply(
+                row_ids = df_tabla['Activo'].tolist()
+                df_tabla_display = df_tabla.copy()
+                df_tabla_display['Precio'] = df_tabla_display['Precio'].map('{:.2f}'.format)
+                df_tabla_display['Int. Corridos'] = df_tabla_display['Int. Corridos'].map('{:.4f}'.format)
+                df_tabla_display['Cap. Residual'] = df_tabla_display['Cap. Residual'].map('{:.2f}'.format)
+                df_tabla_display['Cupón Vigente'] = df_tabla_display['Cupón Vigente'].map('{:.4f}%'.format)
+                df_tabla_display['TIR Semestral'] = df_tabla_display['TIR Semestral'].map('{:.2f}%'.format)
+                df_tabla_display['Dur. Modificada'] = df_tabla_display['Dur. Modificada'].map('{:.2f}'.format)
+                df_tabla_display['Var. Diaria %'] = df_tabla_display['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 _sep = _sov_separadores if 'soberano' in tipo.lower() else None
-                st.markdown(render_tabla_html(df_tabla, separadores=_sep), unsafe_allow_html=True)
+                col_tabla, col_manual = st.columns([6, 2.6], gap='small')
+                with col_tabla:
+                    st.markdown(render_tabla_html(df_tabla_display, separadores=_sep), unsafe_allow_html=True)
+                with col_manual:
+                    st.markdown(
+                        '<div class="bond-wrap"><div class="bond-title">Precio Manual</div></div>',
+                        unsafe_allow_html=True
+                    )
+                    _render_panel_precio_manual(_tabla_manual_id(tipo), row_ids, fecha_hoy)
 
         tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
 
@@ -3602,6 +3716,8 @@ try:
                     pct_change = precio_data.get('pct_change')
                     if not precio or precio <= 0:
                         continue
+                    precio_manual = obtener_precio_manual_monitor(bono.get('tipo_bono'), bono['nombre'])
+                    precio_calculo = precio_manual if precio_manual is not None else precio
                     mat = bono.get('maturity')
                     if not mat:
                         continue
@@ -3610,8 +3726,8 @@ try:
                     if dr == 0:
                         continue
                     vf = bono.get('valor_final', 0) or 0
-                    tna = (vf - precio) / precio / dr * 365 if precio > 0 else None
-                    tea = (1 + (vf - precio) / precio) ** (365.0 / dr) - 1 if precio > 0 and dr > 0 else None
+                    tna = (vf - precio_calculo) / precio_calculo / dr * 365 if precio_calculo > 0 else None
+                    tea = (1 + (vf - precio_calculo) / precio_calculo) ** (365.0 / dr) - 1 if precio_calculo > 0 and dr > 0 else None
                     tem = (1 + tea) ** (1 / 12) - 1 if tea is not None else None
                     vm = dr / 365.0
 
@@ -3686,16 +3802,26 @@ try:
 
                 # Tabla
                 df_lec = df_lec.sort_values('Días Rem.').reset_index(drop=True)
-                df_lec['Precio'] = df_lec['Precio'].map('{:.2f}'.format)
-                df_lec['TNA'] = df_lec['TNA'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
-                df_lec['TEM'] = df_lec['TEM'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
-                df_lec['Vida Media'] = df_lec['Vida Media'].map('{:.2f}'.format)
-                df_lec['Valor Final'] = df_lec['Valor Final'].map('{:.4f}'.format)
-                df_lec['Var. Diaria %'] = df_lec['Var. Diaria %'].apply(
+                row_ids_lec = df_lec['Activo'].tolist()
+                df_lec_display = df_lec.copy()
+                df_lec_display['Precio'] = df_lec_display['Precio'].map('{:.2f}'.format)
+                df_lec_display['TNA'] = df_lec_display['TNA'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
+                df_lec_display['TEM'] = df_lec_display['TEM'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
+                df_lec_display['Vida Media'] = df_lec_display['Vida Media'].map('{:.2f}'.format)
+                df_lec_display['Valor Final'] = df_lec_display['Valor Final'].map('{:.4f}'.format)
+                df_lec_display['Var. Diaria %'] = df_lec_display['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(render_tabla_html(df_lec), unsafe_allow_html=True)
+                col_lec_tabla, col_lec_manual = st.columns([6, 2.6], gap='small')
+                with col_lec_tabla:
+                    st.markdown(render_tabla_html(df_lec_display), unsafe_allow_html=True)
+                with col_lec_manual:
+                    st.markdown(
+                        '<div class="bond-wrap"><div class="bond-title">Precio Manual</div></div>',
+                        unsafe_allow_html=True
+                    )
+                    _render_panel_precio_manual(_tabla_manual_id('Lecaps & Boncaps'), row_ids_lec, fecha_hoy_p)
             else:
                 st.info("No hay precios disponibles en este momento.")
 
@@ -3718,6 +3844,8 @@ try:
                 pct_change = precio_data.get('pct_change')
                 if not precio or precio <= 0:
                     continue
+                precio_manual = obtener_precio_manual_monitor(bono.get('tipo_bono'), bono['nombre'])
+                precio_calculo = precio_manual if precio_manual is not None else precio
                 mat = bono.get('maturity')
                 if not mat:
                     continue
@@ -3731,8 +3859,8 @@ try:
                 factor_cer_vivo = round(_cer_settl_tab / _cb, 4) if (_cer_settl_tab and _cb) else None
 
                 # TIR Anual y TIR Mensual
-                if factor_cer_vivo and precio > 0 and dr > 0:
-                    tir_anual = (factor_cer_vivo * 100 / precio) ** (365.0 / dr) - 1
+                if factor_cer_vivo and precio_calculo > 0 and dr > 0:
+                    tir_anual = (factor_cer_vivo * 100 / precio_calculo) ** (365.0 / dr) - 1
                     tir_mensual = (1 + tir_anual) ** (30 / 360) - 1
                 else:
                     tir_anual = None
@@ -3809,16 +3937,26 @@ try:
 
                 # Tabla
                 df_cer = df_cer.sort_values('Dur. Modificada').reset_index(drop=True)
-                df_cer['Factor CER'] = df_cer['Factor CER'].apply(lambda v: f'{v:.4f}' if v is not None else '-')
-                df_cer['Precio'] = df_cer['Precio'].map('{:.2f}'.format)
-                df_cer['TIR Anual'] = df_cer['TIR Anual'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
-                df_cer['TIR Mensual'] = df_cer['TIR Mensual'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
-                df_cer['Dur. Modificada'] = df_cer['Dur. Modificada'].apply(lambda v: f'{v:.2f}' if v is not None else '-')
-                df_cer['Var. Diaria %'] = df_cer['Var. Diaria %'].apply(
+                row_ids_cer = df_cer['Activo'].tolist()
+                df_cer_display = df_cer.copy()
+                df_cer_display['Factor CER'] = df_cer_display['Factor CER'].apply(lambda v: f'{v:.4f}' if v is not None else '-')
+                df_cer_display['Precio'] = df_cer_display['Precio'].map('{:.2f}'.format)
+                df_cer_display['TIR Anual'] = df_cer_display['TIR Anual'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
+                df_cer_display['TIR Mensual'] = df_cer_display['TIR Mensual'].apply(lambda v: f'{v:.2f}%' if v is not None else '-')
+                df_cer_display['Dur. Modificada'] = df_cer_display['Dur. Modificada'].apply(lambda v: f'{v:.2f}' if v is not None else '-')
+                df_cer_display['Var. Diaria %'] = df_cer_display['Var. Diaria %'].apply(
                     lambda x: f'{x:+.2f}%' if x is not None and not pd.isna(x) else '-'
                 )
                 st.markdown("<div style='margin-top:2rem'></div>", unsafe_allow_html=True)
-                st.markdown(render_tabla_html(df_cer), unsafe_allow_html=True)
+                col_cer_tabla, col_cer_manual = st.columns([6, 2.6], gap='small')
+                with col_cer_tabla:
+                    st.markdown(render_tabla_html(df_cer_display), unsafe_allow_html=True)
+                with col_cer_manual:
+                    st.markdown(
+                        '<div class="bond-wrap"><div class="bond-title">Precio Manual</div></div>',
+                        unsafe_allow_html=True
+                    )
+                    _render_panel_precio_manual(_tabla_manual_id('Bonos CER'), row_ids_cer, fecha_hoy_p)
             else:
                 st.markdown("<div style='margin-top:1rem'></div>", unsafe_allow_html=True)
                 st.info("Bonos CER: no hay precios disponibles en este momento.")
