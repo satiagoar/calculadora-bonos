@@ -3461,11 +3461,13 @@ try:
         qp_toggle = st.query_params.get("manual_toggle")
         qp_table = st.query_params.get("manual_table")
         qp_market = st.query_params.get("manual_market")
+        qp_action = st.query_params.get("manual_action")
         if qp_toggle and qp_table:
             tabla_id_qp = qp_table if isinstance(qp_table, str) else qp_table[-1]
             activo_qp = qp_toggle if isinstance(qp_toggle, str) else qp_toggle[-1]
             precio_market_qp = qp_market if isinstance(qp_market, str) else (qp_market[-1] if qp_market else "0")
-            if _obtener_precio_manual_tabla(tabla_id_qp, activo_qp) is not None:
+            action_qp = qp_action if isinstance(qp_action, str) else (qp_action[-1] if qp_action else "")
+            if action_qp == "reset":
                 _guardar_precio_manual_monitor(tabla_id_qp, activo_qp, None)
                 _close_manual_dialog()
             else:
@@ -3720,11 +3722,11 @@ try:
                 df_tabla_display['_manual_control'] = df_tabla['Activo'].apply(
                     lambda activo: (
                         f'<a href="?manual_table={tabla_id}&manual_toggle={activo}&manual_market='
-                        f'{float(df_tabla.loc[df_tabla["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}" '
+                        f'{float(df_tabla.loc[df_tabla["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=reset" '
                         'style="text-decoration:none;font-size:16px;color:#2e7d32">●</a>'
                         if _obtener_precio_manual_tabla(tabla_id, activo) is not None else
                         f'<a href="?manual_table={tabla_id}&manual_toggle={activo}&manual_market='
-                        f'{float(df_tabla.loc[df_tabla["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}" '
+                        f'{float(df_tabla.loc[df_tabla["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=edit" '
                         'style="text-decoration:none;font-size:16px;color:#9aa5b1">○</a>'
                     )
                 )
@@ -3862,11 +3864,11 @@ try:
                 df_lec_display['_manual_control'] = df_lec['Activo'].apply(
                     lambda activo: (
                         f'<a href="?manual_table={tabla_id_lec}&manual_toggle={activo}&manual_market='
-                        f'{float(df_lec.loc[df_lec["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}" '
+                        f'{float(df_lec.loc[df_lec["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=reset" '
                         'style="text-decoration:none;font-size:16px;color:#2e7d32">●</a>'
                         if _obtener_precio_manual_tabla(tabla_id_lec, activo) is not None else
                         f'<a href="?manual_table={tabla_id_lec}&manual_toggle={activo}&manual_market='
-                        f'{float(df_lec.loc[df_lec["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}" '
+                        f'{float(df_lec.loc[df_lec["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=edit" '
                         'style="text-decoration:none;font-size:16px;color:#9aa5b1">○</a>'
                     )
                 )
@@ -4001,11 +4003,11 @@ try:
                 df_cer_display['_manual_control'] = df_cer['Activo'].apply(
                     lambda activo: (
                         f'<a href="?manual_table={tabla_id_cer}&manual_toggle={activo}&manual_market='
-                        f'{float(df_cer.loc[df_cer["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}" '
+                        f'{float(df_cer.loc[df_cer["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=reset" '
                         'style="text-decoration:none;font-size:16px;color:#2e7d32">●</a>'
                         if _obtener_precio_manual_tabla(tabla_id_cer, activo) is not None else
                         f'<a href="?manual_table={tabla_id_cer}&manual_toggle={activo}&manual_market='
-                        f'{float(df_cer.loc[df_cer["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}" '
+                        f'{float(df_cer.loc[df_cer["Activo"] == activo, "_precio_mercado"].iloc[0]):.6f}&manual_action=edit" '
                         'style="text-decoration:none;font-size:16px;color:#9aa5b1">○</a>'
                     )
                 )
