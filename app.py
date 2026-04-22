@@ -616,11 +616,6 @@ st.markdown("""
         color: #475569 !important;
     }
     
-    /* Ocultar menú del dataframe */
-    .stDataFrame > div > div:first-child {
-        display: none !important;
-    }
-    
     /* Ocultar barra de GitHub */
     .stDeployButton {
         display: none !important;
