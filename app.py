@@ -3401,6 +3401,7 @@ try:
             st.session_state.pop("monitor_manual_dialog_table", None)
             st.session_state.pop("monitor_manual_dialog_activo", None)
             st.session_state.pop("monitor_manual_dialog_precio_mercado", None)
+            st.session_state.pop("monitor_manual_dialog_commit", None)
 
         @st.dialog(" ", width="small", dismissible=True, on_dismiss=_close_manual_dialog)
         def _manual_price_dialog():
@@ -3416,24 +3417,37 @@ try:
                 st.session_state[input_key] = float(precio_manual if precio_manual is not None else precio_mercado)
                 st.session_state[activo_key] = f"{tabla_id}:{activo}"
 
-            def _apply_manual_dialog():
+            st.markdown("""
+            <style>
+            div[data-testid="stDialog"] div[data-testid="stForm"] {
+                border: 0;
+                padding: 0;
+            }
+            div[data-testid="stDialog"] div[data-testid="stForm"] button {
+                display: none;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            with st.form("monitor_manual_dialog_form"):
+                st.number_input(
+                    "",
+                    min_value=0.0,
+                    step=0.01,
+                    format="%.2f",
+                    key=input_key,
+                    label_visibility="collapsed",
+                )
+                submitted = st.form_submit_button("Aplicar")
+
+            if submitted:
                 _guardar_precio_manual_monitor(
                     tabla_id,
                     activo,
                     normalizar_precio_manual_monitor(st.session_state.get(input_key))
                 )
                 _close_manual_dialog()
-                st.session_state["monitor_manual_dialog_commit"] = True
-
-            st.number_input(
-                "",
-                min_value=0.0,
-                step=0.01,
-                format="%.2f",
-                key=input_key,
-                label_visibility="collapsed",
-                on_change=_apply_manual_dialog,
-            )
+                st.rerun()
 
         qp_toggle = st.query_params.get("manual_toggle")
         qp_table = st.query_params.get("manual_table")
@@ -3456,8 +3470,6 @@ try:
 
         if st.session_state.get("monitor_manual_dialog_table") and st.session_state.get("monitor_manual_dialog_activo"):
             _manual_price_dialog()
-        if st.session_state.pop("monitor_manual_dialog_commit", False):
-            st.rerun()
 
         # --- Fetch precios y calcular grupos (compartido entre tabs) ---
         with st.spinner("Cargando precios y calculando métricas..."):
