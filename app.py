@@ -9,6 +9,7 @@ from plotly.subplots import make_subplots
 import json
 import requests
 import re
+import subprocess
 warnings.filterwarnings('ignore')
 
 def formatear_numero(numero, decimales=2, usar_separador_miles=True):
@@ -3430,7 +3431,16 @@ try:
                 styler = styler.set_table_styles(header_styles, overwrite=False)
             return styler
 
-        MONITOR_UI_COMMIT = "153185e"
+        @st.cache_data(show_spinner=False)
+        def _obtener_commit_monitor_ui():
+            try:
+                return subprocess.check_output(
+                    ["git", "rev-parse", "--short", "HEAD"],
+                    cwd=".",
+                    text=True,
+                ).strip()
+            except Exception:
+                return "desconocido"
 
         def _render_monitor_data_editor(
             df_source, tabla_id, key, column_order, column_config,
@@ -3465,7 +3475,7 @@ try:
                 height=table_height,
                 placeholder="",
             )
-            st.caption(f"Monitor UI commit: `{MONITOR_UI_COMMIT}`")
+            st.caption(f"Monitor UI commit: `{_obtener_commit_monitor_ui()}`")
             if _sync_manual_prices_from_editor(edited_df, tabla_id):
                 st.rerun()
 
