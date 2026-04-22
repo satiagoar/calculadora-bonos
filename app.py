@@ -3339,10 +3339,36 @@ try:
         .bond-wrap { border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; margin-top:2rem; }
         .bond-title { background:#fafafa; color:#333; font-weight:700; font-size:14px; padding:11px 14px; border-bottom:2px solid #e0e0e0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; letter-spacing:0.02em; }
         div[data-testid="stDataEditor"] {
+            --gdg-bg-cell: #ffffff;
+            --gdg-bg-cell-medium: #f8fafc;
+            --gdg-bg-header: #fafafa;
+            --gdg-bg-header-has-focus: #f1f5f9;
+            --gdg-bg-header-hovered: #f1f5f9;
+            --gdg-text-dark: #333333;
+            --gdg-text-medium: #555555;
+            --gdg-text-light: #6b7280;
+            --gdg-border-color: #e0e0e0;
+            --gdg-horizontal-border-color: #e2e8f0;
+            --gdg-accent-color: #2563eb;
+            --gdg-accent-light: rgba(37, 99, 235, 0.12);
+            --gdg-bg-search-result: #eef2ff;
             border: 1px solid #e0e0e0;
             border-top: 0;
             border-radius: 0 0 10px 10px;
             overflow: hidden;
+            color: #333333 !important;
+            background: #ffffff !important;
+        }
+        div[data-testid="stDataEditor"] canvas {
+            background: #ffffff !important;
+        }
+        div[data-testid="stDataEditor"] [role="grid"] {
+            background: #ffffff !important;
+        }
+        div[data-testid="stDataEditor"] button {
+            color: #475569 !important;
+            background: #ffffff !important;
+            border-color: #dbe3f0 !important;
         }
         </style>
         """
@@ -3384,9 +3410,10 @@ try:
                 lambda activo: '●' if _obtener_precio_manual_tabla(tabla_id, activo) is not None else ''
             )
             editor_df['Precio Manual'] = editor_df['Activo'].apply(
-                lambda activo: _obtener_precio_manual_tabla(tabla_id, activo)
+                lambda activo: _obtener_precio_manual_tabla(tabla_id, activo) if _obtener_precio_manual_tabla(tabla_id, activo) is not None else np.nan
             )
             editor_df = editor_df[column_order].copy()
+            table_height = 44 + (len(editor_df) + 1) * 38
             edited_df = st.data_editor(
                 editor_df,
                 key=key,
@@ -3395,6 +3422,7 @@ try:
                 disabled=[col for col in editor_df.columns if col != 'Precio Manual'],
                 column_config=column_config,
                 row_height=38,
+                height=table_height,
             )
             if _sync_manual_prices_from_editor(edited_df, tabla_id):
                 st.rerun()
@@ -3635,18 +3663,18 @@ try:
                     'Dur. Modificada', 'Var. Diaria %', 'M', 'Precio Manual'
                 ]
                 usd_column_config = {
-                    'Activo': st.column_config.TextColumn('Activo', width='small'),
+                    'Activo': st.column_config.TextColumn('Activo', width='medium'),
                     'Ticker': st.column_config.TextColumn('Ticker', width='small'),
-                    'Vencimiento': st.column_config.TextColumn('Vencimiento', width='small'),
+                    'Vencimiento': st.column_config.TextColumn('Vencimiento', width='medium'),
                     'Precio': st.column_config.NumberColumn('Precio', format='%.2f', width='small'),
                     'Int. Corridos': st.column_config.NumberColumn('Int. Corridos', format='%.4f', width='small'),
                     'Cap. Residual': st.column_config.NumberColumn('Cap. Residual', format='%.2f', width='small'),
-                    'Cupón Vigente': st.column_config.NumberColumn('Cupón Vigente', format='%.4f%%', width='medium'),
-                    'TIR Semestral': st.column_config.NumberColumn('TIR Semestral', format='%.2f%%', width='medium'),
-                    'Dur. Modificada': st.column_config.NumberColumn('Dur. Modificada', format='%.2f', width='medium'),
-                    'Var. Diaria %': st.column_config.NumberColumn('Var. Diaria %', format='%.2f%%', width='medium'),
+                    'Cupón Vigente': st.column_config.NumberColumn('Cupón', format='%.4f%%', width='medium'),
+                    'TIR Semestral': st.column_config.NumberColumn('TIR Sem.', format='%.2f%%', width='small'),
+                    'Dur. Modificada': st.column_config.NumberColumn('Dur. Mod.', format='%.2f', width='small'),
+                    'Var. Diaria %': st.column_config.NumberColumn('Var. %', format='%.2f%%', width='small'),
                     'M': st.column_config.TextColumn('M', width='small', help='● indica precio manual activo'),
-                    'Precio Manual': st.column_config.NumberColumn('Precio Manual', format='%.2f', width='medium'),
+                    'Precio Manual': st.column_config.NumberColumn('Px Manual', format='%.2f', width='small'),
                 }
                 _render_monitor_data_editor(df_tabla, tabla_id, f"editor_{tabla_id}", usd_column_order, usd_column_config)
 
@@ -3773,17 +3801,17 @@ try:
                     'Vida Media', 'Días Rem.', 'Valor Final', 'Var. Diaria %', 'M', 'Precio Manual'
                 ]
                 lec_column_config = {
-                    'Activo': st.column_config.TextColumn('Activo', width='small'),
-                    'Vencimiento': st.column_config.TextColumn('Vencimiento', width='small'),
+                    'Activo': st.column_config.TextColumn('Activo', width='medium'),
+                    'Vencimiento': st.column_config.TextColumn('Vencimiento', width='medium'),
                     'Precio': st.column_config.NumberColumn('Precio', format='%.2f', width='small'),
                     'TNA': st.column_config.NumberColumn('TNA', format='%.2f%%', width='small'),
                     'TEM': st.column_config.NumberColumn('TEM', format='%.2f%%', width='small'),
                     'Vida Media': st.column_config.NumberColumn('Vida Media', format='%.2f', width='small'),
                     'Días Rem.': st.column_config.NumberColumn('Días Rem.', format='%d', width='small'),
                     'Valor Final': st.column_config.NumberColumn('Valor Final', format='%.4f', width='medium'),
-                    'Var. Diaria %': st.column_config.NumberColumn('Var. Diaria %', format='%.2f%%', width='medium'),
+                    'Var. Diaria %': st.column_config.NumberColumn('Var. %', format='%.2f%%', width='small'),
                     'M': st.column_config.TextColumn('M', width='small', help='● indica precio manual activo'),
-                    'Precio Manual': st.column_config.NumberColumn('Precio Manual', format='%.2f', width='medium'),
+                    'Precio Manual': st.column_config.NumberColumn('Px Manual', format='%.2f', width='small'),
                 }
                 _render_monitor_data_editor(df_lec, tabla_id_lec, f"editor_{tabla_id_lec}", lec_column_order, lec_column_config)
             else:
@@ -3908,16 +3936,16 @@ try:
                     'TIR Anual', 'TIR Mensual', 'Dur. Modificada', 'Var. Diaria %', 'M', 'Precio Manual'
                 ]
                 cer_column_config = {
-                    'Activo': st.column_config.TextColumn('Activo', width='small'),
-                    'Vencimiento': st.column_config.TextColumn('Vencimiento', width='small'),
+                    'Activo': st.column_config.TextColumn('Activo', width='medium'),
+                    'Vencimiento': st.column_config.TextColumn('Vencimiento', width='medium'),
                     'Factor CER': st.column_config.NumberColumn('Factor CER', format='%.4f', width='small'),
                     'Precio': st.column_config.NumberColumn('Precio', format='%.2f', width='small'),
                     'TIR Anual': st.column_config.NumberColumn('TIR Anual', format='%.2f%%', width='small'),
-                    'TIR Mensual': st.column_config.NumberColumn('TIR Mensual', format='%.2f%%', width='small'),
-                    'Dur. Modificada': st.column_config.NumberColumn('Dur. Modificada', format='%.2f', width='medium'),
-                    'Var. Diaria %': st.column_config.NumberColumn('Var. Diaria %', format='%.2f%%', width='medium'),
+                    'TIR Mensual': st.column_config.NumberColumn('TIR Mens.', format='%.2f%%', width='small'),
+                    'Dur. Modificada': st.column_config.NumberColumn('Dur. Mod.', format='%.2f', width='small'),
+                    'Var. Diaria %': st.column_config.NumberColumn('Var. %', format='%.2f%%', width='small'),
                     'M': st.column_config.TextColumn('M', width='small', help='● indica precio manual activo'),
-                    'Precio Manual': st.column_config.NumberColumn('Precio Manual', format='%.2f', width='medium'),
+                    'Precio Manual': st.column_config.NumberColumn('Px Manual', format='%.2f', width='small'),
                 }
                 _render_monitor_data_editor(df_cer, tabla_id_cer, f"editor_{tabla_id_cer}", cer_column_order, cer_column_config)
             else:
