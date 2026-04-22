@@ -3462,7 +3462,8 @@ try:
                 center_headers = center_headers or []
                 right_headers = right_headers or []
 
-                gb = GridOptionsBuilder.from_dataframe(editor_df)
+                grid_df = editor_df.copy().replace({np.nan: None})
+                gb = GridOptionsBuilder.from_dataframe(grid_df)
                 gb.configure_default_column(
                     editable=False,
                     sortable=False,
@@ -3472,7 +3473,6 @@ try:
                 )
                 gb.configure_grid_options(
                     domLayout='normal',
-                    ensureDomOrder=True,
                     suppressMovableColumns=True,
                     headerHeight=38,
                     rowHeight=38,
@@ -3487,11 +3487,11 @@ try:
                     return 'ag-header-left'
 
                 for col in editor_df.columns:
-                    cell_style = {"textAlign": "left", "justifyContent": "flex-start"}
+                    cell_style = {"textAlign": "left"}
                     if col in center_cols:
-                        cell_style = {"textAlign": "center", "justifyContent": "center"}
+                        cell_style = {"textAlign": "center"}
                     elif col in right_cols or col == 'Precio Manual':
-                        cell_style = {"textAlign": "right", "justifyContent": "flex-end"}
+                        cell_style = {"textAlign": "right"}
 
                     configure_args = dict(
                         headerClass=_header_class_for(col),
@@ -3502,11 +3502,7 @@ try:
                     if col == 'Precio Manual':
                         configure_args.update(
                             editable=True,
-                            type=["numericColumn"],
-                            precision=2,
                         )
-                    elif col in right_cols:
-                        configure_args.update(type=["numericColumn"])
 
                     if config is not None:
                         label = getattr(config, "label", None)
@@ -3528,39 +3524,19 @@ try:
                     gb.configure_column(col, **configure_args)
 
                 grid_response = AgGrid(
-                    editor_df,
+                    grid_df,
                     gridOptions=gb.build(),
                     key=key,
                     height=table_height,
-                    theme='streamlit',
+                    theme='balham',
                     allow_unsafe_jscode=False,
                     update_mode=GridUpdateMode.VALUE_CHANGED,
                     data_return_mode='AS_INPUT',
-                    fit_columns_on_grid_load=False,
+                    fit_columns_on_grid_load=True,
                     show_toolbar=False,
                     show_search=False,
                     show_download_button=False,
                     custom_css={
-                        ".ag-root-wrapper": {
-                            "border": "1px solid #e0e0e0",
-                            "border-top": "0",
-                            "border-radius": "0 0 10px 10px",
-                            "font-family": "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
-                            "font-size": "13px",
-                        },
-                        ".ag-header-cell": {
-                            "padding-left": "8px",
-                            "padding-right": "8px",
-                        },
-                        ".ag-header-cell-label": {
-                            "width": "100%",
-                        },
-                        ".ag-cell": {
-                            "padding-left": "8px",
-                            "padding-right": "8px",
-                            "display": "flex",
-                            "align-items": "center",
-                        },
                         ".ag-header-center .ag-header-cell-label": {
                             "justify-content": "center",
                         },
