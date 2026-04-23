@@ -3829,7 +3829,7 @@ try:
                     ],
                 )
 
-        tab_usd, tab_ars, tab_corp = st.tabs(["Soberano - USD", "Soberano - ARS", "Corporativos - USD"])
+        tab_ars, tab_usd, tab_corp = st.tabs(["Soberano - ARS", "Soberano - USD", "Corporativos - USD"])
 
         with tab_usd:
             _render_grupos(['Soberano USD'])
