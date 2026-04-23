@@ -3449,9 +3449,6 @@ try:
             if df_source.empty:
                 return
             editor_df = df_source.copy()
-            editor_df['M'] = editor_df['Activo'].apply(
-                lambda activo: '●' if _obtener_precio_manual_tabla(tabla_id, activo) is not None else ''
-            )
             editor_df['Precio Manual'] = editor_df['Activo'].apply(
                 lambda activo: _obtener_precio_manual_tabla(tabla_id, activo) if _obtener_precio_manual_tabla(tabla_id, activo) is not None else np.nan
             )
@@ -3799,7 +3796,7 @@ try:
                 usd_column_order = [
                     'Activo', 'Ticker', 'Vencimiento', 'Precio', 'Int. Corridos',
                     'Cap. Residual', 'Cupón Vigente', 'TIR Semestral',
-                    'Dur. Modificada', 'Var. Diaria %', 'M', 'Precio Manual'
+                    'Dur. Modificada', 'Var. Diaria %', 'Precio Manual'
                 ]
                 usd_column_config = {
                     'Activo': st.column_config.TextColumn('Activo', width='small'),
@@ -3812,7 +3809,6 @@ try:
                     'TIR Semestral': st.column_config.NumberColumn('TIR Sem.', format='%.2f%%', width='small'),
                     'Dur. Modificada': st.column_config.NumberColumn('Dur. Mod.', format='%.2f', width='small'),
                     'Var. Diaria %': st.column_config.NumberColumn('Var. %', format='%.2f%%', width='small'),
-                    'M': st.column_config.TextColumn('M', width='small', help='● indica precio manual activo'),
                     'Precio Manual': st.column_config.NumberColumn('Px Man.', format='%.2f', width='medium'),
                 }
                 _render_monitor_data_editor(
@@ -3821,12 +3817,12 @@ try:
                     f"editor_{tabla_id}",
                     usd_column_order,
                     usd_column_config,
-                    center_cols=['Vencimiento', 'M'],
+                    center_cols=['Vencimiento'],
                     right_cols=[
                         'Precio', 'Int. Corridos', 'Cap. Residual', 'Cupón Vigente',
                         'TIR Semestral', 'Dur. Modificada', 'Var. Diaria %'
                     ],
-                    center_headers=['Vencimiento', 'M'],
+                    center_headers=['Vencimiento'],
                     right_headers=[
                         'Precio', 'Int. Corridos', 'Cap. Residual', 'Cupón Vigente',
                         'TIR Semestral', 'Dur. Modificada', 'Var. Diaria %', 'Precio Manual'
@@ -3953,7 +3949,7 @@ try:
                 tabla_id_lec = _tabla_manual_id('Lecaps & Boncaps')
                 lec_column_order = [
                     'Activo', 'Vencimiento', 'Precio', 'TNA', 'TEM',
-                    'Vida Media', 'Días Rem.', 'Valor Final', 'Var. Diaria %', 'M', 'Precio Manual'
+                    'Vida Media', 'Días Rem.', 'Valor Final', 'Var. Diaria %', 'Precio Manual'
                 ]
                 lec_column_config = {
                     'Activo': st.column_config.TextColumn('Activo', width='small'),
@@ -3965,7 +3961,6 @@ try:
                     'Días Rem.': st.column_config.NumberColumn('Días Rem.', format='%d', width='small'),
                     'Valor Final': st.column_config.NumberColumn('Valor Final', format='%.4f', width='medium'),
                     'Var. Diaria %': st.column_config.NumberColumn('Var. %', format='%.2f%%', width='small'),
-                    'M': st.column_config.TextColumn('M', width='small', help='● indica precio manual activo'),
                     'Precio Manual': st.column_config.NumberColumn('Px Man.', format='%.2f', width='medium'),
                 }
                 _render_monitor_data_editor(
@@ -3974,9 +3969,9 @@ try:
                     f"editor_{tabla_id_lec}",
                     lec_column_order,
                     lec_column_config,
-                    center_cols=['Vencimiento', 'M'],
+                    center_cols=['Vencimiento'],
                     right_cols=['Precio', 'TNA', 'TEM', 'Vida Media', 'Días Rem.', 'Valor Final', 'Var. Diaria %'],
-                    center_headers=['Vencimiento', 'M'],
+                    center_headers=['Vencimiento'],
                     right_headers=['Precio', 'TNA', 'TEM', 'Vida Media', 'Días Rem.', 'Valor Final', 'Var. Diaria %', 'Precio Manual'],
                 )
             else:
@@ -4098,7 +4093,7 @@ try:
                 tabla_id_cer = _tabla_manual_id('Bonos CER')
                 cer_column_order = [
                     'Activo', 'Vencimiento', 'Factor CER', 'Precio',
-                    'TIR Anual', 'TIR Mensual', 'Dur. Modificada', 'Var. Diaria %', 'M', 'Precio Manual'
+                    'TIR Anual', 'TIR Mensual', 'Dur. Modificada', 'Var. Diaria %', 'Precio Manual'
                 ]
                 cer_column_config = {
                     'Activo': st.column_config.TextColumn('Activo', width='small'),
@@ -4109,7 +4104,6 @@ try:
                     'TIR Mensual': st.column_config.NumberColumn('TIR Mens.', format='%.2f%%', width='small'),
                     'Dur. Modificada': st.column_config.NumberColumn('Dur. Mod.', format='%.2f', width='small'),
                     'Var. Diaria %': st.column_config.NumberColumn('Var. %', format='%.2f%%', width='small'),
-                    'M': st.column_config.TextColumn('M', width='small', help='● indica precio manual activo'),
                     'Precio Manual': st.column_config.NumberColumn('Px Man.', format='%.2f', width='medium'),
                 }
                 _render_monitor_data_editor(
@@ -4118,9 +4112,9 @@ try:
                     f"editor_{tabla_id_cer}",
                     cer_column_order,
                     cer_column_config,
-                    center_cols=['Vencimiento', 'M'],
+                    center_cols=['Vencimiento'],
                     right_cols=['Precio', 'TIR Anual', 'TIR Mensual', 'Dur. Modificada', 'Var. Diaria %'],
-                    center_headers=['Vencimiento', 'M'],
+                    center_headers=['Vencimiento'],
                     right_headers=['Precio', 'TIR Anual', 'TIR Mensual', 'Dur. Modificada', 'Var. Diaria %', 'Precio Manual'],
                 )
             else:
