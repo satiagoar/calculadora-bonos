@@ -3490,6 +3490,8 @@ try:
                         cell_style = {"textAlign": "center"}
                     elif col in right_cols or col == 'Precio Manual':
                         cell_style = {"textAlign": "right"}
+                    if col in ('Precio', 'Precio Manual'):
+                        cell_style["fontWeight"] = 700
 
                     configure_args = dict(
                         headerClass=_header_class_for(col),
@@ -3558,6 +3560,34 @@ try:
                     row_height=38,
                     height=table_height,
                     placeholder="",
+                )
+                st.components.v1.html(
+                    """
+                    <script>
+                    (function boldPriceColumns() {
+                        const doc = window.parent.document;
+                        const editors = doc.querySelectorAll('div[data-testid="stDataEditor"] table');
+                        editors.forEach((table) => {
+                            const headers = Array.from(table.querySelectorAll('thead th'));
+                            const targetIndexes = [];
+                            headers.forEach((th, idx) => {
+                                const txt = (th.textContent || '').trim().toLowerCase();
+                                if (txt === 'precio' || txt === 'px man.' || txt === 'precio manual') {
+                                    targetIndexes.push(idx + 1);
+                                    th.style.fontWeight = '700';
+                                }
+                            });
+                            targetIndexes.forEach((colIdx) => {
+                                table.querySelectorAll(`tbody tr td:nth-child(${colIdx})`).forEach((td) => {
+                                    td.style.fontWeight = '700';
+                                });
+                            });
+                        });
+                        setTimeout(boldPriceColumns, 300);
+                    })();
+                    </script>
+                    """,
+                    height=0,
                 )
             st.caption(f"Monitor UI commit: `{_obtener_commit_monitor_ui()}`")
             if _sync_manual_prices_from_editor(edited_df, tabla_id):
